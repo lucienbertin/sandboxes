@@ -1,4 +1,6 @@
 #[macro_use] extern crate rocket;
+
+use application::DeletePostResult;
 use models::NewPost;
 use rocket::{form::Form, http::Status, response::status::{Created, NoContent}, serde::json::Json};
 
@@ -38,9 +40,20 @@ pub fn post_post(post: Form<NewPost>) -> Result<Created<Json<self::models::Post>
 
 #[delete("/post/<id>")]
 pub fn delete_post(id: i32) -> Result<NoContent, rocket::response::status::Custom<&'static str>> {
-    use adapters::delete_post;
+    use adapters::{find_post, delete_post};
 
-    delete_post(id).map_err(|_e| rocket::response::status::Custom(Status::InternalServerError, "error"))?;
+    // imperative shell
+    let post = find_post(id).map_err(|_e| rocket::response::status::Custom(Status::InternalServerError, "error"))?;
+
+    //functional core
+    let result = post.map(application::delete_post);
+
+    // imperative shell
+    match result {
+        Some(DeletePostResult::DoDelete(post_id)) =>  delete_post(post_id).map_err(|_e| rocket::response::status::Custom(Status::InternalServerError, "error")),
+        Some(DeletePostResult::CantDeletePublishedPost()) => Err(rocket::response::status::Custom(Status::Conflict, "cant delete published post")),
+        None => Err(rocket::response::status::Custom(Status::Gone, "gone")),
+    }?;
 
     Ok(NoContent)
 }
