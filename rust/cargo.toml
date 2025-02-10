@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "adapters",
+  "ports",
+  "application",
+]
