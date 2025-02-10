@@ -1,0 +1,5 @@
+this sandbox is a REST api server plugged into a postgres db
+
+it uses rocket for the http expostion and diesel for linjing to the db
+
+its arch is a mix between [this medium post](https://medium.com/@jeynesbrook/building-an-api-in-rust-with-rocket-rs-and-diesel-rs-clean-architecture-8f6092ee2606) and scott wlaschin functional core imperative shell approach that he explains in [this talk](https://www.youtube.com/watch?v=P1vES9AgfC4&list=WL&index=65&pp=gAQBiAQB)
