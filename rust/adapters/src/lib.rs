@@ -18,7 +18,7 @@ pub fn establish_connection() -> Result<PgConnection, Error> {
 }
 
 
-pub fn get_published_posts() -> Result<Vec<application::models::Post>, Error> {
+pub fn select_published_posts() -> Result<Vec<application::models::Post>, Error> {
     use self::schema::posts::dsl::*;
     use self::models::Post;
 
@@ -34,7 +34,7 @@ pub fn get_published_posts() -> Result<Vec<application::models::Post>, Error> {
 }
 
 
-pub fn get_post(post_id: i32) -> Result<Option<application::models::Post>, Error> {
+pub fn find_post(post_id: i32) -> Result<Option<application::models::Post>, Error> {
     use self::schema::posts::dsl::*;
     use self::models::Post;
 
@@ -50,7 +50,7 @@ pub fn get_post(post_id: i32) -> Result<Option<application::models::Post>, Error
     Ok(result)
 }
 
-pub fn create_post(new_post: NewPost) -> Result<Post, Error> {
+pub fn insert_new_post(new_post: NewPost) -> Result<Post, Error> {
     use self::schema::posts;
     let connection = &mut establish_connection()?;
 
@@ -62,12 +62,21 @@ pub fn create_post(new_post: NewPost) -> Result<Post, Error> {
         .get_result(connection)?;
 
     Ok(result.into())
+}
 
+pub fn delete_post(post_id: i32) -> Result<(), Error> {
+    use self::schema::posts::dsl::*;
+    let connection = &mut establish_connection()?;
+
+    diesel::delete(posts.filter(id.eq(post_id)))
+        .execute(connection)?;
+
+    Ok(())
 }
 
 #[test]
 fn test_connection() {
-    let results = get_published_posts().expect("couldnt load posts");
+    let results = select_published_posts().expect("couldnt load posts");
 
     println!("Displaying {} posts", results.len());
     println!("-----------");
