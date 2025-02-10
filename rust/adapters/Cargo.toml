@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+application = { path = "../application" }
 diesel = { version = "2.2.0", features = ["postgres"] }
 dotenvy = "0.15.7"
 postgis_diesel = { version = "2.4.1", features = ["serde"] }
