@@ -2,29 +2,39 @@ use diesel::prelude::*;
 use dotenvy::dotenv;
 use std::env;
 
-pub mod models;
-pub mod schema;
+pub mod error;
+mod models;
+mod schema;
 
-pub fn establish_connection() -> PgConnection {
-    dotenv().ok();
+use self::error::Error;
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+pub fn establish_connection() -> Result<PgConnection, Error> {
+    dotenv()?;
+    let database_url = env::var("DATABASE_URL")?;
+    let connection = PgConnection::establish(&database_url)?;
+
+    Ok(connection)
+}
+
+
+pub fn get_published_posts() -> Result<Vec<application::models::Post>, Error> {
+    use self::schema::posts::dsl::*;
+    use self::models::Post;
+
+    let connection = &mut establish_connection()?;
+    let results: Vec<self::models::Post>= posts
+        .filter(published.eq(true))
+        .limit(5)
+        .select(Post::as_select())
+        .load(connection)?;
+    let results: Vec<application::models::Post> = results.into_iter().map(|p| p.into()).collect();
+
+    Ok(results)
 }
 
 #[test]
 fn test_connection() {
-    use self::schema::posts::dsl::*;
-    use self::models::Post;
-
-    let connection = &mut establish_connection();
-    let results = posts
-        .filter(published.eq(true))
-        .limit(5)
-        .select(Post::as_select())
-        .load(connection)
-        .expect("Error loading posts");
+    let results = get_published_posts().expect("couldnt load posts");
 
     println!("Displaying {} posts", results.len());
     println!("-----------");
