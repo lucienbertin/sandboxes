@@ -6,7 +6,7 @@ pub struct Post {
     // pub geom: Point,
 }
 
-pub struct NewPost<'a> {
-    pub title: &'a str,
-    pub body: &'a str,
+pub struct NewPost {
+    pub title: String,
+    pub body: String,
 }

@@ -1,5 +1,6 @@
 use rocket::serde::{Serialize, Deserialize,};
 
+
 #[derive(Serialize, Deserialize)]
 pub struct Post {
     pub id: i32,
@@ -15,6 +16,20 @@ impl From<application::models::Post> for Post {
             title: value.title,
             body: value.body,
             published: value.published,
+        }
+    }
+}
+
+#[derive(FromForm)]
+pub struct NewPost {
+    title: String,
+    body: String,
+}
+impl From<NewPost> for application::models::NewPost {
+    fn from(value: NewPost) -> Self {
+        Self {
+            title: value.title,
+            body: value.body,
         }
     }
 }
