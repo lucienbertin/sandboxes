@@ -4,3 +4,4 @@ members = [
   "ports",
   "application",
 ]
+resolver = "2"
