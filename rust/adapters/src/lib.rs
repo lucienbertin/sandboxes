@@ -3,11 +3,23 @@ use diesel::prelude::*;
 use dotenvy::dotenv;
 use std::env;
 
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
+
 pub mod error;
 mod models;
 mod schema;
 
 use self::error::Error;
+
+pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
+    dotenv()?;
+    let secret = env::var("SECRET")?;
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
+
+
+    Ok(key)
+}
 
 pub fn establish_connection() -> Result<PgConnection, Error> {
     dotenv()?;
