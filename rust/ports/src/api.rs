@@ -38,19 +38,20 @@ pub fn post_post(post: Form<NewPost>) -> Result<Created<Json<Post>>, rocket::res
 }
 
 #[delete("/post/<id>")]
-pub fn delete_post(id: i32) -> Result<NoContent, rocket::response::status::Custom<&'static str>> {
+pub fn delete_post(subject: JwtIdentifiedSubject, id: i32) -> Result<NoContent, rocket::response::status::Custom<&'static str>> {
     use adapters::{find_post, delete_post};
 
     // imperative shell
     let post = find_post(id).map_err(|_e| rocket::response::status::Custom(Status::InternalServerError, "error"))?;
 
     //functional core
-    let result = post.map(application::delete_post);
+    let result = post.map(|p| application::delete_post(subject.email, p));
 
     // imperative shell
     match result {
         Some(DeletePostResult::DoDelete(post_id)) =>  delete_post(post_id).map_err(|_e| rocket::response::status::Custom(Status::InternalServerError, "error")),
-        Some(DeletePostResult::CantDeletePublishedPost()) => Err(rocket::response::status::Custom(Status::Conflict, "cant delete published post")),
+        Some(DeletePostResult::CantDeleteAnotherOnesPost) => Err(rocket::response::status::Custom(Status::Forbidden, "cant delete another one's post")),
+        Some(DeletePostResult::CantDeletePublishedPost) => Err(rocket::response::status::Custom(Status::Conflict, "cant delete published post")),
         None => Err(rocket::response::status::Custom(Status::Gone, "gone")),
     }?;
 
