@@ -6,6 +6,7 @@ file = "src/schema.rs"
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 import_types = ["diesel::sql_types::*", "postgis_diesel::sql_types::*"]
 filter = { except_tables = ["spatial_ref_sys"] }
+patch_file = "src/schema.patch"
 
 [migrations_directory]
 dir = "./migrations"
