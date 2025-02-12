@@ -3,6 +3,7 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
+    pub author: String,
     // pub geom: Point,
 }
 
