@@ -13,5 +13,6 @@ diesel::table! {
         body -> Text,
         published -> Bool,
         geom -> Nullable<Geometry>,
+        author -> Text,
     }
 }

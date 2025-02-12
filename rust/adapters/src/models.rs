@@ -11,6 +11,7 @@ pub struct Post {
     pub body: String,
     pub published: bool,
     pub geom: Option<Point>,
+    pub author: String,
 }
 
 use crate::schema::posts;
@@ -29,6 +30,7 @@ impl From<application::models::Post> for Post {
             body: value.body,
             published: value.published,
             geom: None, // not binded for now
+            author: value.author,
         }
     }
 }
@@ -39,6 +41,7 @@ impl From<Post> for application::models::Post {
             title: value.title,
             body: value.body,
             published: value.published,
+            author: value.author,
         }
     }
 }
