@@ -7,6 +7,7 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
+    pub author: String
 }
 
 impl From<application::models::Post> for Post {
@@ -16,6 +17,7 @@ impl From<application::models::Post> for Post {
             title: value.title,
             body: value.body,
             published: value.published,
+            author: value.author,
         }
     }
 }
