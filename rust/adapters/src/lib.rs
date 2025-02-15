@@ -86,6 +86,17 @@ pub fn delete_post(post_id: i32) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn publish_post(post_id: i32) -> Result<(), Error> {
+    use self::schema::posts::dsl::*;
+    let connection = &mut establish_connection()?;
+
+    diesel::update(posts.filter(id.eq(post_id)))
+        .set(published.eq(true))
+        .execute(connection)?;
+
+    Ok(())
+}
+
 #[test]
 fn test_connection() {
     let results = select_published_posts().expect("couldnt load posts");
