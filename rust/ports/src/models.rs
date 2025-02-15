@@ -35,3 +35,17 @@ impl From<NewPost> for application::models::NewPostRequest {
         }
     }
 }
+
+#[derive(FromForm)]
+pub struct PatchPost {
+    title: Option<String>,
+    body: Option<String>,
+}
+impl From<PatchPost> for application::models::PostEdition {
+    fn from(value: PatchPost) -> Self {
+        Self {
+            title: value.title,
+            body: value.body,
+        }
+    }
+}
