@@ -35,3 +35,19 @@ pub fn create_post(subject: String, create_post_request: NewPostRequest) -> Crea
         }
     }
 }
+
+pub enum PublishPostResult {
+    DoPublish(i32),
+    WrongAuthor,
+    AlreadyPublished,
+    SubjectBlacklisted(String),
+}
+
+pub fn publish_post(subject: String, post: Post) -> PublishPostResult {
+    match subject.as_str() {
+        "john@d.oe" => PublishPostResult::SubjectBlacklisted(subject),
+        _s if post.published => PublishPostResult::AlreadyPublished,
+        s if s != &post.author => PublishPostResult::WrongAuthor,
+        _ => PublishPostResult::DoPublish(post.id),
+    }
+}
