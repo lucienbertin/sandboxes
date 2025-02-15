@@ -1,4 +1,4 @@
-use application::models::{NewPost, Post};
+use application::models::{NewPost, Post, PostEdition};
 use diesel::prelude::*;
 use dotenvy::dotenv;
 use std::env;
@@ -93,6 +93,21 @@ pub fn publish_post(post_id: i32) -> Result<(), Error> {
     diesel::update(posts.filter(id.eq(post_id)))
         .set(published.eq(true))
         .execute(connection)?;
+
+    Ok(())
+}
+
+pub fn update_post(post_id: i32, edits: PostEdition) -> Result<(), Error> {
+    use self::schema::posts::dsl::*;
+    let connection = &mut establish_connection()?;
+
+    match edits {
+        PostEdition{ title: Some(t), body: Some(b)} => diesel::update(posts.filter(id.eq(post_id))).set((title.eq(t.as_str()), body.eq(b.as_str()))).execute(connection),
+        PostEdition{ title: None, body: Some(b)} => diesel::update(posts.filter(id.eq(post_id))).set(body.eq(b.as_str())).execute(connection),
+        PostEdition{ title: Some(t), body: None} => diesel::update(posts.filter(id.eq(post_id))).set(title.eq(t.as_str())).execute(connection),
+        PostEdition{ title: None, body: None} => panic!("update_post called with nothing to update"),
+    }?;
+
 
     Ok(())
 }

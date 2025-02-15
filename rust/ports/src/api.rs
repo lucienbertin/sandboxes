@@ -1,6 +1,6 @@
 
 use crate::error::Error;
-use crate::models::{NewPost, Post};
+use crate::models::{NewPost, PatchPost, Post};
 use crate::auth::JwtIdentifiedSubject;
 
 use rocket::{form::Form, http::Status, response::status::{Created, NoContent}, serde::json::Json};
@@ -39,8 +39,8 @@ pub fn publish_post(subject: JwtIdentifiedSubject, id: i32) -> Result<Status, ro
 
     match result {
         PublishPostResult::SubjectBlacklisted(sub) => Err(rocket::response::status::Custom(Status::Forbidden, format!("the user {} is not allowed to write posts anymore", sub).to_string())),
-        PublishPostResult::WrongAuthor => Err(rocket::response::status::Custom(Status::Forbidden, "you are not allowed to publish this post".to_string())),
-        PublishPostResult::AlreadyPublished => Ok(()), // treat it as Ok for idempotency purpose
+        PublishPostResult::CantPublishAnotherOnesPost => Err(rocket::response::status::Custom(Status::Forbidden, "you are not allowed to publish this post".to_string())),
+        PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
         PublishPostResult::DoPublish(post_id) => adapters::publish_post(post_id).map_err(|e| Error::from(e).into())
     }?;
 
@@ -80,6 +80,27 @@ pub fn delete_post(subject: JwtIdentifiedSubject, id: i32) -> Result<NoContent, 
         Some(DeletePostResult::CantDeleteAnotherOnesPost) => Err(rocket::response::status::Custom(Status::Forbidden, "cant delete another one's post".to_string())),
         Some(DeletePostResult::CantDeletePublishedPost) => Err(rocket::response::status::Custom(Status::Conflict, "cant delete published post".to_string())),
         None => Err(rocket::response::status::Custom(Status::Gone, "gone".to_string())),
+    }?;
+
+    Ok(NoContent)
+}
+
+#[patch("/post/<id>", data = "<data>")]
+pub fn patch_post(subject: JwtIdentifiedSubject, id: i32, data: Form<PatchPost>)-> Result<NoContent, rocket::response::status::Custom<String>> {
+    use adapters::{find_post, update_post};
+    use application::EditPostResult;
+
+    let post = find_post(id).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string()))?;
+
+    let result = post.map(|p| application::edit_post(subject.email, p, data.into_inner().into()));
+
+    match result {
+        Some(EditPostResult::DoUpdate(post_id, post_edition)) =>  update_post(post_id, post_edition).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string())),
+        Some(EditPostResult::DoNothing) => Ok(()), // treat it as Ok for idempotency purpose
+        Some(EditPostResult::CantEditAnotherOnesPost) => Err(rocket::response::status::Custom(Status::Forbidden, "cant edit another one's post".to_string())),
+        Some(EditPostResult::CantEditPublishedPost) => Err(rocket::response::status::Custom(Status::Conflict, "cant edit published post".to_string())),
+        Some(EditPostResult::SubjectBlacklisted(sub)) => Err(rocket::response::status::Custom(Status::Forbidden, format!("the user {} is not allowed to write posts anymore", sub).to_string())),
+        None => Err(rocket::response::status::Custom(Status::NotFound, "not found".to_string())),
     }?;
 
     Ok(NoContent)
