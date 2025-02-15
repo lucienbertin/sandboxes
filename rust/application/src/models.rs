@@ -7,7 +7,12 @@ pub struct Post {
     // pub geom: Point,
 }
 
+pub struct NewPostRequest {
+    pub title: String,
+    pub body: String,
+}
 pub struct NewPost {
     pub title: String,
     pub body: String,
+    pub author: String,
 }

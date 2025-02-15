@@ -5,7 +5,7 @@ use super::error::Error;
 
 use adapters::load_hmac_key;
 
-pub fn sign_token(sub: String) -> Result<String, Error> {
+pub fn _sign_token(sub: String) -> Result<String, Error> {
     let key = load_hmac_key()?;
 
     let mut claims = BTreeMap::new();
@@ -63,8 +63,8 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
 
 #[test]
 fn test_sign_token() {
-    let subject = "lucien@bert.in";
-    let result = sign_token(subject.into());
+    let subject = "john@d.oe";
+    let result = _sign_token(subject.into());
 
     match result {
         Ok(token) => println!("token: {}", token),

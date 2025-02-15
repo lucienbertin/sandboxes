@@ -20,6 +20,7 @@ use crate::schema::posts;
 pub struct NewPost {
     pub title: String,
     pub body: String,
+    pub author: String,
 }
 
 impl From<application::models::Post> for Post {
@@ -50,6 +51,7 @@ impl From<application::models::NewPost> for NewPost {
         Self {
             title: value.title,
             body: value.body,
+            author: value.author,
         }
     }
 }

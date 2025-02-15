@@ -27,7 +27,7 @@ pub struct NewPost {
     title: String,
     body: String,
 }
-impl From<NewPost> for application::models::NewPost {
+impl From<NewPost> for application::models::NewPostRequest {
     fn from(value: NewPost) -> Self {
         Self {
             title: value.title,

@@ -4,6 +4,11 @@ pub enum Error {
     JwtError(jwt::Error),
     AdaptersError(adapters::error::Error)
 }
+impl From<AuthError> for Error {
+    fn from(value: AuthError) -> Self {
+        Error::AuthError(value)
+    }
+}
 impl From<jwt::Error> for Error {
     fn from(value: jwt::Error) -> Self {
         Error::JwtError(value)
