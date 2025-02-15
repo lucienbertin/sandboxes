@@ -32,3 +32,13 @@ pub enum  AuthError {
     NoBearerToken,
     NoSubjectClaim,
 }
+
+impl From<Error> for rocket::response::status::Custom<String> {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::AdaptersError(e) => rocket::response::status::Custom(rocket::http::Status::InternalServerError, format!("error: {:?}", e).to_string()), // map every adapters error to 500
+            Error::AuthError(e) => rocket::response::status::Custom(rocket::http::Status::Unauthorized, format!("error: {:?}", e).to_string()),
+            Error::JwtError(e) => rocket::response::status::Custom(rocket::http::Status::Unauthorized, format!("error: {:?}", e).to_string()),
+        }
+    }
+}

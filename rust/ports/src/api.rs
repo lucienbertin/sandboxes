@@ -1,9 +1,9 @@
 
-use std::result;
+use crate::error::Error;
+use crate::models::{NewPost, Post};
+use crate::auth::JwtIdentifiedSubject;
 
-use super::models::{NewPost, Post};
 use rocket::{form::Form, http::Status, response::status::{Created, NoContent}, serde::json::Json};
-use super::auth::JwtIdentifiedSubject;
 
 #[get("/posts", format = "json", )]
 pub fn get_posts(_subject: JwtIdentifiedSubject) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
@@ -33,15 +33,15 @@ pub fn publish_post(subject: JwtIdentifiedSubject, id: i32) -> Result<Status, ro
     use application::{publish_post, PublishPostResult};
 
     let result = find_post(id).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string()))?;
-    let result = result.ok_or(rocket::response::status::Custom(Status::Gone, "gone".to_string()))?;
+    let result = result.ok_or(rocket::response::status::Custom(Status::NotFound, "not found".to_string()))?;
 
     let result = publish_post(subject.email, result);
 
-    let result = match result {
+    match result {
         PublishPostResult::SubjectBlacklisted(sub) => Err(rocket::response::status::Custom(Status::Forbidden, format!("the user {} is not allowed to write posts anymore", sub).to_string())),
         PublishPostResult::WrongAuthor => Err(rocket::response::status::Custom(Status::Forbidden, "you are not allowed to publish this post".to_string())),
         PublishPostResult::AlreadyPublished => Ok(()), // treat it as Ok for idempotency purpose
-        PublishPostResult::DoPublish(post_id) => adapters::publish_post(post_id).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string()))
+        PublishPostResult::DoPublish(post_id) => adapters::publish_post(post_id).map_err(|e| Error::from(e).into())
     }?;
 
     Ok(Status::NoContent)
