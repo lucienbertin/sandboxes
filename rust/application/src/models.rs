@@ -16,3 +16,8 @@ pub struct NewPost {
     pub body: String,
     pub author: String,
 }
+
+pub struct PostEdition {
+    pub title: Option<String>,
+    pub body: Option<String>,
+}
