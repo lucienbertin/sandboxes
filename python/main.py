@@ -38,5 +38,27 @@ async def delete_post(_request, pk):
     await post.delete()
     return response.empty()
 
+@app.patch("/post/<pk:int>")
+async def patch_post(request, pk):
+    post = await Posts.get(pk=pk)
+    data = request.json
+
+    if post.published:
+        return response.empty(status=409)
+    
+    if "title" in data:
+        post.title = data.get("title")
+    if "body" in data:
+        post.body = data.get("body")
+    await post.save()
+    return response.empty()
+
+@app.post("/post/<pk:int>/publish")
+async def publish_post(_request, pk):
+    post = await Posts.get(pk=pk)
+    post.published = True
+    await post.save()
+    return response.empty()
+
 if __name__ == "__main__":
     app.run(port=5000)
