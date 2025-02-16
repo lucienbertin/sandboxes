@@ -28,8 +28,15 @@ async def post_post(request):
         author="tba",
     )
     await new_post.save()
-    return response.empty(status=201)
+    return response.empty(status=201, headers={"Location": f'/post/{new_post.id}'})
 
+@app.delete("/post/<pk:int>")
+async def delete_post(_request, pk):
+    post = await Posts.get(pk=pk)
+    if post.published:
+        return response.empty(status=409)
+    await post.delete()
+    return response.empty()
 
 if __name__ == "__main__":
     app.run(port=5000)
