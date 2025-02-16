@@ -30,7 +30,7 @@ pub fn get_post(id: i32) -> Result<Json<Post>, rocket::response::status::Custom<
 #[post("/post/<id>/publish")]
 pub fn publish_post(subject: JwtIdentifiedSubject, id: i32) -> Result<Status, rocket::response::status::Custom<String>> {
     use adapters::find_post;
-    use application::{publish_post, PublishPostResult};
+    use application::usecases::{publish_post, PublishPostResult};
 
     let result = find_post(id).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string()))?;
     let result = result.ok_or(rocket::response::status::Custom(Status::NotFound, "not found".to_string()))?;
@@ -49,7 +49,7 @@ pub fn publish_post(subject: JwtIdentifiedSubject, id: i32) -> Result<Status, ro
 
 #[post("/posts", data = "<post>")]
 pub fn post_post(subject: JwtIdentifiedSubject, post: Form<NewPost>) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
-    use application::{create_post, CreatePostResult};
+    use application::usecases::{create_post, CreatePostResult};
     use adapters::insert_new_post;
 
     let result = create_post(subject.email, post.into_inner().into());
@@ -67,12 +67,12 @@ pub fn post_post(subject: JwtIdentifiedSubject, post: Form<NewPost>) -> Result<C
 #[delete("/post/<id>")]
 pub fn delete_post(subject: JwtIdentifiedSubject, id: i32) -> Result<NoContent, rocket::response::status::Custom<String>> {
     use adapters::{find_post, delete_post};
-    use application::DeletePostResult;
+    use application::usecases::DeletePostResult;
     // imperative shell
     let post = find_post(id).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string()))?;
 
     //functional core
-    let result = post.map(|p| application::delete_post(subject.email, p));
+    let result = post.map(|p| application::usecases::delete_post(subject.email, p));
 
     // imperative shell
     match result {
@@ -88,11 +88,11 @@ pub fn delete_post(subject: JwtIdentifiedSubject, id: i32) -> Result<NoContent, 
 #[patch("/post/<id>", data = "<data>")]
 pub fn patch_post(subject: JwtIdentifiedSubject, id: i32, data: Form<PatchPost>)-> Result<NoContent, rocket::response::status::Custom<String>> {
     use adapters::{find_post, update_post};
-    use application::EditPostResult;
+    use application::usecases::EditPostResult;
 
     let post = find_post(id).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string()))?;
 
-    let result = post.map(|p| application::edit_post(subject.email, p, data.into_inner().into()));
+    let result = post.map(|p| application::usecases::edit_post(subject.email, p, data.into_inner().into()));
 
     match result {
         Some(EditPostResult::DoUpdate(post_id, post_edition)) =>  update_post(post_id, post_edition).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string())),
