@@ -2,7 +2,7 @@
 pub enum Error {
     AuthError(AuthError),
     JwtError(jwt::Error),
-    AdaptersError(adapters::error::Error)
+    AdaptersError(adapters::error::Error),
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
@@ -27,7 +27,7 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {}
 
 #[derive(Debug)]
-pub enum  AuthError {
+pub enum AuthError {
     NoAuthorizationHeader,
     NoBearerToken,
     NoSubjectClaim,
@@ -36,9 +36,18 @@ pub enum  AuthError {
 impl From<Error> for rocket::response::status::Custom<String> {
     fn from(value: Error) -> Self {
         match value {
-            Error::AdaptersError(e) => rocket::response::status::Custom(rocket::http::Status::InternalServerError, format!("error: {:?}", e).to_string()), // map every adapters error to 500
-            Error::AuthError(e) => rocket::response::status::Custom(rocket::http::Status::Unauthorized, format!("error: {:?}", e).to_string()),
-            Error::JwtError(e) => rocket::response::status::Custom(rocket::http::Status::Unauthorized, format!("error: {:?}", e).to_string()),
+            Error::AdaptersError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::AuthError(e) => rocket::response::status::Custom(
+                rocket::http::Status::Unauthorized,
+                format!("error: {:?}", e).to_string(),
+            ),
+            Error::JwtError(e) => rocket::response::status::Custom(
+                rocket::http::Status::Unauthorized,
+                format!("error: {:?}", e).to_string(),
+            ),
         }
     }
 }

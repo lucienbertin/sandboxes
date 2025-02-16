@@ -1,7 +1,6 @@
 // @generated automatically by Diesel CLI.
 
-pub mod sql_types {
-}
+pub mod sql_types {}
 
 diesel::table! {
     use diesel::sql_types::*;
