@@ -7,7 +7,7 @@ pub enum PublishPostResult {
     CantPublishAlreadyPublishedPost,
 }
 
-pub fn publish_post(subject: String, post: Post) -> PublishPostResult {
+pub fn publish_post(subject: &String, post: &Post) -> PublishPostResult {
     match subject.as_str() {
         s if s != &post.author => PublishPostResult::CantPublishAnotherOnesPost,
         _s if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
@@ -26,7 +26,7 @@ mod test {
         let post = Post{ id: 1, title: "test".to_string(), body: "test".to_string(), published: false, author: "someone@el.se".to_string() };
 
         // act
-        let result = publish_post(subject, post);
+        let result = publish_post(&subject, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::CantPublishAnotherOnesPost);
@@ -39,7 +39,7 @@ mod test {
         let post = Post{ id: 1, title: "test".to_string(), body: "test".to_string(), published: true, author: subject.clone() };
 
         // act
-        let result = publish_post(subject, post);
+        let result = publish_post(&subject, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::CantPublishAlreadyPublishedPost);
@@ -53,7 +53,7 @@ mod test {
         let post = Post{ id: id, title: "test".to_string(), body: "test".to_string(), published: false, author: subject.clone() };
 
         // act
-        let result = publish_post(subject, post);
+        let result = publish_post(&subject, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::DoPublish(id));

@@ -6,8 +6,8 @@ pub enum DeletePostResult {
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost
 }
-pub fn delete_post(subject: String, post: Post) -> DeletePostResult {
-    if subject != post.author {
+pub fn delete_post(subject: &String, post: &Post) -> DeletePostResult {
+    if subject != &post.author {
         return DeletePostResult::CantDeleteAnotherOnesPost; 
     }
     match post.published {
@@ -28,7 +28,7 @@ mod test {
         let post = Post{ author: "someone@el.se".to_string(), id: 1, title: "test".to_string(), body: "test".to_string(), published: false };
 
         // act
-        let result: DeletePostResult = delete_post(subject, post);
+        let result: DeletePostResult = delete_post(&subject, &post);
 
         // assert
         assert_eq!(result, DeletePostResult::CantDeleteAnotherOnesPost);
@@ -41,7 +41,7 @@ mod test {
         let post = Post{ published: true, id: 1, title: "test".to_string(), body: "test".to_string(), author: subject.clone() };
 
         // act
-        let result = delete_post(subject, post);
+        let result = delete_post(&subject, &post);
 
         // assert
         assert_eq!(result, DeletePostResult::CantDeletePublishedPost);
@@ -55,7 +55,7 @@ mod test {
         let post = Post{ id: id, title: "test".to_string(), body: "test".to_string(), published: false, author: subject.clone() };
 
         // act
-        let result = delete_post(subject, post);
+        let result = delete_post(&subject, &post);
 
         // assert
         assert_eq!(result, DeletePostResult::DoDelete(id));
