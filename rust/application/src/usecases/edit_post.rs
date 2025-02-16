@@ -5,12 +5,10 @@ pub enum EditPostResult {
     DoUpdate(i32, PostEdition),
     CantEditAnotherOnesPost,
     CantEditPublishedPost,
-    SubjectBlacklisted(String),
 }
 
 pub fn edit_post(subject: String, post: Post, request: PostEdition) -> EditPostResult {
     let check_subject = match subject.as_str() {
-        "john@d.oe" => Some(EditPostResult::SubjectBlacklisted(subject)),
         s if s != &post.author => Some(EditPostResult::CantEditAnotherOnesPost),
         _ => None
     };

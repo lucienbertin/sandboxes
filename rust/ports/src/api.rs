@@ -38,7 +38,6 @@ pub fn publish_post(subject: JwtIdentifiedSubject, id: i32) -> Result<Status, ro
     let result = publish_post(subject.email, result);
 
     match result {
-        PublishPostResult::SubjectBlacklisted(sub) => Err(rocket::response::status::Custom(Status::Forbidden, format!("the user {} is not allowed to write posts anymore", sub).to_string())),
         PublishPostResult::CantPublishAnotherOnesPost => Err(rocket::response::status::Custom(Status::Forbidden, "you are not allowed to publish this post".to_string())),
         PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
         PublishPostResult::DoPublish(post_id) => adapters::publish_post(post_id).map_err(|e| Error::from(e).into())
@@ -56,7 +55,6 @@ pub fn post_post(subject: JwtIdentifiedSubject, post: Form<NewPost>) -> Result<C
 
     let result = match result {
         CreatePostResult::DoCreate(new_post) => insert_new_post(new_post).map_err(|e| rocket::response::status::Custom(Status::InternalServerError, format!("error: {:?}", e).to_string())),
-        CreatePostResult::SubjectBlacklisted(sub) => Err(rocket::response::status::Custom(Status::Forbidden, format!("the user {} is not allowed to write posts anymore", sub).to_string()))
     }?;
 
     let result = format!("/api/post/{}", result.id);
@@ -99,7 +97,6 @@ pub fn patch_post(subject: JwtIdentifiedSubject, id: i32, data: Form<PatchPost>)
         Some(EditPostResult::DoNothing) => Ok(()), // treat it as Ok for idempotency purpose
         Some(EditPostResult::CantEditAnotherOnesPost) => Err(rocket::response::status::Custom(Status::Forbidden, "cant edit another one's post".to_string())),
         Some(EditPostResult::CantEditPublishedPost) => Err(rocket::response::status::Custom(Status::Conflict, "cant edit published post".to_string())),
-        Some(EditPostResult::SubjectBlacklisted(sub)) => Err(rocket::response::status::Custom(Status::Forbidden, format!("the user {} is not allowed to write posts anymore", sub).to_string())),
         None => Err(rocket::response::status::Custom(Status::NotFound, "not found".to_string())),
     }?;
 
