@@ -3,6 +3,7 @@ mod delete_post;
 mod edit_post;
 mod publish_post;
 
+// flat re-export
 pub use create_post::*;
 pub use delete_post::*;
 pub use edit_post::*;
