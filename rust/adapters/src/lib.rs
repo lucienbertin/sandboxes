@@ -17,7 +17,6 @@ pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
     let secret = env::var("SECRET")?;
     let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
 
-
     Ok(key)
 }
 
@@ -29,13 +28,12 @@ pub fn establish_connection() -> Result<PgConnection, Error> {
     Ok(connection)
 }
 
-
 pub fn select_published_posts() -> Result<Vec<application::models::Post>, Error> {
-    use self::schema::posts::dsl::*;
     use self::models::Post;
+    use self::schema::posts::dsl::*;
 
     let connection = &mut establish_connection()?;
-    let results: Vec<self::models::Post>= posts
+    let results: Vec<self::models::Post> = posts
         .filter(published.eq(true))
         .limit(5)
         .select(Post::as_select())
@@ -45,13 +43,12 @@ pub fn select_published_posts() -> Result<Vec<application::models::Post>, Error>
     Ok(results)
 }
 
-
 pub fn find_post(post_id: i32) -> Result<Option<application::models::Post>, Error> {
-    use self::schema::posts::dsl::*;
     use self::models::Post;
+    use self::schema::posts::dsl::*;
 
     let connection = &mut establish_connection()?;
-    
+
     let result: Option<self::models::Post> = posts
         .find(post_id)
         .select(Post::as_select())
@@ -66,7 +63,7 @@ pub fn insert_new_post(new_post: NewPost) -> Result<Post, Error> {
     use self::schema::posts;
     let connection = &mut establish_connection()?;
 
-    let new_post: self::models::NewPost  = new_post.into();
+    let new_post: self::models::NewPost = new_post.into();
 
     let result = diesel::insert_into(posts::table)
         .values(&new_post)
@@ -80,8 +77,7 @@ pub fn delete_post(post_id: i32) -> Result<(), Error> {
     use self::schema::posts::dsl::*;
     let connection = &mut establish_connection()?;
 
-    diesel::delete(posts.filter(id.eq(post_id)))
-        .execute(connection)?;
+    diesel::delete(posts.filter(id.eq(post_id))).execute(connection)?;
 
     Ok(())
 }
@@ -102,12 +98,29 @@ pub fn update_post(post_id: i32, edits: PostEdition) -> Result<(), Error> {
     let connection = &mut establish_connection()?;
 
     match edits {
-        PostEdition{ title: Some(t), body: Some(b)} => diesel::update(posts.filter(id.eq(post_id))).set((title.eq(t.as_str()), body.eq(b.as_str()))).execute(connection),
-        PostEdition{ title: None, body: Some(b)} => diesel::update(posts.filter(id.eq(post_id))).set(body.eq(b.as_str())).execute(connection),
-        PostEdition{ title: Some(t), body: None} => diesel::update(posts.filter(id.eq(post_id))).set(title.eq(t.as_str())).execute(connection),
-        PostEdition{ title: None, body: None} => panic!("update_post called with nothing to update"),
+        PostEdition {
+            title: Some(t),
+            body: Some(b),
+        } => diesel::update(posts.filter(id.eq(post_id)))
+            .set((title.eq(t.as_str()), body.eq(b.as_str())))
+            .execute(connection),
+        PostEdition {
+            title: None,
+            body: Some(b),
+        } => diesel::update(posts.filter(id.eq(post_id)))
+            .set(body.eq(b.as_str()))
+            .execute(connection),
+        PostEdition {
+            title: Some(t),
+            body: None,
+        } => diesel::update(posts.filter(id.eq(post_id)))
+            .set(title.eq(t.as_str()))
+            .execute(connection),
+        PostEdition {
+            title: None,
+            body: None,
+        } => panic!("update_post called with nothing to update"),
     }?;
-
 
     Ok(())
 }

@@ -4,7 +4,7 @@ pub enum Error {
     StdEnvVarError(std::env::VarError),
     DieselConnectionError(diesel::result::ConnectionError),
     DieselQueryError(diesel::result::Error),
-    HMacError(hmac::digest::InvalidLength)
+    HMacError(hmac::digest::InvalidLength),
 }
 impl From<dotenvy::Error> for Error {
     fn from(value: dotenvy::Error) -> Self {

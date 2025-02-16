@@ -1,5 +1,4 @@
-use rocket::serde::{Serialize, Deserialize,};
-
+use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Post {
@@ -7,7 +6,7 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
-    pub author: String
+    pub author: String,
 }
 
 impl From<application::models::Post> for Post {

@@ -23,7 +23,13 @@ mod test {
     fn wrong_author() {
         // arrange
         let subject = "test@te.st".to_string();
-        let post = Post{ id: 1, title: "test".to_string(), body: "test".to_string(), published: false, author: "someone@el.se".to_string() };
+        let post = Post {
+            id: 1,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: "someone@el.se".to_string(),
+        };
 
         // act
         let result = publish_post(&subject, &post);
@@ -36,7 +42,13 @@ mod test {
     fn already_published() {
         // arrange
         let subject = "test@te.st".to_string();
-        let post = Post{ id: 1, title: "test".to_string(), body: "test".to_string(), published: true, author: subject.clone() };
+        let post = Post {
+            id: 1,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: true,
+            author: subject.clone(),
+        };
 
         // act
         let result = publish_post(&subject, &post);
@@ -50,7 +62,13 @@ mod test {
         // arrange
         let subject = "test@te.st".to_string();
         let id = 1i32;
-        let post = Post{ id: id, title: "test".to_string(), body: "test".to_string(), published: false, author: subject.clone() };
+        let post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: subject.clone(),
+        };
 
         // act
         let result = publish_post(&subject, &post);

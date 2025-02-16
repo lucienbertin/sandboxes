@@ -1,7 +1,11 @@
-use jwt::{SignWithKey, VerifyWithKey};
-use rocket::{http::Status, request::{FromRequest, Outcome}, Request};
-use std::collections::BTreeMap;
 use super::error::Error;
+use jwt::{SignWithKey, VerifyWithKey};
+use rocket::{
+    http::Status,
+    request::{FromRequest, Outcome},
+    Request,
+};
+use std::collections::BTreeMap;
 
 use adapters::load_hmac_key;
 
@@ -30,17 +34,21 @@ pub struct JwtIdentifiedSubject {
 
 fn extract_subject(req: &Request<'_>) -> Result<JwtIdentifiedSubject, Error> {
     use super::error::AuthError;
-    let result = req.headers().get_one("Authorization").ok_or(Error::AuthError(AuthError::NoAuthorizationHeader))?;
-    let result = 
-        if result.starts_with("Bearer ") {
-            Ok(&result[7..])
-        } else {
-            Err(Error::AuthError(AuthError::NoBearerToken))
-        }?;
+    let result = req
+        .headers()
+        .get_one("Authorization")
+        .ok_or(Error::AuthError(AuthError::NoAuthorizationHeader))?;
+    let result = if result.starts_with("Bearer ") {
+        Ok(&result[7..])
+    } else {
+        Err(Error::AuthError(AuthError::NoBearerToken))
+    }?;
     let result = verify_token(result)?;
 
-    let result = result.get("sub").ok_or(Error::AuthError(AuthError::NoSubjectClaim))?;
-    let result = JwtIdentifiedSubject{
+    let result = result
+        .get("sub")
+        .ok_or(Error::AuthError(AuthError::NoSubjectClaim))?;
+    let result = JwtIdentifiedSubject {
         email: result.to_string(),
     };
 
@@ -56,7 +64,7 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
 
         match result {
             Ok(subject) => Outcome::Success(subject),
-            Err(e) => Outcome::Error((Status::Unauthorized, e))
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
         }
     }
 }
