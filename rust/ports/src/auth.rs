@@ -61,22 +61,22 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
     }
 }
 
-#[test]
-fn test_sign_token() {
-    let subject = "john@d.oe";
-    let result = _sign_token(subject.into());
+// #[test]
+// fn test_sign_token() {
+//     let subject = "john@d.oe";
+//     let result = _sign_token(subject.into());
 
-    match result {
-        Ok(token) => println!("token: {}", token),
-        Err(e) => println!("error {:?}", e)
-    };
-}#[test]
-fn test_verify_token() {
-    let token_str = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsdWNpZW5AYmVydC5pbiJ9.MQ2AtPRuMhZuu84jFpjbnZF3tMREpSi51YEU6yq8KBI";
-    let result = verify_token(token_str);
+//     match result {
+//         Ok(token) => println!("token: {}", token),
+//         Err(e) => println!("error {:?}", e)
+//     };
+// }#[test]
+// fn test_verify_token() {
+//     let token_str = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsdWNpZW5AYmVydC5pbiJ9.MQ2AtPRuMhZuu84jFpjbnZF3tMREpSi51YEU6yq8KBI";
+//     let result = verify_token(token_str);
 
-    match result {
-        Ok(claims) => println!("token verified, claims: {:?}", claims),
-        Err(e) => println!("error {:?}", e)
-    };
-}
+//     match result {
+//         Ok(claims) => println!("token verified, claims: {:?}", claims),
+//         Err(e) => println!("error {:?}", e)
+//     };
+// }

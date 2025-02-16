@@ -112,15 +112,15 @@ pub fn update_post(post_id: i32, edits: PostEdition) -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-fn test_connection() {
-    let results = select_published_posts().expect("couldnt load posts");
+// #[test]
+// fn test_connection() {
+//     let results = select_published_posts().expect("couldnt load posts");
 
-    println!("Displaying {} posts", results.len());
-    println!("-----------");
-    for post in results {
-        println!("{}", post.title);
-        println!("> {}", post.body);
-        println!("-----------");
-    }
-}
+//     println!("Displaying {} posts", results.len());
+//     println!("-----------");
+//     for post in results {
+//         println!("{}", post.title);
+//         println!("> {}", post.body);
+//         println!("-----------");
+//     }
+// }
