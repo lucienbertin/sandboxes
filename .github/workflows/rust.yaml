@@ -2,8 +2,10 @@ on:
   pull_request:
   push:
     branches: main
+    paths:
+      - rust/**
 
-name: CI
+name: CI Rust
 
 jobs:
   check:
