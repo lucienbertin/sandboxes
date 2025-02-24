@@ -5,11 +5,11 @@ import { Post } from './post.entity';
 
 @Injectable()
 export class PostService {
-    constructor(
-        @InjectRepository(Post) private readonly repo: Repository<Post>,
-    ) {}
+  constructor(
+    @InjectRepository(Post) private readonly repo: Repository<Post>,
+  ) {}
 
-    findAll(): Promise<Post[]> {
-        return this.repo.find();
-      }
+  findAll(): Promise<Post[]> {
+    return this.repo.find();
+  }
 }
