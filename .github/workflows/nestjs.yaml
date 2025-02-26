@@ -1,7 +1,7 @@
 on:
   pull_request:
     paths:
-      - 'rust/**'
+      - 'nestjs/**'
     branches:
       - main
   push:
