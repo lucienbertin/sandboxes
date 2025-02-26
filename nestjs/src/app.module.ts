@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PostModule } from './post/post.module';
-import { Post } from './post/post.entity';
+import { PostModule } from './post';
 
 @Module({
   imports: [
@@ -13,7 +12,7 @@ import { Post } from './post/post.entity';
       port: 5432,
       password: 'postgres',
       username: 'postgres',
-      entities: [Post],
+      autoLoadEntities: true,
       database: 'postgres',
       synchronize: false,
       logging: true,

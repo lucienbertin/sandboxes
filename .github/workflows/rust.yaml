@@ -1,5 +1,9 @@
 on:
   pull_request:
+    paths:
+      - 'rust/**'
+    branches:
+      - main
   push:
     branches: 
       - main

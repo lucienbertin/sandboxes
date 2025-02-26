@@ -1,5 +1,9 @@
 on:
   pull_request:
+    paths:
+      - 'nestjs/**'
+    branches:
+      - main
   push:
     branches:
       - main
