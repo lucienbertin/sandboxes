@@ -2,8 +2,8 @@ on:
   pull_request:
   push:
     branches: main
-    paths:
-      - rust/**
+  paths:
+    - rust/**
 
 name: CI Rust
 

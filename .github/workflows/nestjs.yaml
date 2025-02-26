@@ -2,8 +2,8 @@ on:
   pull_request:
   push:
     branches: main
-    paths:
-      - nestjs/**
+  paths:
+    - nestjs/**
 
 name: CI NestJs
 
