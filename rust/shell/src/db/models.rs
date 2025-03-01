@@ -1,8 +1,10 @@
 use diesel::prelude::*;
 use postgis_diesel::types::*;
 
+use super::schema::posts;
+
 #[derive(Queryable, Selectable, Clone)]
-#[diesel(table_name = crate::schema::posts)]
+#[diesel(table_name = posts)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Post {
     pub id: i32,
@@ -13,7 +15,6 @@ pub struct Post {
     pub author: String,
 }
 
-use crate::schema::posts;
 #[derive(Insertable)]
 #[diesel(table_name = posts)]
 pub struct NewPost {
@@ -22,8 +23,8 @@ pub struct NewPost {
     pub author: String,
 }
 
-impl From<application::models::Post> for Post {
-    fn from(value: application::models::Post) -> Self {
+impl From<domain::models::Post> for Post {
+    fn from(value: domain::models::Post) -> Self {
         Self {
             id: value.id,
             title: value.title,
@@ -34,7 +35,7 @@ impl From<application::models::Post> for Post {
         }
     }
 }
-impl From<Post> for application::models::Post {
+impl From<Post> for domain::models::Post {
     fn from(value: Post) -> Self {
         Self {
             id: value.id,
@@ -45,8 +46,8 @@ impl From<Post> for application::models::Post {
         }
     }
 }
-impl From<application::models::NewPost> for NewPost {
-    fn from(value: application::models::NewPost) -> Self {
+impl From<domain::models::NewPost> for NewPost {
+    fn from(value: domain::models::NewPost) -> Self {
         Self {
             title: value.title,
             body: value.body,

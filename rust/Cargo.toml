@@ -1,7 +1,6 @@
 [workspace]
 members = [
-  "adapters",
-  "ports",
-  "application",
+  "shell",
+  "domain",
 ]
 resolver = "2"
