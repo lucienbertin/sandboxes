@@ -1,6 +1,5 @@
 use db::PoolState;
 
-
 #[macro_use]
 extern crate rocket;
 
@@ -19,11 +18,11 @@ fn rocket() -> _ {
             routes![
                 index,
                 get_posts,
-                // get_post,
-                // post_post,
-                // delete_post,
-                // publish_post,
-                // patch_post
+                get_post,
+                post_post,
+                delete_post,
+                publish_post,
+                patch_post
             ]
         })
         .manage(PoolState{ pool })

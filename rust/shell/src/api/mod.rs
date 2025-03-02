@@ -45,169 +45,153 @@ pub async fn get_posts(
     Ok(Json(results))
 }
 
-// #[get("/post/<id>", format = "json")]
-// pub fn get_post(id: i32) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
-//     use db::find_post;
+#[get("/post/<id>", format = "json")]
+pub fn get_post(
+    state: &State<PoolState>,
+    _subject: JwtIdentifiedSubject,
+    id: i32
+) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
+    let mut conn = state.pool.get().map_err(|e| {
+        rocket::response::status::Custom(
+            Status::InternalServerError,
+            format!("error: {:?}", e).to_string(),
+        )
+    })?;
+    let result = conn.build_transaction()
+        .read_only()
+        .run(|conn| {
+            db::find_post(conn, id)
+        })?;
 
-//     let result = find_post(id).map_err(|e| {
-//         rocket::response::status::Custom(
-//             Status::InternalServerError,
-//             format!("error: {:?}", e).to_string(),
-//         )
-//     })?;
+    match result {
+        Some(p) => Ok(Json(p.into())),
+        None => Err(rocket::response::status::Custom(
+            Status::NotFound,
+            "not found".to_string(),
+        )),
+    }
+}
 
-//     match result {
-//         Some(p) => Ok(Json(p.into())),
-//         None => Err(rocket::response::status::Custom(
-//             Status::NotFound,
-//             "not found".to_string(),
-//         )),
-//     }
-// }
+#[post("/post/<id>/publish")]
+pub fn publish_post(
+    state: &State<PoolState>,
+    subject: JwtIdentifiedSubject,
+    id: i32,
+) -> Result<Status, rocket::response::status::Custom<String>> {
+    let mut conn = state.pool.get().map_err(|e| {
+        rocket::response::status::Custom(
+            Status::InternalServerError,
+            format!("error: {:?}", e).to_string(),
+        )
+    })?;
 
-// #[post("/post/<id>/publish")]
-// pub fn publish_post(
-//     subject: JwtIdentifiedSubject,
-//     id: i32,
-// ) -> Result<Status, rocket::response::status::Custom<String>> {
-//     use db::find_post;
-//     use core::usecases::{publish_post, PublishPostResult};
+    conn.build_transaction()
+        .run(|conn| {
+            let result = db::find_post(conn, id)?;
 
-//     let result = find_post(id).map_err(|e| {
-//         rocket::response::status::Custom(
-//             Status::InternalServerError,
-//             format!("error: {:?}", e).to_string(),
-//         )
-//     })?;
-//     let result = result.ok_or(rocket::response::status::Custom(
-//         Status::NotFound,
-//         "not found".to_string(),
-//     ))?;
+            let result = result.ok_or(Error::NotFound)?;
 
-//     let result = publish_post(&subject.email, &result);
+            use domain::usecases::{PublishPostResult, publish_post};
+            let result = publish_post(&subject.email, &result);
 
-//     match result {
-//         PublishPostResult::CantPublishAnotherOnesPost => Err(rocket::response::status::Custom(
-//             Status::Forbidden,
-//             "you are not allowed to publish this post".to_string(),
-//         )),
-//         PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-//         PublishPostResult::DoPublish(post_id) => {
-//             db::publish_post(post_id).map_err(|e| Error::from(e).into())
-//         }
-//     }?;
+            match result {
+                PublishPostResult::CantPublishAnotherOnesPost => Err(Error::Forbidden),
+                PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+                PublishPostResult::DoPublish(post_id) => {
+                    db::publish_post(conn, post_id)
+                }
+            }
+        })?;
 
-//     Ok(Status::NoContent)
-// }
+    Ok(Status::NoContent)
+}
 
-// #[post("/posts", data = "<data>")]
-// pub fn post_post(
-//     subject: JwtIdentifiedSubject,
-//     data: Form<NewPost>,
-// ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
-//     use db::insert_new_post;
-//     use core::usecases::{create_post, CreatePostResult};
+#[post("/posts", data = "<data>")]
+pub fn post_post(
+    state: &State<PoolState>,
+    subject: JwtIdentifiedSubject,
+    data: Form<NewPost>,
+) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
+    let mut conn = state.pool.get().map_err(|e| {
+        rocket::response::status::Custom(
+            Status::InternalServerError,
+            format!("error: {:?}", e).to_string(),
+        )
+    })?;
 
-//     let result = create_post(&subject.email, data.into_inner().into());
+    let result = conn.build_transaction()
+        .run(|conn| {
 
-//     let result = match result {
-//         CreatePostResult::DoCreate(new_post) => insert_new_post(new_post).map_err(|e| {
-//             rocket::response::status::Custom(
-//                 Status::InternalServerError,
-//                 format!("error: {:?}", e).to_string(),
-//             )
-//         }),
-//     }?;
+            use domain::usecases::{CreatePostResult, create_post};
+            let result = create_post(&subject.email, data.into_inner().into());
+            match result {
+                CreatePostResult::DoCreate(new_post) => db::insert_new_post(conn, new_post),
+            }
+        })?;
 
-//     let result = format!("/api/post/{}", result.id);
+    let result = format!("/api/post/{}", result.id);
 
-//     Ok(Created::new(result))
-// }
+    Ok(Created::new(result))
+}
 
-// #[delete("/post/<id>")]
-// pub fn delete_post(
-//     subject: JwtIdentifiedSubject,
-//     id: i32,
-// ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-//     use db::{delete_post, find_post};
-//     use core::usecases::DeletePostResult;
-//     // imperative shell
-//     let post = find_post(id).map_err(|e| {
-//         rocket::response::status::Custom(
-//             Status::InternalServerError,
-//             format!("error: {:?}", e).to_string(),
-//         )
-//     })?;
+#[delete("/post/<id>")]
+pub fn delete_post(
+    state: &State<PoolState>,
+    subject: JwtIdentifiedSubject,
+    id: i32,
+) -> Result<NoContent, rocket::response::status::Custom<String>> {
+    let mut conn = state.pool.get().map_err(|e| {
+        rocket::response::status::Custom(
+            Status::InternalServerError,
+            format!("error: {:?}", e).to_string(),
+        )
+    })?;
 
-//     //functional core
-//     let result = post.map(|p| core::usecases::delete_post(&subject.email, &p));
+    conn.build_transaction()
+        .run(|conn| {
+            let result = db::find_post(conn, id)?;
+            let result = result.ok_or(Error::Gone)?;
 
-//     // imperative shell
-//     match result {
-//         Some(DeletePostResult::DoDelete(post_id)) => delete_post(post_id).map_err(|e| {
-//             rocket::response::status::Custom(
-//                 Status::InternalServerError,
-//                 format!("error: {:?}", e).to_string(),
-//             )
-//         }),
-//         Some(DeletePostResult::CantDeleteAnotherOnesPost) => Err(rocket::response::status::Custom(
-//             Status::Forbidden,
-//             "cant delete another one's post".to_string(),
-//         )),
-//         Some(DeletePostResult::CantDeletePublishedPost) => Err(rocket::response::status::Custom(
-//             Status::Conflict,
-//             "cant delete published post".to_string(),
-//         )),
-//         None => Err(rocket::response::status::Custom(
-//             Status::Gone,
-//             "gone".to_string(),
-//         )),
-//     }?;
+            let result = domain::usecases::delete_post(&subject.email, &result);
 
-//     Ok(NoContent)
-// }
+            match result {
+                domain::usecases::DeletePostResult::DoDelete(post_id) => db::delete_post(conn, post_id),
+                domain::usecases::DeletePostResult::CantDeleteAnotherOnesPost => Err(Error::Forbidden),
+                domain::usecases::DeletePostResult::CantDeletePublishedPost => Err(Error::Conflict),
+            }
+        })?;
 
-// #[patch("/post/<id>", data = "<data>")]
-// pub fn patch_post(
-//     subject: JwtIdentifiedSubject,
-//     id: i32,
-//     data: Form<PatchPost>,
-// ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-//     use db::{find_post, update_post};
-//     use core::usecases::EditPostResult;
+    Ok(NoContent)
+}
 
-//     let post = find_post(id).map_err(|e| {
-//         rocket::response::status::Custom(
-//             Status::InternalServerError,
-//             format!("error: {:?}", e).to_string(),
-//         )
-//     })?;
+#[patch("/post/<id>", data = "<data>")]
+pub fn patch_post(
+    state: &State<PoolState>,
+    subject: JwtIdentifiedSubject,
+    id: i32,
+    data: Form<PatchPost>,
+) -> Result<NoContent, rocket::response::status::Custom<String>> {
+    let mut conn = state.pool.get().map_err(|e| {
+        rocket::response::status::Custom(
+            Status::InternalServerError,
+            format!("error: {:?}", e).to_string(),
+        )
+    })?;
 
-//     let result = post
-//         .map(|p| core::usecases::edit_post(&subject.email, &p, data.into_inner().into()));
+    conn.build_transaction()
+        .run(|conn| {
+            let result = db::find_post(conn, id)?;
+            let result = result.ok_or(Error::NotFound)?;
 
-//     match result {
-//         Some(EditPostResult::DoUpdate(post_id, post_edition)) => update_post(post_id, post_edition)
-//             .map_err(|e| {
-//                 rocket::response::status::Custom(
-//                     Status::InternalServerError,
-//                     format!("error: {:?}", e).to_string(),
-//                 )
-//             }),
-//         Some(EditPostResult::NothingToUpdate) => Ok(()), // treat it as Ok for idempotency purpose
-//         Some(EditPostResult::CantEditAnotherOnesPost) => Err(rocket::response::status::Custom(
-//             Status::Forbidden,
-//             "cant edit another one's post".to_string(),
-//         )),
-//         Some(EditPostResult::CantEditPublishedPost) => Err(rocket::response::status::Custom(
-//             Status::Conflict,
-//             "cant edit published post".to_string(),
-//         )),
-//         None => Err(rocket::response::status::Custom(
-//             Status::NotFound,
-//             "not found".to_string(),
-//         )),
-//     }?;
+            let result = domain::usecases::edit_post(&subject.email, &result, data.into_inner().into());
 
-//     Ok(NoContent)
-// }
+            match result {
+                domain::usecases::EditPostResult::DoUpdate(post_id, post_edition) => db::update_post(conn, post_id, post_edition),
+                domain::usecases::EditPostResult::NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
+                domain::usecases::EditPostResult::CantEditAnotherOnesPost => Err(Error::Forbidden),
+                domain::usecases::EditPostResult::CantEditPublishedPost => Err(Error::Conflict),
+            }
+        })?;
+
+    Ok(NoContent)
+}

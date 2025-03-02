@@ -9,6 +9,10 @@ pub enum Error {
     DieselQueryError(diesel::result::Error),
     HMacError(hmac::digest::InvalidLength),
     R2D2Error(r2d2::Error),
+    NotFound,
+    Forbidden,
+    Conflict,
+    Gone,
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
@@ -99,6 +103,22 @@ impl From<Error> for rocket::response::status::Custom<String> {
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
+            Error::NotFound => rocket::response::status::Custom(
+                rocket::http::Status::NotFound,
+                "not found".to_string(),
+            ),
+            Error::Forbidden => rocket::response::status::Custom(
+                rocket::http::Status::Forbidden,
+                "forbiddon".to_string(),
+            ),
+            Error::Conflict => rocket::response::status::Custom(
+                rocket::http::Status::Conflict,
+                "conflict".to_string(),
+            ),
+            Error::Gone => rocket::response::status::Custom(
+                rocket::http::Status::Gone,
+                "gone".to_string(),
+            ),
         }
     }
 }
