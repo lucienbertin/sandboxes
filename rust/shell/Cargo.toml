@@ -1,0 +1,16 @@
+[package]
+name = "shell"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../domain" }
+dotenvy = "0.15.7"
+hmac = "0.12.1"
+sha2 = "0.10.8"
+rocket = { version = "0.5.1", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+jwt = "0.16.0"
+diesel = { version = "2", features = ["postgres", "r2d2"] }
+postgis_diesel = { version = "2", features = ["serde"] }
+r2d2 = "0.8"

@@ -1,53 +1,57 @@
-use application::models::{NewPost, Post, PostEdition};
-use diesel::prelude::*;
-use dotenvy::dotenv;
-use std::env;
+use domain::models::NewPost;
+use domain::models::Post;
+use domain::models::PostEdition;
 
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
+use crate::error::Error;
 
-pub mod error;
 mod models;
 mod schema;
 
-use self::error::Error;
+use diesel::pg::PgConnection;
+use diesel::prelude::*;
+use diesel::r2d2::{self, ConnectionManager};
+use dotenvy::dotenv;
+use std::env;
 
-pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
-    dotenv()?;
-    let secret = env::var("SECRET")?;
-    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
-
-    Ok(key)
+// Alias to the type for a pool of Diesel PostgreSQL connections.
+pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
+// pub type PooledConn = PooledConnection<ConnectionManager<PgConnection>>;
+pub struct PoolState {
+    pub pool: Pool,
 }
-
-pub fn establish_connection() -> Result<PgConnection, Error> {
+// initializes a data pool
+pub fn init_pool() -> Result<Pool, Error> {
     dotenv()?;
     let database_url = env::var("DATABASE_URL")?;
-    let connection = PgConnection::establish(&database_url)?;
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
+    let pool = diesel::r2d2::Pool::new(manager)?;
 
-    Ok(connection)
+    Ok(pool)
 }
 
-pub fn select_published_posts() -> Result<Vec<application::models::Post>, Error> {
+pub fn select_published_posts(
+    connection: &mut PgConnection,
+) -> Result<Vec<domain::models::Post>, Error> {
     use self::models::Post;
     use self::schema::posts::dsl::*;
 
-    let connection = &mut establish_connection()?;
+    // let connection = &mut establish_connection()?;
     let results: Vec<self::models::Post> = posts
         .filter(published.eq(true))
         .limit(5)
         .select(Post::as_select())
         .load(connection)?;
-    let results: Vec<application::models::Post> = results.into_iter().map(|p| p.into()).collect();
+    let results: Vec<domain::models::Post> = results.into_iter().map(|p| p.into()).collect();
 
     Ok(results)
 }
 
-pub fn find_post(post_id: i32) -> Result<Option<application::models::Post>, Error> {
+pub fn find_post(
+    connection: &mut PgConnection,
+    post_id: i32,
+) -> Result<Option<domain::models::Post>, Error> {
     use self::models::Post;
     use self::schema::posts::dsl::*;
-
-    let connection = &mut establish_connection()?;
 
     let result: Option<self::models::Post> = posts
         .find(post_id)
@@ -59,9 +63,8 @@ pub fn find_post(post_id: i32) -> Result<Option<application::models::Post>, Erro
     Ok(result)
 }
 
-pub fn insert_new_post(new_post: NewPost) -> Result<Post, Error> {
+pub fn insert_new_post(connection: &mut PgConnection, new_post: NewPost) -> Result<Post, Error> {
     use self::schema::posts;
-    let connection = &mut establish_connection()?;
 
     let new_post: self::models::NewPost = new_post.into();
 
@@ -73,18 +76,16 @@ pub fn insert_new_post(new_post: NewPost) -> Result<Post, Error> {
     Ok(result.into())
 }
 
-pub fn delete_post(post_id: i32) -> Result<(), Error> {
+pub fn delete_post(connection: &mut PgConnection, post_id: i32) -> Result<(), Error> {
     use self::schema::posts::dsl::*;
-    let connection = &mut establish_connection()?;
 
     diesel::delete(posts.filter(id.eq(post_id))).execute(connection)?;
 
     Ok(())
 }
 
-pub fn publish_post(post_id: i32) -> Result<(), Error> {
+pub fn publish_post(connection: &mut PgConnection, post_id: i32) -> Result<(), Error> {
     use self::schema::posts::dsl::*;
-    let connection = &mut establish_connection()?;
 
     diesel::update(posts.filter(id.eq(post_id)))
         .set(published.eq(true))
@@ -93,9 +94,12 @@ pub fn publish_post(post_id: i32) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn update_post(post_id: i32, edits: PostEdition) -> Result<(), Error> {
+pub fn update_post(
+    connection: &mut PgConnection,
+    post_id: i32,
+    edits: PostEdition,
+) -> Result<(), Error> {
     use self::schema::posts::dsl::*;
-    let connection = &mut establish_connection()?;
 
     match edits {
         PostEdition {
@@ -124,16 +128,3 @@ pub fn update_post(post_id: i32, edits: PostEdition) -> Result<(), Error> {
 
     Ok(())
 }
-
-// #[test]
-// fn test_connection() {
-//     let results = select_published_posts().expect("couldnt load posts");
-
-//     println!("Displaying {} posts", results.len());
-//     println!("-----------");
-//     for post in results {
-//         println!("{}", post.title);
-//         println!("> {}", post.body);
-//         println!("-----------");
-//     }
-// }

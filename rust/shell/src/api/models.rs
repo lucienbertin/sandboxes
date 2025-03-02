@@ -9,8 +9,8 @@ pub struct Post {
     pub author: String,
 }
 
-impl From<application::models::Post> for Post {
-    fn from(value: application::models::Post) -> Self {
+impl From<domain::models::Post> for Post {
+    fn from(value: domain::models::Post) -> Self {
         Self {
             id: value.id,
             title: value.title,
@@ -26,7 +26,7 @@ pub struct NewPost {
     title: String,
     body: String,
 }
-impl From<NewPost> for application::models::NewPostRequest {
+impl From<NewPost> for domain::models::NewPostRequest {
     fn from(value: NewPost) -> Self {
         Self {
             title: value.title,
@@ -40,7 +40,7 @@ pub struct PatchPost {
     title: Option<String>,
     body: Option<String>,
 }
-impl From<PatchPost> for application::models::PostEdition {
+impl From<PatchPost> for domain::models::PostEdition {
     fn from(value: PatchPost) -> Self {
         Self {
             title: value.title,

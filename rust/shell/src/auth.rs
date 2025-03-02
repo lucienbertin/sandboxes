@@ -1,13 +1,24 @@
 use super::error::Error;
+
+use dotenvy::dotenv;
+use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
 use rocket::{
     http::Status,
     request::{FromRequest, Outcome},
     Request,
 };
+use sha2::Sha256;
 use std::collections::BTreeMap;
+use std::env;
 
-use adapters::load_hmac_key;
+pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
+    dotenv()?;
+    let secret = env::var("SECRET")?;
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
+
+    Ok(key)
+}
 
 pub fn _sign_token(sub: String) -> Result<String, Error> {
     let key = load_hmac_key()?;
