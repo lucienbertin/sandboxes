@@ -18,7 +18,7 @@ use rocket::{
 #[get("/posts", format = "json")]
 pub async fn get_posts(
     state: &State<PoolState>,
-    _subject: JwtIdentifiedSubject,
+    _subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
 ) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
         rocket::response::status::Custom(
@@ -39,7 +39,7 @@ pub async fn get_posts(
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
     state: &State<PoolState>,
-    _subject: JwtIdentifiedSubject,
+    _subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
     id: i32,
 ) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
