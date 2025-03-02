@@ -2,14 +2,13 @@ use domain::models::NewPost;
 use domain::models::Post;
 use domain::models::PostEdition;
 
-
 use crate::error::Error;
 
 mod models;
 mod schema;
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use dotenvy::dotenv;
 use std::env;
@@ -18,22 +17,23 @@ use std::env;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 // pub type PooledConn = PooledConnection<ConnectionManager<PgConnection>>;
 pub struct PoolState {
-    pub pool: Pool
-  }
+    pub pool: Pool,
+}
 // initializes a data pool
 pub fn init_pool() -> Result<Pool, Error> {
     dotenv()?;
     let database_url = env::var("DATABASE_URL")?;
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = diesel::r2d2::Pool::new(manager)?;
-    
+
     Ok(pool)
 }
 
-pub fn select_published_posts(connection: &mut PgConnection) -> Result<Vec<domain::models::Post>, Error> {
+pub fn select_published_posts(
+    connection: &mut PgConnection,
+) -> Result<Vec<domain::models::Post>, Error> {
     use self::models::Post;
     use self::schema::posts::dsl::*;
-
 
     // let connection = &mut establish_connection()?;
     let results: Vec<self::models::Post> = posts
@@ -46,7 +46,10 @@ pub fn select_published_posts(connection: &mut PgConnection) -> Result<Vec<domai
     Ok(results)
 }
 
-pub fn find_post(connection: &mut PgConnection, post_id: i32) -> Result<Option<domain::models::Post>, Error> {
+pub fn find_post(
+    connection: &mut PgConnection,
+    post_id: i32,
+) -> Result<Option<domain::models::Post>, Error> {
     use self::models::Post;
     use self::schema::posts::dsl::*;
 
@@ -91,7 +94,11 @@ pub fn publish_post(connection: &mut PgConnection, post_id: i32) -> Result<(), E
     Ok(())
 }
 
-pub fn update_post(connection: &mut PgConnection, post_id: i32, edits: PostEdition) -> Result<(), Error> {
+pub fn update_post(
+    connection: &mut PgConnection,
+    post_id: i32,
+    edits: PostEdition,
+) -> Result<(), Error> {
     use self::schema::posts::dsl::*;
 
     match edits {

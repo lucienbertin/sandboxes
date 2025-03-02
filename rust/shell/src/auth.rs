@@ -1,15 +1,15 @@
 use super::error::Error;
 
+use dotenvy::dotenv;
+use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
 use rocket::{
     http::Status,
     request::{FromRequest, Outcome},
     Request,
 };
-use std::collections::BTreeMap;
-use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use dotenvy::dotenv;
+use std::collections::BTreeMap;
 use std::env;
 
 pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {

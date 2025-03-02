@@ -1,4 +1,3 @@
-
 #[derive(Debug)]
 pub enum Error {
     AuthError(AuthError),
@@ -115,10 +114,9 @@ impl From<Error> for rocket::response::status::Custom<String> {
                 rocket::http::Status::Conflict,
                 "conflict".to_string(),
             ),
-            Error::Gone => rocket::response::status::Custom(
-                rocket::http::Status::Gone,
-                "gone".to_string(),
-            ),
+            Error::Gone => {
+                rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
+            }
         }
     }
 }

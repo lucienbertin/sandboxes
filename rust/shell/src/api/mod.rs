@@ -1,13 +1,12 @@
-use crate::{auth::JwtIdentifiedSubject};
+use crate::auth::JwtIdentifiedSubject;
 use crate::error::Error;
 
 mod models;
 
-use crate::db::{self, Pool, PoolState};
+use crate::db::{self, PoolState};
 
 use self::models::{NewPost, PatchPost, Post};
 
-use diesel::Connection;
 use rocket::State;
 use rocket::{
     form::Form,
@@ -15,13 +14,6 @@ use rocket::{
     response::status::{Created, NoContent},
     serde::json::Json,
 };
-
-
-#[get("/")]
-pub fn index() -> &'static str {
-    "Hello, world!"
-}
-
 
 #[get("/posts", format = "json")]
 pub async fn get_posts(
@@ -34,11 +26,10 @@ pub async fn get_posts(
             format!("error: {:?}", e).to_string(),
         )
     })?;
-    let results = conn.build_transaction()
+    let results = conn
+        .build_transaction()
         .read_only()
-        .run(|conn| {
-            db::select_published_posts(conn)
-        })?;
+        .run(|conn| db::select_published_posts(conn))?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
 
@@ -49,7 +40,7 @@ pub async fn get_posts(
 pub fn get_post(
     state: &State<PoolState>,
     _subject: JwtIdentifiedSubject,
-    id: i32
+    id: i32,
 ) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
         rocket::response::status::Custom(
@@ -57,11 +48,10 @@ pub fn get_post(
             format!("error: {:?}", e).to_string(),
         )
     })?;
-    let result = conn.build_transaction()
+    let result = conn
+        .build_transaction()
         .read_only()
-        .run(|conn| {
-            db::find_post(conn, id)
-        })?;
+        .run(|conn| db::find_post(conn, id))?;
 
     match result {
         Some(p) => Ok(Json(p.into())),
@@ -85,23 +75,20 @@ pub fn publish_post(
         )
     })?;
 
-    conn.build_transaction()
-        .run(|conn| {
-            let result = db::find_post(conn, id)?;
+    conn.build_transaction().run(|conn| {
+        let result = db::find_post(conn, id)?;
 
-            let result = result.ok_or(Error::NotFound)?;
+        let result = result.ok_or(Error::NotFound)?;
 
-            use domain::usecases::{PublishPostResult, publish_post};
-            let result = publish_post(&subject.email, &result);
+        use domain::usecases::{publish_post, PublishPostResult};
+        let result = publish_post(&subject.email, &result);
 
-            match result {
-                PublishPostResult::CantPublishAnotherOnesPost => Err(Error::Forbidden),
-                PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-                PublishPostResult::DoPublish(post_id) => {
-                    db::publish_post(conn, post_id)
-                }
-            }
-        })?;
+        match result {
+            PublishPostResult::CantPublishAnotherOnesPost => Err(Error::Forbidden),
+            PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+            PublishPostResult::DoPublish(post_id) => db::publish_post(conn, post_id),
+        }
+    })?;
 
     Ok(Status::NoContent)
 }
@@ -119,15 +106,13 @@ pub fn post_post(
         )
     })?;
 
-    let result = conn.build_transaction()
-        .run(|conn| {
-
-            use domain::usecases::{CreatePostResult, create_post};
-            let result = create_post(&subject.email, data.into_inner().into());
-            match result {
-                CreatePostResult::DoCreate(new_post) => db::insert_new_post(conn, new_post),
-            }
-        })?;
+    let result = conn.build_transaction().run(|conn| {
+        use domain::usecases::{create_post, CreatePostResult};
+        let result = create_post(&subject.email, data.into_inner().into());
+        match result {
+            CreatePostResult::DoCreate(new_post) => db::insert_new_post(conn, new_post),
+        }
+    })?;
 
     let result = format!("/api/post/{}", result.id);
 
@@ -147,19 +132,18 @@ pub fn delete_post(
         )
     })?;
 
-    conn.build_transaction()
-        .run(|conn| {
-            let result = db::find_post(conn, id)?;
-            let result = result.ok_or(Error::Gone)?;
+    conn.build_transaction().run(|conn| {
+        let result = db::find_post(conn, id)?;
+        let result = result.ok_or(Error::Gone)?;
 
-            let result = domain::usecases::delete_post(&subject.email, &result);
+        let result = domain::usecases::delete_post(&subject.email, &result);
 
-            match result {
-                domain::usecases::DeletePostResult::DoDelete(post_id) => db::delete_post(conn, post_id),
-                domain::usecases::DeletePostResult::CantDeleteAnotherOnesPost => Err(Error::Forbidden),
-                domain::usecases::DeletePostResult::CantDeletePublishedPost => Err(Error::Conflict),
-            }
-        })?;
+        match result {
+            domain::usecases::DeletePostResult::DoDelete(post_id) => db::delete_post(conn, post_id),
+            domain::usecases::DeletePostResult::CantDeleteAnotherOnesPost => Err(Error::Forbidden),
+            domain::usecases::DeletePostResult::CantDeletePublishedPost => Err(Error::Conflict),
+        }
+    })?;
 
     Ok(NoContent)
 }
@@ -178,20 +162,21 @@ pub fn patch_post(
         )
     })?;
 
-    conn.build_transaction()
-        .run(|conn| {
-            let result = db::find_post(conn, id)?;
-            let result = result.ok_or(Error::NotFound)?;
+    conn.build_transaction().run(|conn| {
+        let result = db::find_post(conn, id)?;
+        let result = result.ok_or(Error::NotFound)?;
 
-            let result = domain::usecases::edit_post(&subject.email, &result, data.into_inner().into());
+        let result = domain::usecases::edit_post(&subject.email, &result, data.into_inner().into());
 
-            match result {
-                domain::usecases::EditPostResult::DoUpdate(post_id, post_edition) => db::update_post(conn, post_id, post_edition),
-                domain::usecases::EditPostResult::NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
-                domain::usecases::EditPostResult::CantEditAnotherOnesPost => Err(Error::Forbidden),
-                domain::usecases::EditPostResult::CantEditPublishedPost => Err(Error::Conflict),
+        match result {
+            domain::usecases::EditPostResult::DoUpdate(post_id, post_edition) => {
+                db::update_post(conn, post_id, post_edition)
             }
-        })?;
+            domain::usecases::EditPostResult::NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
+            domain::usecases::EditPostResult::CantEditAnotherOnesPost => Err(Error::Forbidden),
+            domain::usecases::EditPostResult::CantEditPublishedPost => Err(Error::Conflict),
+        }
+    })?;
 
     Ok(NoContent)
 }
