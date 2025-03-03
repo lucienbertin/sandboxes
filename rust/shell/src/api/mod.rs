@@ -76,17 +76,19 @@ pub fn publish_post(
     })?;
 
     conn.build_transaction().run(|conn| {
+        let subject = find_user(conn, subject.email)?;
+        let subject = subject.ok_or(Error::Unauthorized)?;
         let result = db::find_post(conn, id)?;
-
         let result = result.ok_or(Error::NotFound)?;
 
-        use domain::usecases::{publish_post, PublishPostResult};
-        let result = publish_post(&subject.email, &result);
+        use domain::usecases::{publish_post, PublishPostResult::*};
+        let result = publish_post(&subject, &result);
 
         match result {
-            PublishPostResult::CantPublishAnotherOnesPost => Err(Error::Forbidden),
-            PublishPostResult::CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-            PublishPostResult::DoPublish(post_id) => db::publish_post(conn, post_id),
+            CantPublishAnotherOnesPost => Err(Error::Forbidden),
+            CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+            DoPublish(post_id) => db::publish_post(conn, post_id),
+            CantPublishAsReader => Err(Error::Forbidden),
         }
     })?;
 
@@ -107,15 +109,15 @@ pub fn post_post(
     })?;
 
     let result = conn.build_transaction().run(|conn| {
-        use domain::usecases::{create_post, CreatePostResult};
+        use domain::usecases::{create_post, CreatePostResult::*};
 
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
         
         let result = create_post(&subject, data.into_inner().into());
         match result {
-            CreatePostResult::DoCreate(new_post) => db::insert_new_post(conn, new_post),
-            CreatePostResult::CantCreateAsReader => Err(Error::Forbidden),
+            DoCreate(new_post) => db::insert_new_post(conn, new_post),
+            CantCreateAsReader => Err(Error::Forbidden),
         }
     })?;
 
@@ -138,15 +140,20 @@ pub fn delete_post(
     })?;
 
     conn.build_transaction().run(|conn| {
+        let subject = find_user(conn, subject.email)?;
+        let subject = subject.ok_or(Error::Unauthorized)?;
+
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(Error::Gone)?;
 
-        let result = domain::usecases::delete_post(&subject.email, &result);
+        let result = domain::usecases::delete_post(&subject, &result);
 
+        use domain::usecases::DeletePostResult::*;
         match result {
-            domain::usecases::DeletePostResult::DoDelete(post_id) => db::delete_post(conn, post_id),
-            domain::usecases::DeletePostResult::CantDeleteAnotherOnesPost => Err(Error::Forbidden),
-            domain::usecases::DeletePostResult::CantDeletePublishedPost => Err(Error::Conflict),
+            DoDelete(post_id) => db::delete_post(conn, post_id),
+            CantDeleteAnotherOnesPost => Err(Error::Forbidden),
+            CantDeletePublishedPost => Err(Error::Conflict),
+            CantDeleteAsReader => Err(Error::Forbidden),
         }
     })?;
 
@@ -168,18 +175,20 @@ pub fn patch_post(
     })?;
 
     conn.build_transaction().run(|conn| {
+        let subject = find_user(conn, subject.email)?;
+        let subject = subject.ok_or(Error::Unauthorized)?;
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(Error::NotFound)?;
 
-        let result = domain::usecases::edit_post(&subject.email, &result, data.into_inner().into());
+        let result = domain::usecases::edit_post(&subject, &result, data.into_inner().into());
 
+        use domain::usecases::EditPostResult::*;
         match result {
-            domain::usecases::EditPostResult::DoUpdate(post_id, post_edition) => {
-                db::update_post(conn, post_id, post_edition)
-            }
-            domain::usecases::EditPostResult::NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
-            domain::usecases::EditPostResult::CantEditAnotherOnesPost => Err(Error::Forbidden),
-            domain::usecases::EditPostResult::CantEditPublishedPost => Err(Error::Conflict),
+            DoUpdate(post_id, post_edition) => db::update_post(conn, post_id, post_edition),
+            NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
+            CantEditAnotherOnesPost => Err(Error::Forbidden),
+            CantEditPublishedPost => Err(Error::Conflict),
+            CantEditAsReader => Err(Error::Forbidden),
         }
     })?;
 
