@@ -1,4 +1,4 @@
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct User {
     pub id: i32,
     pub first_name: String,
@@ -7,7 +7,7 @@ pub struct User {
     pub role: Role,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Role {
     Admin,
     Writer,
