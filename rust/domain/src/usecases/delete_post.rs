@@ -1,18 +1,19 @@
-use crate::models::Post;
+use crate::models::{Post, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum DeletePostResult {
     DoDelete(i32),
+    CantDeleteAsReader,
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost,
 }
-pub fn delete_post(subject: &String, post: &Post) -> DeletePostResult {
-    if subject != &post.author {
-        return DeletePostResult::CantDeleteAnotherOnesPost;
-    }
-    match post.published {
-        true => DeletePostResult::CantDeletePublishedPost,
-        false => DeletePostResult::DoDelete(post.id),
+pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
+    match subject.role {
+        Role::Reader => DeletePostResult::CantDeleteAsReader,
+        Role::Writer if subject.email != post.author => DeletePostResult::CantDeleteAnotherOnesPost,
+        Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
+        Role::Writer => DeletePostResult::DoDelete(post.id),
+        Role::Admin => DeletePostResult::DoDelete(post.id),
     }
 }
 
@@ -21,60 +22,148 @@ mod test {
     use super::*;
 
     #[test]
-    fn wrong_author() {
+    fn as_reader() {
         // arrange
-        let subject = "test@te.st".to_string();
-        let post = Post {
-            author: "someone@el.se".to_string(),
+        let subject = User {
             id: 1,
-            title: "test".to_string(),
-            body: "test".to_string(),
-            published: false,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Reader,
         };
-
-        // act
-        let result: DeletePostResult = delete_post(&subject, &post);
-
-        // assert
-        assert_eq!(result, DeletePostResult::CantDeleteAnotherOnesPost);
-    }
-
-    #[test]
-    fn already_published() {
-        // arrange
-        let subject = "test@te.st".to_string();
-        let post = Post {
-            published: true,
-            id: 1,
-            title: "test".to_string(),
-            body: "test".to_string(),
-            author: subject.clone(),
-        };
-
-        // act
-        let result = delete_post(&subject, &post);
-
-        // assert
-        assert_eq!(result, DeletePostResult::CantDeletePublishedPost);
-    }
-
-    #[test]
-    fn happy_path() {
-        // arrange
-        let subject = "test@te.st".to_string();
         let id = 1i32;
-        let post = Post {
+        let my_unpublished_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.clone(),
+            author: subject.email.clone(),
+        };
+        let my_published_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: true,
+            author: subject.email.clone(),
+        };
+        let someone_elses_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: "someone@el.se".to_string(),
         };
 
         // act
-        let result = delete_post(&subject, &post);
+        let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
+        let result_my_published_post = delete_post(&subject, &my_published_post);
+        let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
 
         // assert
-        assert_eq!(result, DeletePostResult::DoDelete(id));
+        assert_eq!(
+            result_my_unpublished_post,
+            DeletePostResult::CantDeleteAsReader
+        );
+        assert_eq!(
+            result_my_published_post,
+            DeletePostResult::CantDeleteAsReader
+        );
+        assert_eq!(
+            result_someone_elses_post,
+            DeletePostResult::CantDeleteAsReader
+        );
+    }
+
+    #[test]
+    fn as_writer() {
+        // arrange
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
+        let id = 1i32;
+        let my_unpublished_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: subject.email.clone(),
+        };
+        let my_published_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: true,
+            author: subject.email.clone(),
+        };
+        let someone_elses_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: "someone@el.se".to_string(),
+        };
+
+        // act
+        let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
+        let result_my_published_post = delete_post(&subject, &my_published_post);
+        let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
+
+        // assert
+        assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
+        assert_eq!(
+            result_my_published_post,
+            DeletePostResult::CantDeletePublishedPost
+        );
+        assert_eq!(
+            result_someone_elses_post,
+            DeletePostResult::CantDeleteAnotherOnesPost
+        );
+    }
+    #[test]
+    fn as_admin() {
+        // arrange
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Admin,
+        };
+        let id = 1i32;
+        let my_unpublished_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: subject.email.clone(),
+        };
+        let my_published_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: true,
+            author: subject.email.clone(),
+        };
+        let someone_elses_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: "someone@el.se".to_string(),
+        };
+
+        // act
+        let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
+        let result_my_published_post = delete_post(&subject, &my_published_post);
+        let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
+
+        // assert
+        assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
+        assert_eq!(result_my_published_post, DeletePostResult::DoDelete(id));
+        assert_eq!(result_someone_elses_post, DeletePostResult::DoDelete(id));
     }
 }

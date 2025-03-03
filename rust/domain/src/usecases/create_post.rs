@@ -1,20 +1,22 @@
-use crate::models::{NewPost, NewPostRequest};
+use crate::models::{NewPost, NewPostRequest, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum CreatePostResult {
     DoCreate(NewPost),
+    CantCreateAsReader,
 }
 
-pub fn create_post(subject: &String, create_post_request: NewPostRequest) -> CreatePostResult {
-    match subject.as_str() {
-        s => {
+pub fn create_post(subject: &User, create_post_request: NewPostRequest) -> CreatePostResult {
+    match subject.role {
+        Role::Admin | Role::Writer => {
             let new_post = NewPost {
                 title: create_post_request.title,
                 body: create_post_request.body,
-                author: s.to_string(),
+                author: subject.email.to_string(),
             };
             CreatePostResult::DoCreate(new_post)
         }
+        Role::Reader => CreatePostResult::CantCreateAsReader,
     }
 }
 
@@ -23,9 +25,37 @@ mod test {
     use super::*;
 
     #[test]
-    fn happy_path() {
+    fn reader_cant_create_post() {
         // arrange
-        let subject = "test@te.st".to_string();
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Reader,
+        };
+        let request = NewPostRequest {
+            title: "test".to_string(),
+            body: "test".to_string(),
+        };
+
+        // act
+        let result = create_post(&subject, request);
+
+        // assert
+        assert!(matches!(result, CreatePostResult::CantCreateAsReader));
+    }
+
+    #[test]
+    fn happy_path_writer() {
+        // arrange
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let request = NewPostRequest {
             title: "test".to_string(),
             body: "test".to_string(),
@@ -36,7 +66,33 @@ mod test {
 
         // assert
         assert!(matches!(result, CreatePostResult::DoCreate(_)));
-        let CreatePostResult::DoCreate(new_post) = result;
-        assert_eq!(new_post.author, subject);
+        if let CreatePostResult::DoCreate(new_post) = result {
+            assert_eq!(new_post.author, subject.email);
+        }
+    }
+
+    #[test]
+    fn happy_path_admin() {
+        // arrange
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Admin,
+        };
+        let request = NewPostRequest {
+            title: "test".to_string(),
+            body: "test".to_string(),
+        };
+
+        // act
+        let result = create_post(&subject, request);
+
+        // assert
+        assert!(matches!(result, CreatePostResult::DoCreate(_)));
+        if let CreatePostResult::DoCreate(new_post) = result {
+            assert_eq!(new_post.author, subject.email);
+        }
     }
 }
