@@ -1,4 +1,4 @@
-use crate::models::{Post, PostEdition};
+use crate::models::{Post, PostEdition, User, Role};
 
 #[derive(PartialEq, Debug)]
 pub enum EditPostResult {
@@ -6,17 +6,15 @@ pub enum EditPostResult {
     NothingToUpdate,
     CantEditAnotherOnesPost,
     CantEditPublishedPost,
+    CantEditAsReader,
 }
 
-pub fn edit_post(subject: &String, post: &Post, request: PostEdition) -> EditPostResult {
-    let check_subject = match subject.as_str() {
-        s if s != &post.author => Some(EditPostResult::CantEditAnotherOnesPost),
+pub fn edit_post(subject: &User, post: &Post, request: PostEdition) -> EditPostResult {
+    let check_subject = match subject.role {
+        Role::Writer if subject.email != post.author => Some(EditPostResult::CantEditAnotherOnesPost),
+        Role::Writer if post.published => Some(EditPostResult::CantEditPublishedPost),
+        Role::Reader => Some(EditPostResult::CantEditAsReader),
         _ => None,
-    };
-
-    let check_post = match post.published {
-        true => Some(EditPostResult::CantEditPublishedPost),
-        false => None,
     };
 
     let edits = PostEdition {
@@ -32,7 +30,6 @@ pub fn edit_post(subject: &String, post: &Post, request: PostEdition) -> EditPos
     };
 
     let result = check_subject
-        .or(check_post)
         .or(check_edits)
         .or(Some(EditPostResult::DoUpdate(post.id, edits)))
         .unwrap();
@@ -45,9 +42,32 @@ mod test {
     use super::*;
 
     #[test]
+    fn as_reader() {
+        // arrange
+        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Reader };
+        let post = Post {
+            author: "someone@el.se".to_string(),
+            id: 1,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+        };
+        let request = PostEdition {
+            title: Some("test".to_string()),
+            body: Some("test".to_string()),
+        };
+
+        // act
+        let result = edit_post(&subject, &post, request);
+
+        // assert
+        assert_eq!(result, EditPostResult::CantEditAsReader);
+    }
+
+    #[test]
     fn wrong_author() {
         // arrange
-        let subject = "test@te.st".to_string();
+        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
         let post = Post {
             author: "someone@el.se".to_string(),
             id: 1,
@@ -70,13 +90,13 @@ mod test {
     #[test]
     fn already_published() {
         // arrange
-        let subject = "test@te.st".to_string();
+        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
         let post = Post {
             published: true,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
-            author: subject.clone(),
+            author: subject.email.clone(),
         };
         let request = PostEdition {
             title: Some("test".to_string()),
@@ -93,7 +113,8 @@ mod test {
     #[test]
     fn nothing_to_edit() {
         // arrange
-        let subject = "test@te.st".to_string();
+        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+
         let title = "title";
         let body = "body";
         let post = Post {
@@ -101,7 +122,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: false,
-            author: subject.clone(),
+            author: subject.email.clone(),
         };
         let no_edits = PostEdition {
             title: None,
@@ -134,9 +155,10 @@ mod test {
     }
 
     #[test]
-    fn happy_path() {
+    fn happy_path_as_writer() {
         // arrange
-        let subject = "test@te.st".to_string();
+        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+
         let title = "title";
         let different_title = "different title";
         let different_body = "different body";
@@ -147,7 +169,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: false,
-            author: subject.clone(),
+            author: subject.email.clone(),
         };
         let diff_title_no_body = PostEdition {
             title: Some(different_title.to_string()),
@@ -176,6 +198,98 @@ mod test {
         let result_no_title_diff_body = edit_post(&subject, &post, no_title_diff_body);
         let result_same_title_diff_body = edit_post(&subject, &post, same_title_diff_body);
         let result_diff_title_diff_body = edit_post(&subject, &post, diff_title_diff_body);
+
+        // assert
+        assert!(matches!(
+            result_diff_title_no_body,
+            EditPostResult::DoUpdate(_, _)
+        ));
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_no_body {
+            assert_eq!(id_to_edit, id);
+            assert_eq!(edition.title, Some(different_title.to_string()));
+            assert_eq!(edition.body, None);
+        }
+        assert!(matches!(
+            result_diff_title_same_body,
+            EditPostResult::DoUpdate(_, _)
+        ));
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body {
+            assert_eq!(id_to_edit, id);
+            assert_eq!(edition.title, Some(different_title.to_string()));
+            assert_eq!(edition.body, None);
+        }
+        assert!(matches!(
+            result_no_title_diff_body,
+            EditPostResult::DoUpdate(_, _)
+        ));
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_no_title_diff_body {
+            assert_eq!(id_to_edit, id);
+            assert_eq!(edition.title, None);
+            assert_eq!(edition.body, Some(different_body.to_string()));
+        }
+        assert!(matches!(
+            result_same_title_diff_body,
+            EditPostResult::DoUpdate(_, _)
+        ));
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body {
+            assert_eq!(id_to_edit, id);
+            assert_eq!(edition.title, None);
+            assert_eq!(edition.body, Some(different_body.to_string()));
+        }
+        assert!(matches!(
+            result_diff_title_diff_body,
+            EditPostResult::DoUpdate(_, _)
+        ));
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body {
+            assert_eq!(id_to_edit, id);
+            assert_eq!(edition.title, Some(different_title.to_string()));
+            assert_eq!(edition.body, Some(different_body.to_string()));
+        }
+    }
+    #[test]
+    fn happy_path_as_admin() {
+        // arrange
+        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Admin };
+
+        let title = "title";
+        let different_title = "different title";
+        let different_body = "different body";
+        let body = "body";
+        let id = 1i32;
+        let someone_else_published_post = Post {
+            id: id,
+            title: title.to_string(),
+            body: body.to_string(),
+            published: true,
+            author: "someone@el.se".to_string(),
+        };
+        let diff_title_no_body = PostEdition {
+            title: Some(different_title.to_string()),
+            body: None,
+        };
+        let diff_title_same_body = PostEdition {
+            title: Some(different_title.to_string()),
+            body: Some(body.to_string()),
+        };
+        let no_title_diff_body = PostEdition {
+            title: None,
+            body: Some(different_body.to_string()),
+        };
+        let same_title_diff_body = PostEdition {
+            title: Some(title.to_string()),
+            body: Some(different_body.to_string()),
+        };
+        let diff_title_diff_body = PostEdition {
+            title: Some(different_title.to_string()),
+            body: Some(different_body.to_string()),
+        };
+
+        // act
+        let result_diff_title_no_body = edit_post(&subject, &someone_else_published_post, diff_title_no_body);
+        let result_diff_title_same_body = edit_post(&subject, &someone_else_published_post, diff_title_same_body);
+        let result_no_title_diff_body = edit_post(&subject, &someone_else_published_post, no_title_diff_body);
+        let result_same_title_diff_body = edit_post(&subject, &someone_else_published_post, same_title_diff_body);
+        let result_diff_title_diff_body = edit_post(&subject, &someone_else_published_post, diff_title_diff_body);
 
         // assert
         assert!(matches!(
