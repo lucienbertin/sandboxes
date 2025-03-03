@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use postgis_diesel::types::*;
 
-use super::schema::posts;
+use crate::db::schema::posts;
 
 #[derive(Queryable, Selectable, Clone)]
 #[diesel(table_name = posts)]
