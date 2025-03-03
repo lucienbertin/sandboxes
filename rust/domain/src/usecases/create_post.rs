@@ -15,8 +15,8 @@ pub fn create_post(subject: &User, create_post_request: NewPostRequest) -> Creat
                 author: subject.email.to_string(),
             };
             CreatePostResult::DoCreate(new_post)
-        },
-        Role::Reader => CreatePostResult::CantCreateAsReader
+        }
+        Role::Reader => CreatePostResult::CantCreateAsReader,
     }
 }
 
@@ -27,7 +27,13 @@ mod test {
     #[test]
     fn reader_cant_create_post() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Reader };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Reader,
+        };
         let request = NewPostRequest {
             title: "test".to_string(),
             body: "test".to_string(),
@@ -43,7 +49,13 @@ mod test {
     #[test]
     fn happy_path_writer() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let request = NewPostRequest {
             title: "test".to_string(),
             body: "test".to_string(),
@@ -62,7 +74,13 @@ mod test {
     #[test]
     fn happy_path_admin() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Admin };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Admin,
+        };
         let request = NewPostRequest {
             title: "test".to_string(),
             body: "test".to_string(),

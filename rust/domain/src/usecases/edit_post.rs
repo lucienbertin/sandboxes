@@ -1,4 +1,4 @@
-use crate::models::{Post, PostEdition, User, Role};
+use crate::models::{Post, PostEdition, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum EditPostResult {
@@ -11,7 +11,9 @@ pub enum EditPostResult {
 
 pub fn edit_post(subject: &User, post: &Post, request: PostEdition) -> EditPostResult {
     let check_subject = match subject.role {
-        Role::Writer if subject.email != post.author => Some(EditPostResult::CantEditAnotherOnesPost),
+        Role::Writer if subject.email != post.author => {
+            Some(EditPostResult::CantEditAnotherOnesPost)
+        }
         Role::Writer if post.published => Some(EditPostResult::CantEditPublishedPost),
         Role::Reader => Some(EditPostResult::CantEditAsReader),
         _ => None,
@@ -44,7 +46,13 @@ mod test {
     #[test]
     fn as_reader() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Reader };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Reader,
+        };
         let post = Post {
             author: "someone@el.se".to_string(),
             id: 1,
@@ -67,7 +75,13 @@ mod test {
     #[test]
     fn wrong_author() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
             author: "someone@el.se".to_string(),
             id: 1,
@@ -90,7 +104,13 @@ mod test {
     #[test]
     fn already_published() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
             published: true,
             id: 1,
@@ -113,7 +133,13 @@ mod test {
     #[test]
     fn nothing_to_edit() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
 
         let title = "title";
         let body = "body";
@@ -157,7 +183,13 @@ mod test {
     #[test]
     fn happy_path_as_writer() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
 
         let title = "title";
         let different_title = "different title";
@@ -249,7 +281,13 @@ mod test {
     #[test]
     fn happy_path_as_admin() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Admin };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Admin,
+        };
 
         let title = "title";
         let different_title = "different title";
@@ -285,11 +323,16 @@ mod test {
         };
 
         // act
-        let result_diff_title_no_body = edit_post(&subject, &someone_else_published_post, diff_title_no_body);
-        let result_diff_title_same_body = edit_post(&subject, &someone_else_published_post, diff_title_same_body);
-        let result_no_title_diff_body = edit_post(&subject, &someone_else_published_post, no_title_diff_body);
-        let result_same_title_diff_body = edit_post(&subject, &someone_else_published_post, same_title_diff_body);
-        let result_diff_title_diff_body = edit_post(&subject, &someone_else_published_post, diff_title_diff_body);
+        let result_diff_title_no_body =
+            edit_post(&subject, &someone_else_published_post, diff_title_no_body);
+        let result_diff_title_same_body =
+            edit_post(&subject, &someone_else_published_post, diff_title_same_body);
+        let result_no_title_diff_body =
+            edit_post(&subject, &someone_else_published_post, no_title_diff_body);
+        let result_same_title_diff_body =
+            edit_post(&subject, &someone_else_published_post, same_title_diff_body);
+        let result_diff_title_diff_body =
+            edit_post(&subject, &someone_else_published_post, diff_title_diff_body);
 
         // assert
         assert!(matches!(

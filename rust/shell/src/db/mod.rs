@@ -1,5 +1,5 @@
-mod schema;
 mod post;
+mod schema;
 mod user;
 
 pub use post::*;

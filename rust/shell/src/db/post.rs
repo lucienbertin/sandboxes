@@ -59,12 +59,8 @@ impl From<domain::models::NewPost> for NewPost {
 }
 
 // queries
-pub fn select_posts(
-    connection: &mut PgConnection,
-) -> Result<Vec<domain::models::Post>, Error> {
-    let results: Vec<Post> = posts
-        .select(Post::as_select())
-        .load(connection)?;
+pub fn select_posts(connection: &mut PgConnection) -> Result<Vec<domain::models::Post>, Error> {
+    let results: Vec<Post> = posts.select(Post::as_select()).load(connection)?;
     let results: Vec<domain::models::Post> = results.into_iter().map(|p| p.into()).collect();
 
     Ok(results)
@@ -97,7 +93,6 @@ pub fn find_post(
     connection: &mut PgConnection,
     post_id: i32,
 ) -> Result<Option<domain::models::Post>, Error> {
-
     let result: Option<Post> = posts
         .find(post_id)
         .select(Post::as_select())
@@ -108,8 +103,10 @@ pub fn find_post(
     Ok(result)
 }
 
-pub fn insert_new_post(connection: &mut PgConnection, new_post: domain::models::NewPost) -> Result<domain::models::Post, Error> {
-
+pub fn insert_new_post(
+    connection: &mut PgConnection,
+    new_post: domain::models::NewPost,
+) -> Result<domain::models::Post, Error> {
     let new_post: NewPost = new_post.into();
 
     let result = diesel::insert_into(posts::table)
@@ -121,14 +118,12 @@ pub fn insert_new_post(connection: &mut PgConnection, new_post: domain::models::
 }
 
 pub fn delete_post(connection: &mut PgConnection, post_id: i32) -> Result<(), Error> {
-
     diesel::delete(posts.filter(id.eq(post_id))).execute(connection)?;
 
     Ok(())
 }
 
 pub fn publish_post(connection: &mut PgConnection, post_id: i32) -> Result<(), Error> {
-
     diesel::update(posts.filter(id.eq(post_id)))
         .set(published.eq(true))
         .execute(connection)?;
@@ -141,7 +136,6 @@ pub fn update_post(
     post_id: i32,
     edits: domain::models::PostEdition,
 ) -> Result<(), Error> {
-
     match edits {
         domain::models::PostEdition {
             title: Some(t),

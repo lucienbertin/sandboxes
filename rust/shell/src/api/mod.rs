@@ -26,24 +26,23 @@ pub async fn get_posts(
             format!("error: {:?}", e).to_string(),
         )
     })?;
-    let results = conn
-        .build_transaction()
-        .read_only()
-        .run(|conn| {
-            let subject = match subject {
-                None => None,
-                Some(s) => find_user(conn, s.email)?
-            };
+    let results = conn.build_transaction().read_only().run(|conn| {
+        let subject = match subject {
+            None => None,
+            Some(s) => find_user(conn, s.email)?,
+        };
 
-            let result = domain::usecases::consult_posts(&subject);
+        let result = domain::usecases::consult_posts(&subject);
 
-            use domain::usecases::ConsultPostsResult::*;
-            match result {
-                ConsultPublishedPosts => db::select_published_posts(conn),
-                ConsultPublishedPostsAndAuthoredBy(author) => db::select_published_posts_or_authored_by(conn, author),
-                ConsultAllPosts => db::select_posts(conn),
+        use domain::usecases::ConsultPostsResult::*;
+        match result {
+            ConsultPublishedPosts => db::select_published_posts(conn),
+            ConsultPublishedPostsAndAuthoredBy(author) => {
+                db::select_published_posts_or_authored_by(conn, author)
             }
-        })?;
+            ConsultAllPosts => db::select_posts(conn),
+        }
+    })?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
 
@@ -62,26 +61,23 @@ pub fn get_post(
             format!("error: {:?}", e).to_string(),
         )
     })?;
-    let result = conn
-        .build_transaction()
-        .read_only()
-        .run(|conn| {
-            let subject = match subject {
-                None => None,
-                Some(s) => find_user(conn, s.email)?
-            };
-            let post = db::find_post(conn, id)?;
-            let post = post.ok_or(Error::NotFound)?;
+    let result = conn.build_transaction().read_only().run(|conn| {
+        let subject = match subject {
+            None => None,
+            Some(s) => find_user(conn, s.email)?,
+        };
+        let post = db::find_post(conn, id)?;
+        let post = post.ok_or(Error::NotFound)?;
 
-            let result = domain::usecases::consult_post(&subject, &post);
+        let result = domain::usecases::consult_post(&subject, &post);
 
-            use domain::usecases::ConsultPostResult::*;
-            match result {
-                DoConsultPost => Ok(post),
-                CantConsultUnpublishedPostFromSomeoneElse => Err(Error::Forbidden),
-                CantConsultUnpublishedPostAsReader => Err(Error::Forbidden),
-            }
-        })?;
+        use domain::usecases::ConsultPostResult::*;
+        match result {
+            DoConsultPost => Ok(post),
+            CantConsultUnpublishedPostFromSomeoneElse => Err(Error::Forbidden),
+            CantConsultUnpublishedPostAsReader => Err(Error::Forbidden),
+        }
+    })?;
 
     Ok(Json(result.into()))
 }
@@ -137,7 +133,7 @@ pub fn post_post(
 
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
-        
+
         let result = create_post(&subject, data.into_inner().into());
         match result {
             DoCreate(new_post) => db::insert_new_post(conn, new_post),

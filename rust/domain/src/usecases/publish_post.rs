@@ -1,4 +1,4 @@
-use crate::models::{Post, User, Role::*};
+use crate::models::{Post, Role::*, User};
 
 #[derive(PartialEq, Debug)]
 pub enum PublishPostResult {
@@ -26,7 +26,13 @@ mod test {
     #[test]
     fn as_reader() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Reader };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Reader,
+        };
         let post = Post {
             id: 1,
             title: "test".to_string(),
@@ -45,7 +51,13 @@ mod test {
     #[test]
     fn wrong_author() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
             id: 1,
             title: "test".to_string(),
@@ -64,7 +76,13 @@ mod test {
     #[test]
     fn already_published() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
             id: 1,
             title: "test".to_string(),
@@ -83,7 +101,13 @@ mod test {
     #[test]
     fn happy_path() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Writer };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Writer,
+        };
         let id = 1i32;
         let post = Post {
             id: id,
@@ -99,11 +123,17 @@ mod test {
         // assert
         assert_eq!(result, PublishPostResult::DoPublish(id));
     }
-    
+
     #[test]
     fn as_admin() {
         // arrange
-        let subject = User { id: 1, first_name: "test".to_string(), last_name: "test".to_string(), email: "test@te.st".to_string(), role: Role::Admin };
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Admin,
+        };
         let id = 1i32;
         let someone_elses_post = Post {
             id: id,
@@ -135,7 +165,9 @@ mod test {
         // assert
         assert_eq!(result_someone_elses_post, PublishPostResult::DoPublish(id));
         assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublish(id));
-        assert_eq!(result_my_published_post, PublishPostResult::CantPublishAlreadyPublishedPost);
+        assert_eq!(
+            result_my_published_post,
+            PublishPostResult::CantPublishAlreadyPublishedPost
+        );
     }
-    
 }

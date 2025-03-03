@@ -118,9 +118,10 @@ impl From<Error> for rocket::response::status::Custom<String> {
             Error::Gone => {
                 rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
             }
-            Error::Unauthorized => {
-                rocket::response::status::Custom(rocket::http::Status::Unauthorized, "unauthorized".to_string())
-            }
+            Error::Unauthorized => rocket::response::status::Custom(
+                rocket::http::Status::Unauthorized,
+                "unauthorized".to_string(),
+            ),
         }
     }
 }
