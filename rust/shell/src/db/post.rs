@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use postgis_diesel::types::*;
+// use postgis_diesel::types::*;
 use crate::error::Error;
 
 // Bindings
@@ -13,7 +13,7 @@ struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
-    pub geom: Option<Point>,
+    // pub geom: Option<Point>,
     pub author: String,
 }
 
@@ -32,7 +32,7 @@ impl From<domain::models::Post> for Post {
             title: value.title,
             body: value.body,
             published: value.published,
-            geom: None, // not binded for now
+            // geom: None, // not binded for now
             author: value.author,
         }
     }
