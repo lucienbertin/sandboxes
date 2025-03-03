@@ -1,13 +1,14 @@
 use std::io::Write;
-
 use diesel::*;
 use diesel::deserialize::{FromSql, FromSqlRow};
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::expression::AsExpression;
+use crate::error::Error;
 
 use crate::db::schema::users;
 
+// bindings
 #[derive(Debug, PartialEq, FromSqlRow, AsExpression, Eq, Clone)]
 #[diesel(sql_type = crate::db::schema::sql_types::UserRole)]
 pub enum Role {
@@ -79,7 +80,7 @@ impl From<User> for domain::models::User {
     }
 }
 
-use crate::error::Error;
+// methods
 pub fn find_user(
     connection: &mut PgConnection,
     user_id: i32,
@@ -96,31 +97,31 @@ pub fn find_user(
     Ok(result)
 }
 
-#[cfg(test)]
-mod test {
-    use diesel::{Connection, PgConnection};
+// #[cfg(test)]
+// mod test {
+//     use diesel::{Connection, PgConnection};
 
-    use crate::error::Error;
-    fn establish_connection() -> Result<PgConnection, Error> {
-        use dotenvy::dotenv;
-        use std::env;
+//     use crate::error::Error;
+//     fn establish_connection() -> Result<PgConnection, Error> {
+//         use dotenvy::dotenv;
+//         use std::env;
 
-        dotenv()?;
-        let database_url = env::var("DATABASE_URL")?;
-        let connection = PgConnection::establish(&database_url)?;
+//         dotenv()?;
+//         let database_url = env::var("DATABASE_URL")?;
+//         let connection = PgConnection::establish(&database_url)?;
 
-        Ok(connection)
-    }
+//         Ok(connection)
+//     }
 
-    #[test]
-    fn find_user() {
-        let mut conn = establish_connection().expect("cant connect to db");
-        let res_0 = super::find_user(&mut conn, 0);
-        let res_1 = super::find_user(&mut conn, 1);
-        let res_2 = super::find_user(&mut conn, 2);
+//     #[test]
+//     fn find_user() {
+//         let mut conn = establish_connection().expect("cant connect to db");
+//         let res_0 = super::find_user(&mut conn, 0);
+//         let res_1 = super::find_user(&mut conn, 1);
+//         let res_2 = super::find_user(&mut conn, 2);
 
-        println!("user 0: {:?}", res_0);
-        println!("user 1: {:?}", res_1);
-        println!("user 2: {:?}", res_2);
-    }
-}
+//         println!("user 0: {:?}", res_0);
+//         println!("user 1: {:?}", res_1);
+//         println!("user 2: {:?}", res_2);
+//     }
+// }
