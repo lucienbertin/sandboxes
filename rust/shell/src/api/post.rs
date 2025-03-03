@@ -1,3 +1,6 @@
+use crate::auth::JwtIdentifiedSubject;
+use crate::db::{self, find_user, PoolState};
+use crate::error::Error;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket::{
@@ -6,9 +9,6 @@ use rocket::{
     response::status::{Created, NoContent},
     serde::json::Json,
 };
-use crate::auth::JwtIdentifiedSubject;
-use crate::error::Error;
-use crate::db::{self, find_user, PoolState};
 
 #[derive(Serialize, Deserialize)]
 pub struct Post {
@@ -58,7 +58,6 @@ impl From<PatchPost> for domain::models::PostEdition {
         }
     }
 }
-
 
 #[get("/posts", format = "json")]
 pub async fn get_posts(
