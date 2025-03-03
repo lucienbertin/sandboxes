@@ -18,7 +18,7 @@ use rocket::{
 #[get("/posts", format = "json")]
 pub async fn get_posts(
     state: &State<PoolState>,
-    _subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
+    subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
 ) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
         rocket::response::status::Custom(
@@ -29,7 +29,21 @@ pub async fn get_posts(
     let results = conn
         .build_transaction()
         .read_only()
-        .run(|conn| db::select_published_posts(conn))?;
+        .run(|conn| {
+            let subject = match subject {
+                None => None,
+                Some(s) => find_user(conn, s.email)?
+            };
+
+            let result = domain::usecases::consult_posts(&subject);
+
+            use domain::usecases::ConsultPostsResult::*;
+            match result {
+                ConsultPublishedPosts => db::select_published_posts(conn),
+                ConsultPublishedPostsAndAuthoredBy(author) => db::select_published_posts_or_authored_by(conn, author),
+                ConsultAllPosts => db::select_posts(conn),
+            }
+        })?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
 
@@ -39,7 +53,7 @@ pub async fn get_posts(
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
     state: &State<PoolState>,
-    _subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
+    subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
     id: i32,
 ) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
@@ -51,15 +65,25 @@ pub fn get_post(
     let result = conn
         .build_transaction()
         .read_only()
-        .run(|conn| db::find_post(conn, id))?;
+        .run(|conn| {
+            let subject = match subject {
+                None => None,
+                Some(s) => find_user(conn, s.email)?
+            };
+            let post = db::find_post(conn, id)?;
+            let post = post.ok_or(Error::NotFound)?;
 
-    match result {
-        Some(p) => Ok(Json(p.into())),
-        None => Err(rocket::response::status::Custom(
-            Status::NotFound,
-            "not found".to_string(),
-        )),
-    }
+            let result = domain::usecases::consult_post(&subject, &post);
+
+            use domain::usecases::ConsultPostResult::*;
+            match result {
+                DoConsultPost => Ok(post),
+                CantConsultUnpublishedPostFromSomeoneElse => Err(Error::Forbidden),
+                CantConsultUnpublishedPostAsReader => Err(Error::Forbidden),
+            }
+        })?;
+
+    Ok(Json(result.into()))
 }
 
 #[post("/post/<id>/publish")]

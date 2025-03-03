@@ -59,12 +59,33 @@ impl From<domain::models::NewPost> for NewPost {
 }
 
 // queries
+pub fn select_posts(
+    connection: &mut PgConnection,
+) -> Result<Vec<domain::models::Post>, Error> {
+    let results: Vec<Post> = posts
+        .select(Post::as_select())
+        .load(connection)?;
+    let results: Vec<domain::models::Post> = results.into_iter().map(|p| p.into()).collect();
+
+    Ok(results)
+}
 pub fn select_published_posts(
     connection: &mut PgConnection,
 ) -> Result<Vec<domain::models::Post>, Error> {
     let results: Vec<Post> = posts
         .filter(published.eq(true))
-        .limit(5)
+        .select(Post::as_select())
+        .load(connection)?;
+    let results: Vec<domain::models::Post> = results.into_iter().map(|p| p.into()).collect();
+
+    Ok(results)
+}
+pub fn select_published_posts_or_authored_by(
+    connection: &mut PgConnection,
+    user: domain::models::User,
+) -> Result<Vec<domain::models::Post>, Error> {
+    let results: Vec<Post> = posts
+        .filter(published.eq(true).or(author.eq(user.email)))
         .select(Post::as_select())
         .load(connection)?;
     let results: Vec<domain::models::Post> = results.into_iter().map(|p| p.into()).collect();
