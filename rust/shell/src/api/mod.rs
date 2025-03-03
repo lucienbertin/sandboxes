@@ -3,7 +3,7 @@ use crate::error::Error;
 
 mod models;
 
-use crate::db::{self, PoolState};
+use crate::db::{self, find_user, PoolState};
 
 use self::models::{NewPost, PatchPost, Post};
 
@@ -108,9 +108,14 @@ pub fn post_post(
 
     let result = conn.build_transaction().run(|conn| {
         use domain::usecases::{create_post, CreatePostResult};
-        let result = create_post(&subject.email, data.into_inner().into());
+
+        let subject = find_user(conn, subject.email)?;
+        let subject = subject.ok_or(Error::Unauthorized)?;
+        
+        let result = create_post(&subject, data.into_inner().into());
         match result {
             CreatePostResult::DoCreate(new_post) => db::insert_new_post(conn, new_post),
+            CreatePostResult::CantCreateAsReader => Err(Error::Forbidden),
         }
     })?;
 

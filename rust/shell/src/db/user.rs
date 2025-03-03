@@ -83,12 +83,12 @@ impl From<User> for domain::models::User {
 // methods
 pub fn find_user(
     connection: &mut PgConnection,
-    user_id: i32,
+    user_email: String,
 ) -> Result<Option<domain::models::User>, Error> {
     use crate::db::schema::users::dsl::*;
 
     let result: Option<User> = users
-        .find(user_id)
+        .filter(email.eq(user_email))
         .select(User::as_select())
         .first(connection)
         .optional()?;
@@ -116,12 +116,12 @@ pub fn find_user(
 //     #[test]
 //     fn find_user() {
 //         let mut conn = establish_connection().expect("cant connect to db");
-//         let res_0 = super::find_user(&mut conn, 0);
-//         let res_1 = super::find_user(&mut conn, 1);
-//         let res_2 = super::find_user(&mut conn, 2);
+//         let res_unkwn = super::find_user(&mut conn, "un@kno.wn".to_string());
+//         let res_jdoe = super::find_user(&mut conn, "john@d.oe".to_string());
+//         let res_lbert = super::find_user(&mut conn, "lucien@bert.in".to_string());
 
-//         println!("user 0: {:?}", res_0);
-//         println!("user 1: {:?}", res_1);
-//         println!("user 2: {:?}", res_2);
+//         println!("user un@kno.wn: {:?}", res_unkwn);
+//         println!("user john@d.oe: {:?}", res_jdoe);
+//         println!("user lucien@bert.in: {:?}", res_lbert);
 //     }
 // }

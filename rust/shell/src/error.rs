@@ -10,6 +10,7 @@ pub enum Error {
     R2D2Error(r2d2::Error),
     NotFound,
     Forbidden,
+    Unauthorized,
     Conflict,
     Gone,
 }
@@ -116,6 +117,9 @@ impl From<Error> for rocket::response::status::Custom<String> {
             ),
             Error::Gone => {
                 rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
+            }
+            Error::Unauthorized => {
+                rocket::response::status::Custom(rocket::http::Status::Unauthorized, "unauthorized".to_string())
             }
         }
     }
