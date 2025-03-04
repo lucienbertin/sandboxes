@@ -1,11 +1,11 @@
 use diesel::prelude::*;
 // use postgis_diesel::types::*;
-use crate::error::Error;
 use super::user::User;
+use crate::error::Error;
 // Bindings
 use crate::db::schema::posts;
-use crate::db::schema::users;
 use crate::db::schema::posts::dsl::*;
+use crate::db::schema::users;
 #[derive(Queryable, Selectable, Clone, Identifiable, Associations)]
 #[diesel(belongs_to(User, foreign_key = author_id))]
 #[diesel(table_name = posts)]
@@ -73,7 +73,10 @@ pub fn select_posts(connection: &mut PgConnection) -> Result<Vec<domain::models:
         .inner_join(users::table)
         .select((Post::as_select(), User::as_select()))
         .load(connection)?;
-    let results: Vec<domain::models::Post> = results.into_iter().map(|t| PostAuthorTuple::from(t).into()).collect();
+    let results: Vec<domain::models::Post> = results
+        .into_iter()
+        .map(|t| PostAuthorTuple::from(t).into())
+        .collect();
 
     Ok(results)
 }
@@ -85,7 +88,10 @@ pub fn select_published_posts(
         .filter(published.eq(true))
         .select((Post::as_select(), User::as_select()))
         .load(connection)?;
-    let results: Vec<domain::models::Post> = results.into_iter().map(|t| PostAuthorTuple::from(t).into()).collect();
+    let results: Vec<domain::models::Post> = results
+        .into_iter()
+        .map(|t| PostAuthorTuple::from(t).into())
+        .collect();
 
     Ok(results)
 }
@@ -98,7 +104,10 @@ pub fn select_published_posts_or_authored_by(
         .filter(published.eq(true).or(author_id.eq(user.id)))
         .select((Post::as_select(), User::as_select()))
         .load(connection)?;
-    let results: Vec<domain::models::Post> = results.into_iter().map(|t| PostAuthorTuple::from(t).into()).collect();
+    let results: Vec<domain::models::Post> = results
+        .into_iter()
+        .map(|t| PostAuthorTuple::from(t).into())
+        .collect();
 
     Ok(results)
 }
