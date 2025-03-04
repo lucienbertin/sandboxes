@@ -16,7 +16,7 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
-    pub author: String,
+    // pub author_id: String,
 }
 
 impl From<domain::models::Post> for Post {
@@ -26,7 +26,7 @@ impl From<domain::models::Post> for Post {
             title: value.title,
             body: value.body,
             published: value.published,
-            author: value.author,
+            // author: value.author_id,
         }
     }
 }
