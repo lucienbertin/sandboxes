@@ -4,7 +4,7 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
-    pub author: String,
+    pub author_id: i32,
     // pub geom: Point,
 }
 
@@ -18,7 +18,7 @@ pub struct NewPostRequest {
 pub struct NewPost {
     pub title: String,
     pub body: String,
-    pub author: String,
+    pub author_id: i32,
 }
 
 #[derive(PartialEq, Debug)]

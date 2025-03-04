@@ -11,7 +11,7 @@ pub enum PublishPostResult {
 pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
     match subject.role {
         Reader => PublishPostResult::CantPublishAsReader,
-        Writer if subject.email != post.author => PublishPostResult::CantPublishAnotherOnesPost,
+        Writer if subject.id != post.author_id => PublishPostResult::CantPublishAnotherOnesPost,
         _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
         _ => PublishPostResult::DoPublish(post.id),
     }
@@ -38,7 +38,7 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: "someone@el.se".to_string(),
+            author_id: 2,
         };
 
         // act
@@ -63,7 +63,7 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: "someone@el.se".to_string(),
+            author_id: 2,
         };
 
         // act
@@ -88,7 +88,7 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author: subject.email.clone(),
+            author_id: 1,
         };
 
         // act
@@ -114,7 +114,7 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
 
         // act
@@ -140,21 +140,21 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let my_unpublished_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author: subject.email.clone(),
+            author_id: 1,
         };
 
         // act

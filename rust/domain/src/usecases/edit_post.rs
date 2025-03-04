@@ -11,7 +11,7 @@ pub enum EditPostResult {
 
 pub fn edit_post(subject: &User, post: &Post, request: PostEdition) -> EditPostResult {
     let check_subject = match subject.role {
-        Role::Writer if subject.email != post.author => {
+        Role::Writer if subject.id != post.author_id => {
             Some(EditPostResult::CantEditAnotherOnesPost)
         }
         Role::Writer if post.published => Some(EditPostResult::CantEditPublishedPost),
@@ -54,7 +54,7 @@ mod test {
             role: Role::Reader,
         };
         let post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 1,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -83,7 +83,7 @@ mod test {
             role: Role::Writer,
         };
         let post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -116,7 +116,7 @@ mod test {
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let request = PostEdition {
             title: Some("test".to_string()),
@@ -148,7 +148,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let no_edits = PostEdition {
             title: None,
@@ -201,7 +201,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let diff_title_no_body = PostEdition {
             title: Some(different_title.to_string()),
@@ -299,7 +299,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: true,
-            author: "someone@el.se".to_string(),
+            author_id: 2,
         };
         let diff_title_no_body = PostEdition {
             title: Some(different_title.to_string()),

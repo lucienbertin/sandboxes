@@ -12,7 +12,7 @@ pub fn consult_post(subject: &Option<User>, post: &Post) -> ConsultPostResult {
         None => ConsultPostResult::CantConsultUnpublishedPostAsReader,
         Some(s) if s.role == Role::Reader && post.published => ConsultPostResult::DoConsultPost,
         Some(s) if s.role == Role::Reader => ConsultPostResult::CantConsultUnpublishedPostAsReader,
-        Some(s) if s.role == Role::Writer && s.email != post.author && !post.published => {
+        Some(s) if s.role == Role::Writer && s.id != post.author_id && !post.published => {
             ConsultPostResult::CantConsultUnpublishedPostFromSomeoneElse
         }
         Some(s) if s.role == Role::Writer => ConsultPostResult::DoConsultPost,
@@ -30,14 +30,14 @@ mod test {
         // arrange
         let subject = None;
         let unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -67,14 +67,14 @@ mod test {
             role: Role::Reader,
         });
         let unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -105,21 +105,21 @@ mod test {
             role: Role::Writer,
         });
         let my_unpublished_post = Post {
-            author: email.to_string(),
+            author_id: 1,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let someone_elses_unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -156,21 +156,21 @@ mod test {
             role: Role::Admin,
         });
         let my_unpublished_post = Post {
-            author: email.to_string(),
+            author_id: 1,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let someone_elses_unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author_id: 2,
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),

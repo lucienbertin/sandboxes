@@ -10,7 +10,7 @@ pub enum DeletePostResult {
 pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
     match subject.role {
         Role::Reader => DeletePostResult::CantDeleteAsReader,
-        Role::Writer if subject.email != post.author => DeletePostResult::CantDeleteAnotherOnesPost,
+        Role::Writer if subject.id != post.author_id => DeletePostResult::CantDeleteAnotherOnesPost,
         Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
         Role::Writer => DeletePostResult::DoDelete(post.id),
         Role::Admin => DeletePostResult::DoDelete(post.id),
@@ -37,21 +37,21 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: "someone@el.se".to_string(),
+            author_id: 2,
         };
 
         // act
@@ -90,21 +90,21 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: "someone@el.se".to_string(),
+            author_id: 2,
         };
 
         // act
@@ -139,21 +139,21 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author: subject.email.clone(),
+            author_id: 1,
         };
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: "someone@el.se".to_string(),
+            author_id: 2,
         };
 
         // act
