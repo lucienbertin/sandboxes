@@ -11,7 +11,7 @@ pub enum EditPostResult {
 
 pub fn edit_post(subject: &User, post: &Post, request: PostEdition) -> EditPostResult {
     let check_subject = match subject.role {
-        Role::Writer if subject.email != post.author => {
+        Role::Writer if subject.id != post.author.id => {
             Some(EditPostResult::CantEditAnotherOnesPost)
         }
         Role::Writer if post.published => Some(EditPostResult::CantEditPublishedPost),
@@ -54,7 +54,7 @@ mod test {
             role: Role::Reader,
         };
         let post = Post {
-            author: "someone@el.se".to_string(),
+            author: subject.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -82,8 +82,15 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
-            author: "someone@el.se".to_string(),
+            author: someoneelse.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -116,7 +123,7 @@ mod test {
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
-            author: subject.email.clone(),
+            author: subject.clone(),
         };
         let request = PostEdition {
             title: Some("test".to_string()),
@@ -148,7 +155,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: false,
-            author: subject.email.clone(),
+            author: subject.clone(),
         };
         let no_edits = PostEdition {
             title: None,
@@ -201,7 +208,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: false,
-            author: subject.email.clone(),
+            author: subject.clone(),
         };
         let diff_title_no_body = PostEdition {
             title: Some(different_title.to_string()),
@@ -288,6 +295,13 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Admin,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
 
         let title = "title";
         let different_title = "different title";
@@ -299,7 +313,7 @@ mod test {
             title: title.to_string(),
             body: body.to_string(),
             published: true,
-            author: "someone@el.se".to_string(),
+            author: someoneelse.clone(),
         };
         let diff_title_no_body = PostEdition {
             title: Some(different_title.to_string()),

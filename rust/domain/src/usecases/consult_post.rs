@@ -6,18 +6,15 @@ pub enum ConsultPostResult {
     CantConsultUnpublishedPostFromSomeoneElse,
     CantConsultUnpublishedPostAsReader,
 }
-pub fn consult_post(subject: &Option<User>, post: &Post) -> ConsultPostResult {
-    match subject {
-        None if post.published => ConsultPostResult::DoConsultPost,
-        None => ConsultPostResult::CantConsultUnpublishedPostAsReader,
-        Some(s) if s.role == Role::Reader && post.published => ConsultPostResult::DoConsultPost,
-        Some(s) if s.role == Role::Reader => ConsultPostResult::CantConsultUnpublishedPostAsReader,
-        Some(s) if s.role == Role::Writer && s.email != post.author && !post.published => {
+pub fn consult_post(subject: &User, post: &Post) -> ConsultPostResult {
+    match subject.role {
+        Role::Reader if post.published => ConsultPostResult::DoConsultPost,
+        Role::Reader => ConsultPostResult::CantConsultUnpublishedPostAsReader,
+        Role::Writer if subject.id != post.author.id && !post.published => {
             ConsultPostResult::CantConsultUnpublishedPostFromSomeoneElse
         }
-        Some(s) if s.role == Role::Writer => ConsultPostResult::DoConsultPost,
-        Some(s) if s.role == Role::Admin => ConsultPostResult::DoConsultPost,
-        Some(_) => ConsultPostResult::DoConsultPost,
+        Role::Writer => ConsultPostResult::DoConsultPost,
+        Role::Admin => ConsultPostResult::DoConsultPost,
     }
 }
 
@@ -26,55 +23,31 @@ mod test {
     use super::*;
 
     #[test]
-    fn as_anonymous() {
-        // arrange
-        let subject = None;
-        let unpublished_post = Post {
-            author: "someone@el.se".to_string(),
-            id: 1,
-            title: "test".to_string(),
-            body: "test".to_string(),
-            published: false,
-        };
-        let published_post = Post {
-            author: "someone@el.se".to_string(),
-            id: 1,
-            title: "test".to_string(),
-            body: "test".to_string(),
-            published: true,
-        };
-
-        // act
-        let result_unpublished = consult_post(&subject, &unpublished_post);
-        let result_published = consult_post(&subject, &published_post);
-
-        // assert
-        assert!(matches!(
-            result_unpublished,
-            ConsultPostResult::CantConsultUnpublishedPostAsReader
-        ));
-        assert!(matches!(result_published, ConsultPostResult::DoConsultPost));
-    }
-
-    #[test]
     fn as_reader() {
         // arrange
-        let subject = Some(User {
+        let subject = User {
             id: 1,
             first_name: "test".to_string(),
             last_name: "test".to_string(),
             email: "test@te.st".to_string(),
             role: Role::Reader,
-        });
+        };
+        let someone_else = User {
+            id: 1,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "someone@el.se".to_string(),
+            role: Role::Writer,
+        };
         let unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author: someone_else.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author: someone_else.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -97,29 +70,36 @@ mod test {
     fn as_writer() {
         // arrange
         let email = "test@te.st".to_string();
-        let subject = Some(User {
+        let subject = User {
             id: 1,
             first_name: "test".to_string(),
             last_name: "test".to_string(),
             email: email.clone(),
             role: Role::Writer,
-        });
+        };
+        let someone_else = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "someone@el.se".to_string(),
+            role: Role::Writer,
+        };
         let my_unpublished_post = Post {
-            author: email.to_string(),
+            author: subject.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let someone_elses_unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author: someone_else.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author: someone_else.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
@@ -148,29 +128,36 @@ mod test {
     fn as_admin() {
         // arrange
         let email = "test@te.st".to_string();
-        let subject = Some(User {
+        let subject = User {
             id: 1,
             first_name: "test".to_string(),
             last_name: "test".to_string(),
             email: email.clone(),
             role: Role::Admin,
-        });
+        };
+        let someone_else = User {
+            id: 1,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "someone@el.se".to_string(),
+            role: Role::Writer,
+        };
         let my_unpublished_post = Post {
-            author: email.to_string(),
+            author: subject.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let someone_elses_unpublished_post = Post {
-            author: "someone@el.se".to_string(),
+            author: someone_else.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
         };
         let published_post = Post {
-            author: "someone@el.se".to_string(),
+            author: someone_else.clone(),
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),

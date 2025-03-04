@@ -16,7 +16,7 @@ diesel::table! {
         body -> Text,
         published -> Bool,
         geom -> Nullable<Geometry>,
-        author -> Text,
+        author_id -> Int4,
     }
 }
 
@@ -33,5 +33,7 @@ diesel::table! {
         role -> UserRole,
     }
 }
+
+diesel::joinable!(posts -> users (author_id));
 
 diesel::allow_tables_to_appear_in_same_query!(posts, users,);
