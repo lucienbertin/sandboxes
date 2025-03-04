@@ -11,7 +11,7 @@ pub enum PublishPostResult {
 pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
     match subject.role {
         Reader => PublishPostResult::CantPublishAsReader,
-        Writer if subject.id != post.author_id => PublishPostResult::CantPublishAnotherOnesPost,
+        Writer if subject.id != post.author.id => PublishPostResult::CantPublishAnotherOnesPost,
         _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
         _ => PublishPostResult::DoPublish(post.id),
     }
@@ -33,12 +33,19 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Reader,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 2,
+            author: someoneelse.clone(),
         };
 
         // act
@@ -58,12 +65,19 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let post = Post {
             id: 1,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 2,
+            author: someoneelse.clone(),
         };
 
         // act
@@ -88,7 +102,7 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author_id: 1,
+            author: subject.clone(),
         };
 
         // act
@@ -114,7 +128,7 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 1,
+            author: subject.clone(),
         };
 
         // act
@@ -140,21 +154,21 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 1,
+            author: subject.clone(),
         };
         let my_unpublished_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 1,
+            author: subject.clone(),
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author_id: 1,
+            author: subject.clone(),
         };
 
         // act

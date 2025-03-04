@@ -12,7 +12,7 @@ pub fn create_post(subject: &User, create_post_request: NewPostRequest) -> Creat
             let new_post = NewPost {
                 title: create_post_request.title,
                 body: create_post_request.body,
-                author_id: subject.id,
+                author: subject.clone(),
             };
             CreatePostResult::DoCreate(new_post)
         }
@@ -67,7 +67,7 @@ mod test {
         // assert
         assert!(matches!(result, CreatePostResult::DoCreate(_)));
         if let CreatePostResult::DoCreate(new_post) = result {
-            assert_eq!(new_post.author_id, subject.id);
+            assert_eq!(new_post.author.id, subject.id);
         }
     }
 
@@ -92,7 +92,7 @@ mod test {
         // assert
         assert!(matches!(result, CreatePostResult::DoCreate(_)));
         if let CreatePostResult::DoCreate(new_post) = result {
-            assert_eq!(new_post.author_id, subject.id);
+            assert_eq!(new_post.author.id, subject.id);
         }
     }
 }

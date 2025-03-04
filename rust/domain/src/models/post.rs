@@ -1,10 +1,12 @@
+use super::User;
+
 #[derive(PartialEq, Debug)]
 pub struct Post {
     pub id: i32,
     pub title: String,
     pub body: String,
     pub published: bool,
-    pub author_id: i32,
+    pub author: User,
     // pub geom: Point,
 }
 
@@ -18,7 +20,7 @@ pub struct NewPostRequest {
 pub struct NewPost {
     pub title: String,
     pub body: String,
-    pub author_id: i32,
+    pub author: User,
 }
 
 #[derive(PartialEq, Debug)]

@@ -6,15 +6,11 @@ pub enum ConsultPostsResult {
     ConsultPublishedPostsAndAuthoredBy(User),
     ConsultAllPosts,
 }
-pub fn consult_posts(subject: &Option<User>) -> ConsultPostsResult {
-    match subject {
-        None => ConsultPostsResult::ConsultPublishedPosts,
-        Some(s) if s.role == Role::Reader => ConsultPostsResult::ConsultPublishedPosts,
-        Some(s) if s.role == Role::Writer => {
-            ConsultPostsResult::ConsultPublishedPostsAndAuthoredBy(s.clone())
-        }
-        Some(s) if s.role == Role::Admin => ConsultPostsResult::ConsultAllPosts,
-        Some(_) => ConsultPostsResult::ConsultPublishedPosts,
+pub fn consult_posts(subject: &User) -> ConsultPostsResult {
+    match subject.role {
+        Role::Reader => ConsultPostsResult::ConsultPublishedPosts,
+        Role::Writer => ConsultPostsResult::ConsultPublishedPostsAndAuthoredBy(subject.clone()),
+        Role::Admin => ConsultPostsResult::ConsultAllPosts,
     }
 }
 #[cfg(test)]
@@ -22,25 +18,15 @@ mod test {
     use super::*;
 
     #[test]
-    fn as_anonymous() {
-        // arrange
-        let subject = None;
-        // act
-        let result = consult_posts(&subject);
-        // assert
-        assert!(matches!(result, ConsultPostsResult::ConsultPublishedPosts));
-    }
-
-    #[test]
     fn as_reader() {
         // arrange
-        let subject = Some(User {
+        let subject = User {
             id: 1,
             first_name: "test".to_string(),
             last_name: "test".to_string(),
             email: "test@te.st".to_string(),
             role: Role::Reader,
-        });
+        };
         // act
         let result = consult_posts(&subject);
         // assert
@@ -57,7 +43,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
-        let subject = Some(writer.clone());
+        let subject = writer.clone();
         // act
         let result = consult_posts(&subject);
         // assert
@@ -73,13 +59,13 @@ mod test {
     #[test]
     fn as_admin() {
         // arrange
-        let subject = Some(User {
+        let subject = User {
             id: 1,
             first_name: "test".to_string(),
             last_name: "test".to_string(),
             email: "test@te.st".to_string(),
             role: Role::Admin,
-        });
+        };
         // act
         let result = consult_posts(&subject);
         // assert

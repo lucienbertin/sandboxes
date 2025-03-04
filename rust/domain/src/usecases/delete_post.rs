@@ -10,7 +10,7 @@ pub enum DeletePostResult {
 pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
     match subject.role {
         Role::Reader => DeletePostResult::CantDeleteAsReader,
-        Role::Writer if subject.id != post.author_id => DeletePostResult::CantDeleteAnotherOnesPost,
+        Role::Writer if subject.id != post.author.id => DeletePostResult::CantDeleteAnotherOnesPost,
         Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
         Role::Writer => DeletePostResult::DoDelete(post.id),
         Role::Admin => DeletePostResult::DoDelete(post.id),
@@ -31,27 +31,34 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Reader,
         };
+        let someoneelse = User {
+            id: 1,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let id = 1i32;
         let my_unpublished_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 1,
+            author: subject.clone(),
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author_id: 1,
+            author: subject.clone(),
         };
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 2,
+            author: someoneelse.clone(),
         };
 
         // act
@@ -84,27 +91,34 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let id = 1i32;
         let my_unpublished_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 1,
+            author: subject.clone(),
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author_id: 1,
+            author: subject.clone(),
         };
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 2,
+            author: someoneelse.clone(),
         };
 
         // act
@@ -133,27 +147,34 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Admin,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let id = 1i32;
         let my_unpublished_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 1,
+            author: subject.clone(),
         };
         let my_published_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: true,
-            author_id: 1,
+            author: subject.clone(),
         };
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author_id: 2,
+            author: someoneelse,
         };
 
         // act
