@@ -21,7 +21,7 @@ impl ToSql<crate::db::schema::sql_types::UserRole, Pg> for Role {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         match *self {
             Role::Admin => out.write_all(b"admin")?,
-            Role::Writer => out.write_all(b"wirter")?,
+            Role::Writer => out.write_all(b"writer")?,
             Role::Reader => out.write_all(b"reader")?,
         }
         Ok(IsNull::No)
@@ -32,7 +32,7 @@ impl FromSql<crate::db::schema::sql_types::UserRole, Pg> for Role {
     fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
         match bytes.as_bytes() {
             b"admin" => Ok(Role::Admin),
-            b"wirter" => Ok(Role::Writer),
+            b"writer" => Ok(Role::Writer),
             b"reader" => Ok(Role::Reader),
             _ => Err("Unrecognized enum variant".into()),
         }
