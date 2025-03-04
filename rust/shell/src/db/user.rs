@@ -39,7 +39,7 @@ impl FromSql<crate::db::schema::sql_types::UserRole, Pg> for Role {
     }
 }
 
-#[derive(Queryable, Selectable, Clone)]
+#[derive(Queryable, Selectable, Clone, Identifiable)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct User {

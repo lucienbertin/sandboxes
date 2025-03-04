@@ -1,11 +1,12 @@
 use diesel::prelude::*;
 // use postgis_diesel::types::*;
 use crate::error::Error;
-
+use super::user::User;
 // Bindings
 use crate::db::schema::posts;
 use crate::db::schema::posts::dsl::*;
-#[derive(Queryable, Selectable, Clone)]
+#[derive(Queryable, Selectable, Clone, Identifiable, Associations)]
+#[diesel(belongs_to(User, foreign_key = author_id))]
 #[diesel(table_name = posts)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 struct Post {
@@ -14,7 +15,7 @@ struct Post {
     pub body: String,
     pub published: bool,
     // pub geom: Option<Point>,
-    pub author: String,
+    pub author_id: i32,
 }
 
 #[derive(Insertable)]
@@ -22,7 +23,7 @@ struct Post {
 struct NewPost {
     pub title: String,
     pub body: String,
-    pub author: String,
+    pub author_id: i32,
 }
 
 impl From<domain::models::Post> for Post {
@@ -33,7 +34,7 @@ impl From<domain::models::Post> for Post {
             body: value.body,
             published: value.published,
             // geom: None, // not binded for now
-            author: value.author,
+            author_id: value.author_id,
         }
     }
 }
@@ -44,7 +45,7 @@ impl From<Post> for domain::models::Post {
             title: value.title,
             body: value.body,
             published: value.published,
-            author: value.author,
+            author_id: value.author_id,
         }
     }
 }
@@ -53,7 +54,7 @@ impl From<domain::models::NewPost> for NewPost {
         Self {
             title: value.title,
             body: value.body,
-            author: value.author,
+            author_id: value.author_id,
         }
     }
 }
@@ -81,7 +82,7 @@ pub fn select_published_posts_or_authored_by(
     user: domain::models::User,
 ) -> Result<Vec<domain::models::Post>, Error> {
     let results: Vec<Post> = posts
-        .filter(published.eq(true).or(author.eq(user.email)))
+        .filter(published.eq(true).or(author_id.eq(user.id)))
         .select(Post::as_select())
         .load(connection)?;
     let results: Vec<domain::models::Post> = results.into_iter().map(|p| p.into()).collect();
