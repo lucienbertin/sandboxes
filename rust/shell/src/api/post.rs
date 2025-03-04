@@ -11,12 +11,29 @@ use rocket::{
 };
 
 #[derive(Serialize, Deserialize)]
+pub struct User {
+    // pub id: i32,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+}
+#[derive(Serialize, Deserialize)]
 pub struct Post {
     pub id: i32,
     pub title: String,
     pub body: String,
     pub published: bool,
-    // pub author_id: String,
+    pub author: User,
+}
+
+impl From<domain::models::User> for User {
+    fn from(value: domain::models::User) -> Self {
+        Self {
+            email: value.email,
+            first_name: value.first_name,
+            last_name: value.last_name,
+        }
+    }
 }
 
 impl From<domain::models::Post> for Post {
@@ -26,7 +43,7 @@ impl From<domain::models::Post> for Post {
             title: value.title,
             body: value.body,
             published: value.published,
-            // author: value.author_id,
+            author: value.author.into(),
         }
     }
 }
@@ -62,7 +79,7 @@ impl From<PatchPost> for domain::models::PostEdition {
 #[get("/posts", format = "json")]
 pub async fn get_posts(
     state: &State<PoolState>,
-    subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
+    subject: JwtIdentifiedSubject, // is allowed with no auth
 ) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
         rocket::response::status::Custom(
@@ -71,10 +88,8 @@ pub async fn get_posts(
         )
     })?;
     let results = conn.build_transaction().read_only().run(|conn| {
-        let subject = match subject {
-            None => None,
-            Some(s) => find_user(conn, s.email)?,
-        };
+        let subject = find_user(conn, subject.email)?;
+        let subject = subject.ok_or(Error::Unauthorized)?;
 
         let result = domain::usecases::consult_posts(&subject);
 
@@ -96,7 +111,7 @@ pub async fn get_posts(
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
     state: &State<PoolState>,
-    subject: Option<JwtIdentifiedSubject>, // is allowed with no auth
+    subject: JwtIdentifiedSubject, // is allowed with no auth
     id: i32,
 ) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
     let mut conn = state.pool.get().map_err(|e| {
@@ -106,10 +121,8 @@ pub fn get_post(
         )
     })?;
     let result = conn.build_transaction().read_only().run(|conn| {
-        let subject = match subject {
-            None => None,
-            Some(s) => find_user(conn, s.email)?,
-        };
+        let subject = find_user(conn, subject.email)?;
+        let subject = subject.ok_or(Error::Unauthorized)?;
         let post = db::find_post(conn, id)?;
         let post = post.ok_or(Error::NotFound)?;
 
@@ -185,7 +198,7 @@ pub fn post_post(
         }
     })?;
 
-    let result = format!("/api/post/{}", result.id);
+    let result = format!("/api/post/{}", result);
 
     Ok(Created::new(result))
 }
