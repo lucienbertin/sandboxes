@@ -1,0 +1,28 @@
+on:
+  pull_request:
+    paths:
+      - 'nextjs/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'nextjs/**'
+
+name: CI NextJs
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - run: npm ci --prefix nextjs
+      - run: npm run build --prefix nextjs
+      - run: npm run lint --prefix nextjs
