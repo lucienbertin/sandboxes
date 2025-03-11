@@ -1,10 +1,14 @@
 import prisma from "@/lib/prisma";
+import Link from "next/link";
 
 export default async function Posts() {
   const posts = await prisma.post.findMany({
     include: {
       author: true,
     },
+    where: {
+        published: true,
+    }
   });
 
   return (
@@ -19,6 +23,7 @@ export default async function Posts() {
             <span className="text-sm ml-2">
               by {post.author.firstName} {post.author.lastName} 
             </span>
+            <Link className="text-sm ml-2" href={`/posts/${post.id}`}> read</Link>
           </li>
         ))}
       </ul>
