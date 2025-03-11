@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { Suspense } from "react";
+import Post from "./post";
 
 export default async function Page({
     params,
@@ -9,7 +11,7 @@ export default async function Page({
     const { id: id_str } = await params;
     const id = parseInt(id_str);
 
-    const post = await prisma.post.findUnique({
+    const post$ = prisma.post.findUnique({
         where: {
             id: id,
         },
@@ -19,14 +21,10 @@ export default async function Page({
       });
     return (
         <article className="min-h-screen flex flex-col items-center justify-center -mt-16">
-        <Link href="/posts">back</Link>
-          <h1 className="text-4xl font-bold mb-8 font-[family-name:var(--font-geist-sans)]">
-            {post?.title}
-            <span className="text-sm ml-2">
-              by {post?.author.firstName} {post?.author.lastName} 
-            </span>
-          </h1>
-          <p>{post?.body}</p>
+            <Link href="/posts">back</Link>
+            <Suspense fallback={<div>Loading...</div>}>
+                <Post post$={post$}/>
+            </Suspense>
         </article>
       );
   }
