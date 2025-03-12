@@ -10,6 +10,17 @@ diesel::table! {
     use diesel::sql_types::*;
     use postgis_diesel::sql_types::*;
 
+    places (id) {
+        id -> Int4,
+        name -> Varchar,
+        geometry -> Nullable<Geometry>,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use postgis_diesel::sql_types::*;
+
     posts (id) {
         id -> Int4,
         title -> Varchar,
@@ -36,4 +47,8 @@ diesel::table! {
 
 diesel::joinable!(posts -> users (author_id));
 
-diesel::allow_tables_to_appear_in_same_query!(posts, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    places,
+    posts,
+    users,
+);
