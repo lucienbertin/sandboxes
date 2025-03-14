@@ -1,12 +1,11 @@
-import prisma from "@/lib/prisma";
 import PlacesMap from "./map";
+import { getPlacesGeoJSON, isInitialized } from "@/datasource";
 
 export default async function Page() {
-    const places = await prisma.place.findMany();
-
-    console.log(places)
+    await isInitialized;
+    const places$ = getPlacesGeoJSON();
 
     return (
-        <PlacesMap />
+        <PlacesMap places$={places$} />
     )
   }
