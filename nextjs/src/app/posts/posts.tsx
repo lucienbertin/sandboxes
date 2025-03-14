@@ -1,12 +1,12 @@
 'use client'
-import { Post, User } from '@prisma/client'
 import { use, useEffect, useState } from 'react'
 import Link from "next/link";
+import { IPost } from '@/post.entity';
  
 export default function Posts({
   posts$: posts$,
 }: {
-  posts$: Promise<(Post & { author: User })[]>
+  posts$: Promise<IPost[]>
 }) {
   const posts = use(posts$)
 
@@ -36,9 +36,9 @@ export default function Posts({
         {posts.map((post) => (
             <li key={post.id}>
                 <span className="font-semibold">{post.title}</span>
-                <span className="text-sm ml-2">
+                {/* <span className="text-sm ml-2">
                 by {post.author.firstName} {post.author.lastName} 
-                </span>
+                </span> */}
                 <Link className="text-sm ml-2" href={`/posts/${post.id}`}> read</Link>
             </li>
         ))}

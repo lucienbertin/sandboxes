@@ -1,16 +1,14 @@
-import prisma from "@/lib/prisma";
 import { Suspense } from "react";
 import Posts from "./posts";
 
-export default function Page() {
-  const posts$ = prisma.post.findMany({
-    include: {
-      author: true,
-    },
-    where: {
-        published: true,
-    }
-  });
+import { isInitialized, getPublishedPosts } from "@/datasource";
+import { IPost, Post } from "@/post.entity";
+
+export default async function Page() {
+
+
+  await isInitialized;
+  const posts$: Promise<IPost[]> = getPublishedPosts();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center -mt-16">
