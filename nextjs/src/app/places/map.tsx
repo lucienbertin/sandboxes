@@ -32,6 +32,17 @@ export default function PlacesMap({
     const [zoom, setZoom] = useState(INITIAL_ZOOM)
     const [selectedFeature, setSelectedFeature] = useState<Feature<Point, IPlace> | null>();
 
+    const deselectPlace = () => {
+        setSelectedFeature(null);
+        if (selectedFeature) {
+            console.log(selectedFeature);
+            mapRef.current.setFeatureState({
+                source: 'places',
+                id: selectedFeature.id,
+            }, { selected: false });
+        }
+    }
+
     useEffect(() => {
         mapboxgl.accessToken = 'pk.eyJ1IjoibHVjaWVuYmVydGluIiwiYSI6ImNsMHJ4cW9idjAyNG4zYnBndXZkeXVuNjEifQ.8gkDcSKIddxBKkwucdo3JA';
         mapRef.current = new mapboxgl.Map({
@@ -79,20 +90,22 @@ export default function PlacesMap({
                 }
             });
 
-            // let selectedFeature = null;
+            let selectedFeatureId: number | null = null;
             mapRef.current.addInteraction('click', {
                 type: 'click',
                 target: { layerId: 'places-layer' },
                 handler: ({ feature }: any) => {
-                    if (selectedFeature) {
-                        mapRef.current.get
-                        mapRef.current.setFeatureState(selectedFeature, { selected: false });
+                    if (selectedFeatureId) {
+                        console.log(selectedFeature);
+                        mapRef.current.setFeatureState({
+                            source: 'places',
+                            id: selectedFeatureId,
+                        }, { selected: false });
                     }
-
-                    console.log(feature, selectedFeature);
     
                     setSelectedFeature(feature);
                     mapRef.current.setFeatureState(feature, { selected: true });
+                    selectedFeatureId = feature.id;
                 }
             });
             // Hovering over a feature will highlight it
@@ -133,7 +146,7 @@ export default function PlacesMap({
                 <div className="">
                     <div>
                         <code>{selectedFeature?.properties.name}</code>
-                        <span onClick={() => setSelectedFeature(null)}> x</span>
+                        <span onClick={deselectPlace}> x</span>
                     </div>
                 </div>
                 ) : (<></>)}
