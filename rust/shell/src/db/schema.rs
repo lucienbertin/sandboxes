@@ -47,8 +47,4 @@ diesel::table! {
 
 diesel::joinable!(posts -> users (author_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    places,
-    posts,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(places, posts, users,);
