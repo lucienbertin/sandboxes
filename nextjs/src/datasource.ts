@@ -19,11 +19,15 @@ export const isInitialized = datasource.initialize().then(ds => ds.isInitialized
 
 export async function getPublishedPosts(): Promise<IPost[]> {
     const posts = await datasource.getRepository(Post).findBy({ published: true });
-
     return posts.map(p => p.asStruct());
 }
+
+export async function getPost(id: number): Promise<IPost | null> {
+    const post = await datasource.getRepository(Post).findOneBy({id});
+    return post?.asStruct() as IPost | null;
+}
+
 export async function getPlaces(): Promise<IPlace[]> {
     const places = await datasource.getRepository(Place).find();
-
     return places.map(p => p.asStruct());
 }
