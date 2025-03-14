@@ -6,11 +6,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgres"
   url      = "postgres://postgres:postgres@localhost:5432/postgres"
+  extensions = [postgis(version: "2.1")]
 }
 
 model Post {
@@ -30,4 +32,11 @@ model User {
   lastName  String? @map("last_name")
   posts Post[]
   @@map("users")
+}
+
+model Place {
+  id Int @id @default(autoincrement())
+  name String
+  geometry Unsupported("geometry(Point, 4326)")
+  @@map("places")
 }
