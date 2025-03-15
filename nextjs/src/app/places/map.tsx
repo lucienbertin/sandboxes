@@ -1,11 +1,10 @@
 "use client"
-import { useRef, useEffect, useState, use } from 'react'
-import mapboxgl from 'mapbox-gl'
+import { useRef, use } from 'react'
 
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Feature, FeatureCollection, Point } from 'geojson';
+import { FeatureCollection, Point } from 'geojson';
 import { IPlace } from '@/place.entity';
-import Map, { Layer, Source } from 'react-map-gl/mapbox';
+import Map, { Layer, MapRef, Source } from 'react-map-gl/mapbox';
 
 const INITIAL_CENTER: [
 	number,
@@ -21,7 +20,7 @@ export default function PlacesMap({
 }: {
   places$: Promise<FeatureCollection<Point, IPlace>>
 }) {
-    const mapRef = useRef<any>(null)
+    const mapRef = useRef<MapRef>(null)
     const places = use(places$);
 
     return (
