@@ -1,11 +1,11 @@
 'use client'
-import { Post as PostModel, User } from '@prisma/client'
+import { IPost } from '@/post.entity';
 import { use } from 'react'
  
 export default function Post({
   post$,
 }: {
-  post$: Promise<(PostModel & { author: User }) | null>
+  post$: Promise<IPost | null>
 }) {
   const post = use(post$);
  
@@ -13,9 +13,9 @@ export default function Post({
     <article className="min-h-screen flex flex-col items-center justify-center -mt-16">
       <h1 className="text-4xl font-bold mb-8 font-[family-name:var(--font-geist-sans)]">
         {post?.title}
-        <span className="text-sm ml-2">
+        {/* <span className="text-sm ml-2">
           by {post?.author.firstName} {post?.author.lastName} 
-        </span>
+        </span> */}
       </h1>
       <p>{post?.body}</p>
     </article>
