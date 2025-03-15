@@ -35,8 +35,15 @@ export async function getPlaces(): Promise<IPlace[]> {
 
 export async function getPlacesGeoJSON(): Promise<FeatureCollection<Point, IPlace>> {
     const places = await datasource.getRepository(Place).find();
+    await waitforme(10000);
     return {
         type: "FeatureCollection",
         features: places.map(p => p.asGeoJSON()),
     }
+}
+
+function waitforme(millisec: number) {
+    return new Promise(resolve => {
+        setTimeout(() => { resolve('') }, millisec);
+    })
 }
