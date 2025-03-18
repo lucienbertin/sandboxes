@@ -4,7 +4,7 @@ import { IPost, Post } from "./post.entity";
 import { IPlace, Place } from "./place.entity";
 import { FeatureCollection, Point } from "geojson";
 
-export const datasource = new DataSource({
+const datasource = new DataSource({
     type: 'postgres',
     host: 'localhost',
     port: 5432,
