@@ -1,10 +1,9 @@
 import PlacesMap from "./map";
-import { getPlacesGeoJSON, isInitialized } from "@/datasource";
+import { getPlacesGeoJSON } from "@/datasource";
 import StaticMap from "./staticMap";
 import { Suspense } from "react";
 
 export default async function Page() {
-    await isInitialized;
     const places$ = getPlacesGeoJSON();
 
     return (
