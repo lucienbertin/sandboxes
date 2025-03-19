@@ -65,7 +65,7 @@ export async function getPostsCount() {
     await isInitialized;
     const repo = datasource.getRepository(Post);
 
-    let cnt = await repo.count();
+    const cnt = await repo.count();
     await waitforme(1000);
 
     return cnt;

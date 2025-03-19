@@ -7,7 +7,7 @@ import { IPost } from '@/post.entity';
 import { revalidatePath } from 'next/cache';
  
 export default async function Page() {
-    let cnt$ = getPostsCount();
+    const cnt$ = getPostsCount();
     // let cnt = await getPostsCount();
     const handler = async (formData: FormData) => {
         "use server"
