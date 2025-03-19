@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import Post from "./post";
-import { getPost, isInitialized } from "@/datasource";
+import { getPost } from "@/datasource";
 
 export default async function Page({
     params,
   }: {
     params: Promise<{ id: string }>
   }) {
-    await isInitialized;
     const { id: id_str } = await params;
     const id = parseInt(id_str);
     const post$ = getPost(id);

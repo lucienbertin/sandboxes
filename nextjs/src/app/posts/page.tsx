@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import Posts from "./posts";
 
-import { isInitialized, getPublishedPosts } from "@/datasource";
+import { getPublishedPosts } from "@/datasource";
 import { IPost } from "@/post.entity";
 
 export default async function Page() {
-  await isInitialized;
   const posts$: Promise<IPost[]> = getPublishedPosts();
 
   return (

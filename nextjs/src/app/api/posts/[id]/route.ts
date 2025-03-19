@@ -1,6 +1,6 @@
 export const dynamic = 'force-static';
 
-import { isInitialized, getPost } from "@/datasource"
+import { getPost } from "@/datasource"
 
 export async function GET(
     _request: Request,
@@ -8,7 +8,6 @@ export async function GET(
   ) {
     const { id: id_str } = await params;
     const id = parseInt(id_str);
-    await isInitialized;
     const post = await getPost(id);
 
     if (post == null) {
