@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { DataSource, DeepPartial } from "typeorm";
 import { IPost, Post } from "./post.entity";
 import { IPlace, Place } from "./place.entity";
-import { Feature, FeatureCollection, Geometry, Point } from "geojson";
+import { Feature, FeatureCollection, Point } from "geojson";
 
 const datasource = new DataSource({
     type: 'postgres',
