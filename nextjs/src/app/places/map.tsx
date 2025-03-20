@@ -26,7 +26,6 @@ export default function PlacesMap({
     return (
         <div className="w-240 h-160 bg-white">
             <Map
-                
                 initialViewState={{
                     longitude: INITIAL_CENTER[0],
                     latitude: INITIAL_CENTER[1],

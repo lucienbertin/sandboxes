@@ -16,7 +16,7 @@ export class Place implements IPlace {
   name!: string;
 
   @typeorm.Column({
-    type: 'geography',
+    type: 'geometry',
     srid: 4326,
     spatialFeatureType: 'Point',
   })

@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { DataSource, DeepPartial } from "typeorm";
 import { IPost, Post } from "./post.entity";
 import { IPlace, Place } from "./place.entity";
-import { FeatureCollection, Point } from "geojson";
+import { Feature, FeatureCollection, Point } from "geojson";
 
 const datasource = new DataSource({
     type: 'postgres',
@@ -69,4 +69,15 @@ export async function getPostsCount() {
     await waitforme(1000);
 
     return cnt;
+}
+
+export async function createPlace(newPlace: Feature<Point, DeepPartial<IPlace>>) {
+    await isInitialized;
+
+    const repo = datasource.getRepository(Place);
+    const place = repo.create({ ...newPlace.properties });
+    place.geometry = newPlace.geometry;
+
+    await repo.save(place);
+
 }

@@ -24,13 +24,13 @@ export default function PostForm({
 
     return (
         <>
-        <h1>clientside rendered form</h1>
-        <form action={handler}>
-            <input type="text" name="title" />
-            <input type="text" name="body" />
-            <button type="submit">Create</button>
-        </form>
-        <p>there are currently {cnt} posts in db</p>
+            <h1>clientside rendered form</h1>
+            <form action={handler}>
+                <input type="text" name="title" />
+                <input type="text" name="body" />
+                <button type="submit">Create</button>
+            </form>
+            <p>there are currently {cnt} posts in db</p>
         </>
     )
 }
