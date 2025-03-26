@@ -3,7 +3,6 @@ export const dynamic = 'force-static';
 import { getPublishedPosts, createPost } from "@/infrastructure"
 import { Post } from "@/domain";
 import { NextRequest } from "next/server";
-import { DeepPartial } from "typeorm";
 
 export async function GET() {
     const posts = await getPublishedPosts();
@@ -13,7 +12,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     const requestBody = await request.json();
-    const newPost: DeepPartial<Post> = {
+    const newPost: Partial<Post> = {
         title: requestBody.title,
         body: requestBody.body,
     };

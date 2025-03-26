@@ -9,7 +9,6 @@ import {useControl} from 'react-map-gl/mapbox';
 
 import type {MapRef, ControlPosition} from 'react-map-gl/mapbox';
 import { Feature, Point } from 'geojson';
-import { DeepPartial } from 'typeorm';
 import { Place } from '@/domain';
 
 type DrawControlProps = ConstructorParameters<typeof MapboxDraw>[0] & {
@@ -78,7 +77,7 @@ export default function Form() {
 
       if (!!feature && !!formData.get("name")) {
 
-        const place: Feature<Point, DeepPartial<Place>> = {
+        const place: Feature<Point, Partial<Place>> = {
           type: 'Feature',
           geometry: feature.geometry,
           properties: {
