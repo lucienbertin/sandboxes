@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import Post from "./post";
-import { getPost } from "@/datasource";
+import PostComponent from "./post";
+import { getPost } from "@/infrastructure";
 
 export default async function Page({
     params,
@@ -16,7 +16,7 @@ export default async function Page({
         <article className="min-h-screen flex flex-col items-center justify-center -mt-16">
             <Link href="/posts">back</Link>
             <Suspense fallback={<div>Loading...</div>}>
-                <Post post$={post$}/>
+                <PostComponent post$={post$}/>
             </Suspense>
         </article>
       );

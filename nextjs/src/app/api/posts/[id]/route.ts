@@ -1,6 +1,6 @@
 export const dynamic = 'force-static';
 
-import { getPost } from "@/datasource"
+import { getPost } from "@/infrastructure"
 
 export async function GET(
     _request: Request,
