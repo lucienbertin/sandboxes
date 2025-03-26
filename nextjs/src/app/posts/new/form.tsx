@@ -1,9 +1,8 @@
 "use client";
 
-import { createPost, getPostsCount } from "@/datasource";
-import { IPost } from "@/post.entity";
+import { createPost, getPostsCount } from "@/infrastructure";
+import { Post } from "@/domain";
 import { use, useState } from "react";
-import { DeepPartial } from "typeorm";
 
 
 export default function PostForm({
@@ -17,7 +16,7 @@ export default function PostForm({
         const newPost = {
             title: formData.get("title"),
             body: formData.get("body"),
-        } as DeepPartial<IPost>;
+        } as Partial<Post>;
         await createPost(newPost);
         setCnt(await getPostsCount());
     }

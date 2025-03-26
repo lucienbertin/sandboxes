@@ -1,12 +1,12 @@
 'use client'
 import { use, useEffect, useState } from 'react'
 import Link from "next/link";
-import { IPost } from '@/post.entity';
+import { Post } from '@/domain';
  
 export default function Posts({
   posts$: posts$,
 }: {
-  posts$: Promise<IPost[]>
+  posts$: Promise<Post[]>
 }) {
   const posts = use(posts$)
 

@@ -3,7 +3,7 @@ import { useRef, use } from 'react'
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { FeatureCollection, Point } from 'geojson';
-import { IPlace } from '@/place.entity';
+import { Place } from '@/domain';
 import Map, { Layer, MapRef, Source } from 'react-map-gl/mapbox';
 
 const INITIAL_CENTER: [
@@ -18,7 +18,7 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoibHVjaWVuYmVydGluIiwiYSI6ImNsMHJ4cW9idjAyNG4zYnB
 export default function PlacesMap({
   places$,
 }: {
-  places$: Promise<FeatureCollection<Point, IPlace>>
+  places$: Promise<FeatureCollection<Point, Place>>
 }) {
     const mapRef = useRef<MapRef>(null)
     const places = use(places$);

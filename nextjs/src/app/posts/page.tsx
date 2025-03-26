@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import Posts from "./posts";
 
-import { getPublishedPosts } from "@/datasource";
-import { IPost } from "@/post.entity";
+import { getPublishedPosts } from "@/infrastructure";
+import { Post } from "@/domain";
 
 export default async function Page() {
-  const posts$: Promise<IPost[]> = getPublishedPosts();
+  const posts$: Promise<Post[]> = getPublishedPosts();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center -mt-16">

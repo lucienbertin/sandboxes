@@ -1,11 +1,11 @@
 'use client'
-import { IPost } from '@/post.entity';
+import { Post } from '@/domain';
 import { use } from 'react'
  
-export default function Post({
+export default function PostComponent({
   post$,
 }: {
-  post$: Promise<IPost | null>
+  post$: Promise<Post | null>
 }) {
   const post = use(post$);
  

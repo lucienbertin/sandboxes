@@ -1,9 +1,8 @@
-import { createPost, getPostsCount } from '@/datasource'
+import { createPost, getPostsCount } from '@/infrastructure'
 import Link from 'next/link'
 import PostForm from './form';
 import { Suspense } from 'react';
-import { DeepPartial } from 'typeorm';
-import { IPost } from '@/post.entity';
+import { Post } from '@/domain';
 import { revalidatePath } from 'next/cache';
  
 export default async function Page() {
@@ -14,7 +13,7 @@ export default async function Page() {
         const newPost = {
             title: formData.get("title"),
             body: formData.get("body"),
-        } as DeepPartial<IPost>;
+        } as Partial<Post>;
         await createPost(newPost);
 
         revalidatePath('/posts/new')
