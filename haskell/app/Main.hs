@@ -7,31 +7,32 @@ data WeeklySchedule = Week DailySchedule DailySchedule DailySchedule DailySchedu
 
 data Schedule = DailySchedule DailySchedule | WeeklySchedule WeeklySchedule
 
-isOpenAt :: TimeOfDay -> DailySchedule -> Bool
-isOpenAt _t Open = True
-isOpenAt _t Closed = False
-isOpenAt t (FromTo from to) = t >= from && t < to
+isOpenAt :: DailySchedule -> TimeOfDay -> Bool
+isOpenAt Open _= True
+isOpenAt Closed _ = False
+isOpenAt (FromTo from to) t = t >= from && t < to
 
-dayOfWeekandTime :: LocalTime -> (DayOfWeek, TimeOfDay)
-dayOfWeekandTime (LocalTime date time) = (dayOfWeek date, time)
+data WeekTime = WeekTime DayOfWeek TimeOfDay
+weekTime :: LocalTime -> WeekTime
+weekTime (LocalTime date time) = WeekTime (dayOfWeek date) time
 
-isOpenOnDayOfWeek :: (DayOfWeek, TimeOfDay) -> WeeklySchedule -> Bool
-isOpenOnDayOfWeek (Monday, t)    (Week mon _ _ _ _ _ _) = isOpenAt t mon
-isOpenOnDayOfWeek (Tuesday, t)   (Week _ tue _ _ _ _ _) = isOpenAt t tue
-isOpenOnDayOfWeek (Wednesday, t) (Week _ _ wed _ _ _ _) = isOpenAt t wed
-isOpenOnDayOfWeek (Thursday, t)  (Week _ _ _ thu _ _ _) = isOpenAt t thu
-isOpenOnDayOfWeek (Friday, t)    (Week _ _ _ _ fri _ _) = isOpenAt t fri
-isOpenOnDayOfWeek (Saturday, t)  (Week _ _ _ _ _ sat _) = isOpenAt t sat
-isOpenOnDayOfWeek (Sunday, t)    (Week _ _ _ _ _ _ sun) = isOpenAt t sun
+isOpenOnDayOfWeek :: WeeklySchedule -> WeekTime -> Bool
+isOpenOnDayOfWeek (Week mon _ _ _ _ _ _) (WeekTime Monday    t) = isOpenAt mon t
+isOpenOnDayOfWeek (Week _ tue _ _ _ _ _) (WeekTime Tuesday   t) = isOpenAt tue t
+isOpenOnDayOfWeek (Week _ _ wed _ _ _ _) (WeekTime Wednesday t) = isOpenAt wed t
+isOpenOnDayOfWeek (Week _ _ _ thu _ _ _) (WeekTime Thursday  t) = isOpenAt thu t
+isOpenOnDayOfWeek (Week _ _ _ _ fri _ _) (WeekTime Friday    t) = isOpenAt fri t
+isOpenOnDayOfWeek (Week _ _ _ _ _ sat _) (WeekTime Saturday  t) = isOpenAt sat t
+isOpenOnDayOfWeek (Week _ _ _ _ _ _ sun) (WeekTime Sunday    t) = isOpenAt sun t
 
-isOpen :: LocalTime -> Schedule -> Bool
-isOpen (LocalTime _date time) (DailySchedule s) = isOpenAt time s
-isOpen datetime (WeeklySchedule week) = isOpenOnDayOfWeek (dayOfWeekandTime datetime) week
+isOpen :: Schedule -> LocalTime -> Bool
+isOpen (DailySchedule s) (LocalTime _ time)  = isOpenAt s time
+isOpen (WeeklySchedule week) dateTime  = isOpenOnDayOfWeek week (weekTime dateTime) 
 
 ioNow :: IO LocalTime
 ioNow = fmap (\(ZonedTime now _tz) -> now) getZonedTime
 isOpenNow :: Schedule -> IO Bool
-isOpenNow s = fmap (`isOpen` s) ioNow
+isOpenNow s = fmap (isOpen s) ioNow
 
 main :: IO ()
 main = do
@@ -39,14 +40,14 @@ main = do
     putStrLn ("Hello, Haskell! it is now: " ++ show now)
 
     let alwaysOpen = DailySchedule Open
-    putStrLn ("this should be open: " ++ show (isOpen now alwaysOpen))
+    putStrLn ("this should be open: " ++ show (isOpen alwaysOpen now))
     let alwaysClosed = DailySchedule Closed
-    putStrLn ("this should be closed: " ++ show (isOpen now alwaysClosed))
+    putStrLn ("this should be closed: " ++ show (isOpen alwaysClosed now))
     let ntf = FromTo (TimeOfDay 9 0 0) (TimeOfDay 17 0 0)
     let nineToFive = DailySchedule ntf
-    putStrLn ("this should be open between 9AM and 5PM: " ++ show (isOpen now nineToFive))
+    putStrLn ("this should be open between 9AM and 5PM: " ++ show (isOpen nineToFive now))
 
     let standardWorkingWeek = WeeklySchedule (Week Open Open Open Open Open Closed Closed)
-    putStrLn ("this should be open on week days and closed on weekends: " ++ show (isOpen now standardWorkingWeek))
+    putStrLn ("this should be open on week days and closed on weekends: " ++ show (isOpen standardWorkingWeek now))
     let standardWorkingHours = WeeklySchedule (Week ntf ntf ntf ntf ntf Closed Closed)
-    putStrLn ("this should be open on week days between 9AM and 5PM: " ++ show (isOpen now standardWorkingHours))
+    putStrLn ("this should be open on week days between 9AM and 5PM: " ++ show (isOpen standardWorkingHours now))
