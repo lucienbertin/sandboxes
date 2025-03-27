@@ -2,7 +2,6 @@ module Main where
 
 import Data.Time (LocalTime (LocalTime), dayOfWeek, DayOfWeek( Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday), TimeOfDay (TimeOfDay), getZonedTime, ZonedTime (ZonedTime))
 
--- newtype FixedSchedule = Fixed Bool
 data DailySchedule = Open | Closed | FromTo TimeOfDay TimeOfDay
 data WeeklySchedule = Week DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule -- 1 dailay schedule per day if the week
 
