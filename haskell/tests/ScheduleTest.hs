@@ -17,11 +17,18 @@ sunday =    fromOrdinalDate 2025 11
 
 sixAM =   TimeOfDay  6 0 0
 nineAM =  TimeOfDay  9 0 0
+threePM = TimeOfDay 15 0 0
 fivePM =  TimeOfDay 17 0 0
 eightPM = TimeOfDay 20 0 0
 
+mondayAt6AM = LocalTime monday sixAM
+mondayAt9AM = LocalTime monday nineAM
 mondayAtNoon = LocalTime monday midday
+mondayAt3PM = LocalTime monday threePM
+mondayAt5PM = LocalTime monday fivePM
+mondayAt8PM = LocalTime monday eightPM
 mondayAtNight = LocalTime monday midnight
+
 
 -- schedules
 alwaysOpen = DailySchedule Open
@@ -32,15 +39,28 @@ openOnWeekDays = WeeklySchedule (Week Open Open Open Open Open Closed Closed)
 nineToFiveOnWeekDays = WeeklySchedule (Week nineToFive nineToFive nineToFive nineToFive nineToFive Closed Closed)
 
 -- tests
-alwaysOpenOnMondays :: Test
 alwaysOpenOnMondays = TestCase (assertBool "should be open on any date" (isOpen alwaysOpen mondayAtNoon))
-alwaysClosedOnMondays :: Test
 alwaysClosedOnMondays = TestCase (assertBool "should be close on any date" (isClosed alwaysClosed mondayAtNoon))
+openDuringWorkingHours1 = TestCase (assertBool "should be open @9AM" (isOpen nineToFiveDaily mondayAtNoon))
+openDuringWorkingHours2 = TestCase (assertBool "should be open @noon" (isOpen nineToFiveDaily mondayAtNoon))
+openDuringWorkingHours3 = TestCase (assertBool "should be open @3PM" (isOpen nineToFiveDaily mondayAtNoon))
+closedOutsideWorkingHours1 = TestCase (assertBool "should be closed @midnight" (isClosed nineToFiveDaily mondayAtNight))
+closedOutsideWorkingHours2 = TestCase (assertBool "should be closed @6AM" (isClosed nineToFiveDaily mondayAt6AM))
+closedOutsideWorkingHours3 = TestCase (assertBool "should be closing @5PM" (isClosed nineToFiveDaily mondayAt5PM))
+closedOutsideWorkingHours4 = TestCase (assertBool "should be closed @8PM" (isClosed nineToFiveDaily mondayAt8PM))
  
 tests :: Test
 tests = TestList [
     TestLabel "alwaysOpenOnMondays" alwaysOpenOnMondays,
-    TestLabel "alwaysClosedOnMondays" alwaysClosedOnMondays]
+    TestLabel "alwaysClosedOnMondays" alwaysClosedOnMondays,
+    TestLabel "openDuringWorkingHours1" openDuringWorkingHours1,
+    TestLabel "openDuringWorkingHours2" openDuringWorkingHours2,
+    TestLabel "openDuringWorkingHours3" openDuringWorkingHours3,
+    TestLabel "closedOutsideWorkingHours1" closedOutsideWorkingHours1,
+    TestLabel "closedOutsideWorkingHours2" closedOutsideWorkingHours2,
+    TestLabel "closedOutsideWorkingHours3" closedOutsideWorkingHours3,
+    TestLabel "closedOutsideWorkingHours4" closedOutsideWorkingHours4
+    ]
  
 main :: IO ()
 main = do
