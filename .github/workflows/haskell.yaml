@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Cabal
+      - name: Setup cabal
         uses: haskell-actions/setup@v2
         with:
           ghc-version: 9.4.8
           cabal-version: 3.12.1.0
-      - name: cabal build
+      - name: Build
         working-directory: ./haskell
         run: cabal build
-      # - run: npm run build --prefix haskell
-      # - run: npm run lint:check --prefix haskell
-      # - run: npm run format:check --prefix haskell
+      - name: Test
+        working-directory: ./haskell
+        run: cabal test
