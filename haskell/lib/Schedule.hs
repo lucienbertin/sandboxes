@@ -1,6 +1,16 @@
-module Schedule where
+module Schedule (
+    DailySchedule (Open, Closed, FromTo),
+    WeeklySchedule (Week),
+    Schedule (DailySchedule, WeeklySchedule),
 
-import Data.Time (LocalTime (LocalTime), dayOfWeek, DayOfWeek( Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday), TimeOfDay (TimeOfDay), getZonedTime, ZonedTime (ZonedTime))
+    ioNow, isOpen, isOpenNow
+) where
+
+import Data.Time (
+    LocalTime (LocalTime),
+    dayOfWeek, DayOfWeek( Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday),
+    TimeOfDay (TimeOfDay),
+    getZonedTime, ZonedTime (ZonedTime))
 
 data DailySchedule = Open | Closed | FromTo TimeOfDay TimeOfDay
 data WeeklySchedule = Week DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule -- 1 daily schedule per day of the week, starts on monday
