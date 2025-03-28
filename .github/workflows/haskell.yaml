@@ -17,7 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: haskell-actions/setup@v2
+      - name: Setup cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: 9.4.8
+          cabal-version: 3.12.1.0
       - name: Build
         working-directory: ./haskell
         run: cabal build
