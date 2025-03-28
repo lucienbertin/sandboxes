@@ -104,7 +104,7 @@ wsNtFOpenOnThursday2 = TestCase (assertBool "should be closed on a thursday at 8
 wsNtFOpenOnFridays1 = TestCase (assertBool "should be open on a friday at 3PM" (isOpen nineToFiveOnWeekDays fridayAt3PM))
 wsNtFOpenOnFridays2 = TestCase (assertBool "should be closed on a friday at midnignt" (isClosed nineToFiveOnWeekDays fridayAtNight))
 wsNtFOpenOnSaturdays1 = TestCase (assertBool "should be closed on a saturday" (isClosed nineToFiveOnWeekDays saturdayAt9AM))
-wsNtFOpenOnSundays1 = TestCase (assertBool "should be closed on a sunday" (isOpen nineToFiveOnWeekDays sundayAtNoon))
+wsNtFOpenOnSundays1 = TestCase (assertBool "should be closed on a sunday" (isClosed nineToFiveOnWeekDays sundayAtNoon))
 
  
 tests :: Test
