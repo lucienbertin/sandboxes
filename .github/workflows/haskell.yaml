@@ -1,0 +1,30 @@
+on:
+  pull_request:
+    paths:
+      - 'haskell/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'haskell/**'
+
+name: CI Haskell
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: 9.4.8
+          cabal-version: 3.12.1.0
+      - name: Build
+        working-directory: ./haskell
+        run: cabal build
+      - name: Test
+        working-directory: ./haskell
+        run: cabal test
