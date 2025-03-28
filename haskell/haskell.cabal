@@ -83,6 +83,6 @@ executable haskell
 test-suite tests
     type: exitcode-stdio-1.0
     main-is: ScheduleTest.hs
-    build-depends: base ^>=4.17, HUnit ^>=1.6, schedule-lib
+    build-depends: base ^>=4.17, HUnit ^>=1.6, containers > 0.6, time > 1, schedule-lib
     hs-source-dirs: tests
     default-language: Haskell2010

@@ -3,7 +3,8 @@ module Schedule (
     WeeklySchedule (Week),
     Schedule (DailySchedule, WeeklySchedule),
 
-    ioNow, isOpen, isOpenNow
+    isOpen, isClosed,
+    ioNow, isOpenNow, isClosedNow
 ) where
 
 import Data.Time (
@@ -39,7 +40,12 @@ isOpen :: Schedule -> LocalTime -> Bool
 isOpen (DailySchedule s) (LocalTime _ time)  = isOpenAt s time
 isOpen (WeeklySchedule week) dateTime  = isOpenOnDayOfWeek week (weekTime dateTime) 
 
+isClosed :: Schedule -> LocalTime -> Bool
+isClosed s t = not (isOpen s t)
+
 ioNow :: IO LocalTime
 ioNow = fmap (\(ZonedTime now _tz) -> now) getZonedTime
 isOpenNow :: Schedule -> IO Bool
 isOpenNow s = fmap (isOpen s) ioNow
+isClosedNow :: Schedule -> IO Bool
+isClosedNow s = fmap (isClosed s) ioNow
