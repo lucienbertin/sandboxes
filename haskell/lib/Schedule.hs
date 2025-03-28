@@ -1,5 +1,5 @@
 module Schedule (
-    DailySchedule (Open, Closed, FromTo),
+    DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week),
     Schedule (DailySchedule, WeeklySchedule),
 
@@ -13,7 +13,13 @@ import Data.Time (
     TimeOfDay (TimeOfDay),
     getZonedTime, ZonedTime (ZonedTime))
 
-data DailySchedule = Open | Closed | FromTo TimeOfDay TimeOfDay
+import Data.SortedList (SortedList, fromSortedList)
+
+data DailySchedule =
+    Open
+    | Closed
+    | FromTo TimeOfDay TimeOfDay
+    | Switch (SortedList TimeOfDay) -- on each ToD of the list toggles between open and closed, starts closed
 data WeeklySchedule = Week DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule -- 1 daily schedule per day of the week, starts on monday
 
 data Schedule = DailySchedule DailySchedule | WeeklySchedule WeeklySchedule
@@ -22,6 +28,7 @@ isOpenAt :: DailySchedule -> TimeOfDay -> Bool
 isOpenAt Open _= True
 isOpenAt Closed _ = False
 isOpenAt (FromTo from to) t = t >= from && t < to
+isOpenAt (Switch s) t = (odd.length.filter (<= t)) (fromSortedList s)
 
 data WeekTime = WeekTime DayOfWeek TimeOfDay
 weekTime :: LocalTime -> WeekTime
