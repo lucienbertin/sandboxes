@@ -1,31 +1,40 @@
 module Schedule (
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week),
+    MondaysSchedule, TuesdaysSchedule, WednesdaysSchedule, ThursdaysSchedule, FridaysSchedule, SaturdaysSchedule, SundaysSchedule,
     Schedule (DailySchedule, WeeklySchedule),
 
     isOpen, isClosed,
-    ioNow, isOpenNow, isClosedNow
-) where
+    ioNow, isOpenNow, isClosedNow) where
 
 import Data.Time (
     LocalTime (LocalTime),
-    dayOfWeek, DayOfWeek( Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday),
+    dayOfWeek, DayOfWeek(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday),
     TimeOfDay (TimeOfDay),
     getZonedTime, ZonedTime (ZonedTime))
 
 import Data.SortedList (SortedList, fromSortedList)
 
 data DailySchedule =
-    Open
+      Open
     | Closed
     | FromTo TimeOfDay TimeOfDay
     | Switch (SortedList TimeOfDay) -- on each ToD of the list toggles between open and closed, starts closed
-data WeeklySchedule = Week DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule DailySchedule -- 1 daily schedule per day of the week, starts on monday
+
+type MondaysSchedule = DailySchedule
+type TuesdaysSchedule = DailySchedule
+type WednesdaysSchedule = DailySchedule
+type ThursdaysSchedule = DailySchedule
+type FridaysSchedule = DailySchedule
+type SaturdaysSchedule = DailySchedule
+type SundaysSchedule = DailySchedule
+
+data WeeklySchedule = Week MondaysSchedule TuesdaysSchedule WednesdaysSchedule ThursdaysSchedule FridaysSchedule SaturdaysSchedule SundaysSchedule
 
 data Schedule = DailySchedule DailySchedule | WeeklySchedule WeeklySchedule
 
 isOpenAt :: DailySchedule -> TimeOfDay -> Bool
-isOpenAt Open _= True
+isOpenAt Open   _ = True
 isOpenAt Closed _ = False
 isOpenAt (FromTo from to) t = t >= from && t < to
 isOpenAt (Switch s) t = (odd.length.filter (<= t)) (fromSortedList s)
@@ -50,6 +59,7 @@ isOpen (WeeklySchedule week) dateTime  = isOpenOnDayOfWeek week (weekTime dateTi
 isClosed :: Schedule -> LocalTime -> Bool
 isClosed s t = not (isOpen s t)
 
+-- now
 ioNow :: IO LocalTime
 ioNow = fmap (\(ZonedTime now _tz) -> now) getZonedTime
 isOpenNow :: Schedule -> IO Bool
