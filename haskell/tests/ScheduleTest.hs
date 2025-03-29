@@ -2,8 +2,13 @@ module Main where
 import Test.HUnit
 import qualified System.Exit as Exit
 
-import Schedule (isOpen, isClosed, DailySchedule (Open, Closed, FromTo, Switch), WeeklySchedule (Week), Schedule (WeeklySchedule, DailySchedule))
-import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight)
+import Schedule (
+    isOpen, isClosed,
+    DailySchedule (Open, Closed, FromTo, Switch),
+    WeeklySchedule (Week),
+    YearlySchedule (Year),
+    Schedule (WeeklySchedule, DailySchedule, YearlySchedule), PartialYearSchedule (PartialYear))
+import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight, )
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 import Data.SortedList (toSortedList)
 
@@ -54,6 +59,19 @@ nineToFiveWithLunchbreakDaily = DailySchedule nineToFiveWithLunchbreak
 openOnWeekDays = WeeklySchedule (Week Open Open Open Open Open Closed Closed)
 nineToFiveOnWeekDays = WeeklySchedule (Week nineToFive nineToFive nineToFive nineToFive nineToFive Closed Closed)
 
+-- parc de procé
+eightThirtyAM = TimeOfDay 8 30 0
+tenPM = TimeOfDay 22 0 0
+fiveFortyFivePM = TimeOfDay 17 45 0
+summerOpeningHours = FromTo eightThirtyAM tenPM
+winterOpeningHours = FromTo eightThirtyAM fiveFortyFivePM
+summerSchedule = PartialYear 3 15 (DailySchedule summerOpeningHours)
+winterSchedule = PartialYear 10 15 (DailySchedule winterOpeningHours)
+procéSchedule = YearlySchedule (Year (toSortedList [summerSchedule, winterSchedule]))
+midwinter = fromOrdinalDate 2025 40 -- around february 10th-15th
+midspring = fromOrdinalDate 2025 130 -- around mid may
+midsummer = fromOrdinalDate 2025 220 -- around mid july
+midfall = fromOrdinalDate 2025 310 -- around mid november
 
 
 -- tests
@@ -106,6 +124,31 @@ wsNtFOpenOnFridays2 = TestCase (assertBool "should be closed on a friday at midn
 wsNtFOpenOnSaturdays1 = TestCase (assertBool "should be closed on a saturday" (isClosed nineToFiveOnWeekDays saturdayAt9AM))
 wsNtFOpenOnSundays1 = TestCase (assertBool "should be closed on a sunday" (isClosed nineToFiveOnWeekDays sundayAtNoon))
 
+-- procé
+procéOnWinter1 = TestCase (assertBool "procé should be closed on a winter dawn" (isClosed procéSchedule (LocalTime midwinter sixAM)))
+procéOnWinter2 = TestCase (assertBool "procé should be open on a winter morning" (isOpen procéSchedule (LocalTime midwinter nineAM)))
+procéOnWinter3 = TestCase (assertBool "procé should be open on a winter noon" (isOpen procéSchedule (LocalTime midwinter midday)))
+procéOnWinter4 = TestCase (assertBool "procé should be open on a winter afternoon" (isOpen procéSchedule (LocalTime midwinter threePM)))
+procéOnWinter5 = TestCase (assertBool "procé should be closed on a winter evening" (isClosed procéSchedule (LocalTime midwinter eightPM)))
+procéOnWinter6 = TestCase (assertBool "procé should be closed on a winter night" (isClosed procéSchedule (LocalTime midwinter midnight)))
+procéOnSpring1 = TestCase (assertBool "procé should be closed on a spring dawn" (isClosed procéSchedule (LocalTime midspring sixAM)))
+procéOnSpring2 = TestCase (assertBool "procé should be open on a spring morning" (isOpen procéSchedule (LocalTime midspring nineAM)))
+procéOnSpring3 = TestCase (assertBool "procé should be open on a spring noon" (isOpen procéSchedule (LocalTime midspring midday)))
+procéOnSpring4 = TestCase (assertBool "procé should be open on a spring afternoon" (isOpen procéSchedule (LocalTime midspring threePM)))
+procéOnSpring5 = TestCase (assertBool "procé should be open on a spring evening" (isOpen procéSchedule (LocalTime midspring eightPM)))
+procéOnSpring6 = TestCase (assertBool "procé should be closed on a spring night" (isClosed procéSchedule (LocalTime midspring midnight)))
+procéOnSummer1 = TestCase (assertBool "procé should be closed on a summer dawn" (isClosed procéSchedule (LocalTime midsummer sixAM)))
+procéOnSummer2 = TestCase (assertBool "procé should be open on a summer morning" (isOpen procéSchedule (LocalTime midsummer nineAM)))
+procéOnSummer3 = TestCase (assertBool "procé should be open on a summer noon" (isOpen procéSchedule (LocalTime midsummer midday)))
+procéOnSummer4 = TestCase (assertBool "procé should be open on a summer afternoon" (isOpen procéSchedule (LocalTime midsummer threePM)))
+procéOnSummer5 = TestCase (assertBool "procé should be open on a summer evening" (isOpen procéSchedule (LocalTime midsummer eightPM)))
+procéOnSummer6 = TestCase (assertBool "procé should be closed on a summer night" (isClosed procéSchedule (LocalTime midsummer midnight)))
+procéOnFall1 = TestCase (assertBool "procé should be closed on a fall dawn" (isClosed procéSchedule (LocalTime midfall sixAM)))
+procéOnFall2 = TestCase (assertBool "procé should be open on a fall morning" (isOpen procéSchedule (LocalTime midfall nineAM)))
+procéOnFall3 = TestCase (assertBool "procé should be open on a fall noon" (isOpen procéSchedule (LocalTime midfall midday)))
+procéOnFall4 = TestCase (assertBool "procé should be open on a fall afternoon" (isOpen procéSchedule (LocalTime midfall threePM)))
+procéOnFall5 = TestCase (assertBool "procé should be closed on a fall evening" (isClosed procéSchedule (LocalTime midfall eightPM)))
+procéOnFall6 = TestCase (assertBool "procé should be closed on a fall night" (isClosed procéSchedule (LocalTime midfall midnight)))
  
 tests :: Test
 tests = TestList [
@@ -152,7 +195,32 @@ tests = TestList [
     TestLabel "wsNtFOpenOnFridays1" wsNtFOpenOnFridays1,
     TestLabel "wsNtFOpenOnFridays2" wsNtFOpenOnFridays2,
     TestLabel "wsNtFOpenOnSaturdays1" wsNtFOpenOnSaturdays1,
-    TestLabel "wsNtFOpenOnSundays1" wsNtFOpenOnSundays1
+    TestLabel "wsNtFOpenOnSundays1" wsNtFOpenOnSundays1,
+
+    TestLabel "procéOnWinter1" procéOnWinter1,
+    TestLabel "procéOnWinter2" procéOnWinter2,
+    TestLabel "procéOnWinter3" procéOnWinter3,
+    TestLabel "procéOnWinter4" procéOnWinter4,
+    TestLabel "procéOnWinter5" procéOnWinter5,
+    TestLabel "procéOnWinter6" procéOnWinter6,
+    TestLabel "procéOnSpring1" procéOnSpring1,
+    TestLabel "procéOnSpring2" procéOnSpring2,
+    TestLabel "procéOnSpring3" procéOnSpring3,
+    TestLabel "procéOnSpring4" procéOnSpring4,
+    TestLabel "procéOnSpring5" procéOnSpring5,
+    TestLabel "procéOnSpring6" procéOnSpring6,
+    TestLabel "procéOnSummer1" procéOnSummer1,
+    TestLabel "procéOnSummer2" procéOnSummer2,
+    TestLabel "procéOnSummer3" procéOnSummer3,
+    TestLabel "procéOnSummer4" procéOnSummer4,
+    TestLabel "procéOnSummer5" procéOnSummer5,
+    TestLabel "procéOnSummer6" procéOnSummer6,
+    TestLabel "procéOnFall1" procéOnFall1,
+    TestLabel "procéOnFall2" procéOnFall2,
+    TestLabel "procéOnFall3" procéOnFall3,
+    TestLabel "procéOnFall4" procéOnFall4,
+    TestLabel "procéOnFall5" procéOnFall5,
+    TestLabel "procéOnFall6" procéOnFall6
     ]
  
 main :: IO ()
