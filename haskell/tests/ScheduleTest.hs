@@ -7,8 +7,8 @@ import Schedule (
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week),
     YearlySchedule (Year),
-    Schedule (WeeklySchedule, DailySchedule, YearlySchedule), PartialYearSchedule (PartialYear))
-import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight, )
+    Schedule (WeeklySchedule, DailySchedule, YearlySchedule, ExceptionalSchedule), PartialYearSchedule (PartialYear), BetweenSchedule (Between), ExceptionalSchedule (RegularExceptBetween))
+import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight, DayOfWeek (Wednesday), )
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 import Data.SortedList (toSortedList)
 
@@ -41,7 +41,9 @@ mondayAtNight = LocalTime monday midnight
 tuesdayAt6AM = LocalTime tuesday sixAM
 tuesdayAt3PM = LocalTime tuesday threePM
 wednesdayAt9AM = LocalTime wednesday nineAM
+wednesdayAt1PM = LocalTime wednesday onePM
 wednesdayAtNight = LocalTime wednesday midnight
+thursdayAtNight = LocalTime thursday midnight
 thursdayAtNoon = LocalTime thursday midday
 thursdayAt8PM = LocalTime thursday eightPM
 fridayAt3PM = LocalTime friday threePM
@@ -72,6 +74,10 @@ midwinter = fromOrdinalDate 2025 40 -- around february 10th-15th
 midspring = fromOrdinalDate 2025 130 -- around mid may
 midsummer = fromOrdinalDate 2025 220 -- around mid july
 midfall = fromOrdinalDate 2025 310 -- around mid november
+
+closedBetweenMondayToSundayExcluded = Between mondayAtNight sundayAtNoon alwaysClosed
+butOpenOnWednesdayAndThursdayUntillLate = Between wednesdayAt1PM thursdayAtNoon (DailySchedule summerOpeningHours)
+procéWithMaintenanceWork = ExceptionalSchedule (RegularExceptBetween procéSchedule [closedBetweenMondayToSundayExcluded, butOpenOnWednesdayAndThursdayUntillLate])
 
 
 -- tests
@@ -149,7 +155,27 @@ procéOnFall3 = TestCase (assertBool "procé should be open on a fall noon" (isO
 procéOnFall4 = TestCase (assertBool "procé should be open on a fall afternoon" (isOpen procéSchedule (LocalTime midfall threePM)))
 procéOnFall5 = TestCase (assertBool "procé should be closed on a fall evening" (isClosed procéSchedule (LocalTime midfall eightPM)))
 procéOnFall6 = TestCase (assertBool "procé should be closed on a fall night" (isClosed procéSchedule (LocalTime midfall midnight)))
- 
+
+-- procé with maintenance
+procéMWOnWinter1 = TestCase (assertBool "regular winter schedule should apply - dawn" (isClosed procéWithMaintenanceWork (LocalTime midwinter sixAM)))
+procéMWOnWinter2 = TestCase (assertBool "regular winter schedule should apply - morning" (isOpen procéWithMaintenanceWork (LocalTime midwinter nineAM)))
+procéMWOnWinter3 = TestCase (assertBool "regular winter schedule should apply - noon" (isOpen procéWithMaintenanceWork (LocalTime midwinter midday)))
+procéMWOnWinter4 = TestCase (assertBool "regular winter schedule should apply - afternoon" (isOpen procéWithMaintenanceWork (LocalTime midwinter threePM)))
+procéMWOnWinter5 = TestCase (assertBool "regular winter schedule should apply - evening" (isClosed procéWithMaintenanceWork (LocalTime midwinter eightPM)))
+procéMWOnWinter6 = TestCase (assertBool "regular winter schedule should apply - night" (isClosed procéWithMaintenanceWork (LocalTime midwinter midnight)))
+procéMWonTheExceptionalWeek1 = TestCase (assertBool "parc should be closed on monday noon" (isClosed procéWithMaintenanceWork mondayAtNoon))
+procéMWonTheExceptionalWeek2 = TestCase (assertBool "parc should be closed on tuesday 3PM" (isClosed procéWithMaintenanceWork tuesdayAt3PM))
+procéMWonTheExceptionalWeek3 = TestCase (assertBool "parc should still be closed on wednesday morning" (isClosed procéWithMaintenanceWork wednesdayAt9AM))
+procéMWonTheExceptionalWeek4 = TestCase (assertBool "parc should open on wednesday at 1pm" (isOpen procéWithMaintenanceWork wednesdayAt1PM))
+procéMWonTheExceptionalWeek5 = TestCase (assertBool "parc should be open on wednesday evening" (isOpen procéWithMaintenanceWork (LocalTime wednesday eightPM)))
+procéMWonTheExceptionalWeek6 = TestCase (assertBool "parc should be closed on thursday dawn" (isClosed procéWithMaintenanceWork (LocalTime thursday sixAM)))
+procéMWonTheExceptionalWeek7 = TestCase (assertBool "parc should be open on thursday morning" (isOpen procéWithMaintenanceWork (LocalTime thursday nineAM)))
+procéMWonTheExceptionalWeek8 = TestCase (assertBool "parc should be closing on thursday at noon" (isClosed procéWithMaintenanceWork thursdayAtNoon))
+procéMWonTheExceptionalWeek9 = TestCase (assertBool "parc should be closed on friday" (isClosed procéWithMaintenanceWork fridayAt3PM))
+procéMWonTheExceptionalWeek10 = TestCase (assertBool "parc should be closed on saturday" (isClosed procéWithMaintenanceWork saturdayAt9AM))
+procéMWonTheExceptionalWeek11 = TestCase (assertBool "parc should reopen on sunday with its regular schedule" (isOpen procéWithMaintenanceWork sundayAtNoon))
+
+
 tests :: Test
 tests = TestList [
     TestLabel "dsAlwaysOpenOnMondays" dsAlwaysOpenOnMondays,
@@ -220,11 +246,27 @@ tests = TestList [
     TestLabel "procéOnFall3" procéOnFall3,
     TestLabel "procéOnFall4" procéOnFall4,
     TestLabel "procéOnFall5" procéOnFall5,
-    TestLabel "procéOnFall6" procéOnFall6
-    ]
- 
+    TestLabel "procéOnFall6" procéOnFall6,
+
+    TestLabel "procéMWOnWinter1" procéMWOnWinter1,
+    TestLabel "procéMWOnWinter2" procéMWOnWinter2,
+    TestLabel "procéMWOnWinter3" procéMWOnWinter3,
+    TestLabel "procéMWOnWinter4" procéMWOnWinter4,
+    TestLabel "procéMWOnWinter5" procéMWOnWinter5,
+    TestLabel "procéMWOnWinter6" procéMWOnWinter6,
+    TestLabel "procéMWonTheExceptionalWeek1" procéMWonTheExceptionalWeek1,
+    TestLabel "procéMWonTheExceptionalWeek2" procéMWonTheExceptionalWeek2,
+    TestLabel "procéMWonTheExceptionalWeek3" procéMWonTheExceptionalWeek3,
+    TestLabel "procéMWonTheExceptionalWeek4" procéMWonTheExceptionalWeek4,
+    TestLabel "procéMWonTheExceptionalWeek5" procéMWonTheExceptionalWeek5,
+    TestLabel "procéMWonTheExceptionalWeek6" procéMWonTheExceptionalWeek6,
+    TestLabel "procéMWonTheExceptionalWeek7" procéMWonTheExceptionalWeek7,
+    TestLabel "procéMWonTheExceptionalWeek8" procéMWonTheExceptionalWeek8,
+    TestLabel "procéMWonTheExceptionalWeek9" procéMWonTheExceptionalWeek9,
+    TestLabel "procéMWonTheExceptionalWeek10" procéMWonTheExceptionalWeek10,
+    TestLabel "procéMWonTheExceptionalWeek11" procéMWonTheExceptionalWeek11]
+
 main :: IO ()
 main = do
     result <- runTestTT tests
     if failures result > 0 then Exit.exitFailure else Exit.exitSuccess
- 

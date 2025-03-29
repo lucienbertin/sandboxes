@@ -1,9 +1,9 @@
-{-# LANGUAGE InstanceSigs #-}
 module Schedule (
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week), MondaysSchedule, TuesdaysSchedule, WednesdaysSchedule, ThursdaysSchedule, FridaysSchedule, SaturdaysSchedule, SundaysSchedule,
     YearlySchedule (Year), PartialYearSchedule (PartialYear),
-    Schedule (DailySchedule, WeeklySchedule, YearlySchedule),
+    ExceptionalSchedule (RegularExceptBetween), BetweenSchedule (Between), RegularSchedule,
+    Schedule (DailySchedule, WeeklySchedule, YearlySchedule, ExceptionalSchedule),
 
     isOpen, isClosed,
     ioNow, isOpenNow, isClosedNow) where
@@ -13,7 +13,7 @@ import Data.Time (
     dayOfWeek, DayOfWeek(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday),
     TimeOfDay (TimeOfDay),
     getZonedTime, ZonedTime (ZonedTime),
-    MonthOfYear, DayOfMonth, isLeapYear)
+    MonthOfYear, DayOfMonth, isLeapYear, Day)
 
 import Data.SortedList (SortedList, fromSortedList)
 import Data.Time.Calendar.OrdinalDate (toOrdinalDate)
@@ -47,17 +47,22 @@ comparePartialYearSchedule (PartialYear m d _) (PartialYear n e _) = compare m n
 instance Ord PartialYearSchedule where
   compare = comparePartialYearSchedule
 
+newtype YearlySchedule = Year (SortedList PartialYearSchedule) deriving (Show)
 
-data YearlySchedule = Year (SortedList PartialYearSchedule) deriving (Show)
+data BetweenSchedule = Between LocalTime LocalTime Schedule deriving (Show) -- end day excluded
+type RegularSchedule = Schedule
+data ExceptionalSchedule = RegularExceptBetween RegularSchedule [BetweenSchedule] deriving (Show)
 
-data Schedule = DailySchedule DailySchedule | WeeklySchedule WeeklySchedule | YearlySchedule YearlySchedule deriving (Show)
+data Schedule = DailySchedule DailySchedule | WeeklySchedule WeeklySchedule | YearlySchedule YearlySchedule | ExceptionalSchedule ExceptionalSchedule deriving (Show)
 
+-- daily schedules
 isOpenAt :: DailySchedule -> TimeOfDay -> Bool
 isOpenAt Open   _ = True
 isOpenAt Closed _ = False
 isOpenAt (FromTo from to) t = t >= from && t < to
 isOpenAt (Switch s) t = (odd.length.filter (<= t)) (fromSortedList s)
 
+-- weekly schedules
 data WeekTime = WeekTime DayOfWeek TimeOfDay
 weekTime :: LocalTime -> WeekTime
 weekTime (LocalTime date time) = WeekTime (dayOfWeek date) time
@@ -71,7 +76,9 @@ isOpenOnDayOfWeek (Week _ _ _ _ fri _ _) (WeekTime Friday    t) = isOpenAt fri t
 isOpenOnDayOfWeek (Week _ _ _ _ _ sat _) (WeekTime Saturday  t) = isOpenAt sat t
 isOpenOnDayOfWeek (Week _ _ _ _ _ _ sun) (WeekTime Sunday    t) = isOpenAt sun t
 
+-- yearly schedule 
 partialYearScheduleIsApplicable (PartialYear moy dom _) isLeapYear = (<=) (monthAndDayToDayOfYear isLeapYear moy dom)
+
 isOpenOnDayOfYear :: YearlySchedule -> LocalTime -> Bool
 isOpenOnDayOfYear (Year schedules) dt = isOpen schedule dt
     where 
@@ -82,10 +89,19 @@ isOpenOnDayOfYear (Year schedules) dt = isOpen schedule dt
         applicableSchedulesAndFallback = lastSchedule : applicableSchedules
         (PartialYear _ _ schedule) = last applicableSchedulesAndFallback
 
+-- exceptional schedule
+isOpenOnDay :: ExceptionalSchedule -> LocalTime -> Bool
+isOpenOnDay (RegularExceptBetween rs ex) dt = isOpen applicableSchedule dt where
+    applicableExceptions = filter (\(Between start end _) -> dt >= start && dt < end) ex
+    applicableSchedules = rs : fmap (\(Between _ _ s) -> s) applicableExceptions
+    applicableSchedule = last applicableSchedules
+
+-- schedules
 isOpen :: Schedule -> LocalTime -> Bool
-isOpen (DailySchedule ds)  (LocalTime _ time) = isOpenAt ds time
-isOpen (WeeklySchedule ws) dateTime           = isOpenOnDayOfWeek ws (weekTime dateTime)
-isOpen (YearlySchedule ys)   dateTime           = isOpenOnDayOfYear ys dateTime
+isOpen (DailySchedule ds) (LocalTime _ time) = isOpenAt ds time
+isOpen (WeeklySchedule ws) dateTime          = isOpenOnDayOfWeek ws (weekTime dateTime)
+isOpen (YearlySchedule ys) dateTime          = isOpenOnDayOfYear ys dateTime
+isOpen (ExceptionalSchedule es) dateTime     = isOpenOnDay es dateTime
 
 isClosed :: Schedule -> LocalTime -> Bool
 isClosed s t = not (isOpen s t)
