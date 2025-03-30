@@ -26,3 +26,4 @@ jobs:
       - run: npm ci --prefix nextjs
       - run: npm run build --prefix nextjs -- --experimental-build-mode compile
       - run: npm run lint --prefix nextjs
+      - run: npm run format:check --prefix nextjs
