@@ -3,7 +3,8 @@ module Schedule (
     WeeklySchedule (Week), MondaysSchedule, TuesdaysSchedule, WednesdaysSchedule, ThursdaysSchedule, FridaysSchedule, SaturdaysSchedule, SundaysSchedule,
     YearlySchedule (Year), PartialYearSchedule (PartialYear),
     ExceptionalSchedule (RegularExceptBetween), BetweenSchedule (Between), RegularSchedule,
-    Schedule (DailySchedule, WeeklySchedule, YearlySchedule, ExceptionalSchedule),
+    AmendedSchedule (Amended), InitialSchedule, Amendment (Amend), DateOfEffect,
+    Schedule (DailySchedule, WeeklySchedule, YearlySchedule, ExceptionalSchedule, AmendedSchedule),
 
     isOpen, isClosed,
     ioNow, isOpenNow, isClosedNow) where
@@ -53,7 +54,20 @@ data BetweenSchedule = Between LocalTime LocalTime Schedule deriving (Show) -- e
 type RegularSchedule = Schedule
 data ExceptionalSchedule = RegularExceptBetween RegularSchedule [BetweenSchedule] deriving (Show)
 
-data Schedule = DailySchedule DailySchedule | WeeklySchedule WeeklySchedule | YearlySchedule YearlySchedule | ExceptionalSchedule ExceptionalSchedule deriving (Show)
+type DateOfEffect = LocalTime
+data Amendment = Amend DateOfEffect Schedule deriving (Show)
+compareAmendments :: Amendment -> Amendment -> Ordering
+compareAmendments (Amend d _) (Amend e _) = compare d e
+
+type InitialSchedule = Schedule
+data AmendedSchedule = Amended InitialSchedule (SortedList Amendment) deriving (Show)
+
+data Schedule =
+      DailySchedule DailySchedule
+    | WeeklySchedule WeeklySchedule
+    | YearlySchedule YearlySchedule
+    | ExceptionalSchedule ExceptionalSchedule
+    | AmendedSchedule AmendedSchedule deriving (Show)
 
 -- daily schedules
 isOpenAt :: DailySchedule -> TimeOfDay -> Bool
@@ -96,12 +110,20 @@ isOpenOnDay (RegularExceptBetween rs ex) dt = isOpen applicableSchedule dt where
     applicableSchedules = rs : fmap (\(Between _ _ s) -> s) applicableExceptions
     applicableSchedule = last applicableSchedules
 
+-- amended schedule
+isOpenWithAmendments :: AmendedSchedule -> LocalTime -> Bool
+isOpenWithAmendments (Amended initialSchedule amendments) dt = isOpen applicableSchedule dt where
+    applicableAmendments = filter (\(Amend doe _) -> dt >= doe) (fromSortedList amendments)
+    applicableSchedules = initialSchedule : fmap (\(Amend _ s) -> s) applicableAmendments
+    applicableSchedule = last applicableSchedules
+
 -- schedules
 isOpen :: Schedule -> LocalTime -> Bool
 isOpen (DailySchedule ds) (LocalTime _ time) = isOpenAt ds time
 isOpen (WeeklySchedule ws) dateTime          = isOpenOnDayOfWeek ws (weekTime dateTime)
 isOpen (YearlySchedule ys) dateTime          = isOpenOnDayOfYear ys dateTime
 isOpen (ExceptionalSchedule es) dateTime     = isOpenOnDay es dateTime
+isOpen (AmendedSchedule as) dateTime         = isOpenWithAmendments as dateTime
 
 isClosed :: Schedule -> LocalTime -> Bool
 isClosed s t = not (isOpen s t)
