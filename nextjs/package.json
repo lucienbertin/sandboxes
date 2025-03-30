@@ -6,14 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.0",
     "@mapbox/mapbox-sdk": "^0.16.1",
     "@types/geojson": "^7946.0.16",
     "mapbox-gl": "^3.10.0",
-    "next": "15.2.1",
+    "next": "15.2.4",
     "next-auth": "^4.24.11",
     "pg": "^8.14.0",
     "react": "^19.0.0",
@@ -32,6 +34,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.1",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "prettier": "^3.4.2",
     "prisma": "^6.5.0",
     "tailwindcss": "^4",
     "typescript": "^5"
