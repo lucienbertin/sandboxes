@@ -10,6 +10,7 @@ import {useControl} from 'react-map-gl/mapbox';
 import type {MapRef, ControlPosition} from 'react-map-gl/mapbox';
 import { Feature, Point } from 'geojson';
 import { Place } from '@/domain';
+import { useSession } from 'next-auth/react';
 
 type DrawControlProps = ConstructorParameters<typeof MapboxDraw>[0] & {
   position?: ControlPosition;
@@ -58,7 +59,10 @@ const INITIAL_ZOOM = 11.5;
 
 export default function Form() {
   const mapRef = useRef<MapRef>(null)
-  
+  const { data: session } = useSession();
+  const me = session?.user;
+  console.log(me);
+
   const [feature, setFeature] = useState<Feature<Point> | null>();
 
   const onUpdate = useCallback((evt: {features: Feature<Point>[]}) => {

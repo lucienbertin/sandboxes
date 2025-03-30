@@ -152,7 +152,7 @@ export async function createPlace(newPlace: Feature<Point, DeepPartial<Place>>) 
 
 }
 
-export async function authenticateUser(email: string, _password: string): Promise<User | null> {
+export async function authenticateUser(email: string): Promise<User | null> {
   await isInitialized;
 
   const repo = datasource.getRepository(ORMUser);

@@ -11,31 +11,13 @@ const credentialsProvider: Provider =
             email: { label: "Email", type: "email", placeholder: "john@d.oe" },
             password: { label: "Password", type: "password" }
         },
-        async authorize(credentials, req) {
-            // You need to provide your own logic here that takes the credentials
-            // submitted and returns either a object representing a user or value
-            // that is false/null if the credentials are invalid.
-            // e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
-            // You can also use the `req` object to obtain additional parameters
-            // (i.e., the request IP address)
-            //   const res = await fetch("/your/endpoint", {
-            //     method: 'POST',
-            //     body: JSON.stringify(credentials),
-            //     headers: { "Content-Type": "application/json" }
-            //   })
-            //   const user = await res.json()
-            
-            //   // If no error and we have user data, return it
-            //   if (res.ok && user) {
-            //     return user
-            //   }
+        async authorize(credentials) {
             if (!credentials) {
                 return null;
             } else {
-                const user = await authenticateUser(credentials.email, credentials.password)
-                return user as any;
+                const user = await authenticateUser(credentials.email)
+                return user as any; // eslint-disable-line @typescript-eslint/no-explicit-any
             }
-            // Return null if user data could not be retrieved
         }
     });
 
