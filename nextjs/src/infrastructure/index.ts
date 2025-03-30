@@ -1,12 +1,12 @@
 'use server';
-import { Place, Post } from '@/domain';
+import { Place, Post, User } from '@/domain';
 import * as typeorm from 'typeorm';
 import "reflect-metadata";
 import { DataSource, DeepPartial } from "typeorm";
 import { Feature, FeatureCollection, Point } from "geojson";
 
 @typeorm.Entity({ name: 'posts' })
-class ORMPost implements Post {
+class ORMPost {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
@@ -25,7 +25,7 @@ class ORMPost implements Post {
 }
 
 @typeorm.Entity({ name: 'places' })
-class ORMPlace implements Place {
+class ORMPlace {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
@@ -51,6 +51,29 @@ class ORMPlace implements Place {
     }
   }
 }
+@typeorm.Entity({ name: 'users' })
+class ORMUser {
+  @typeorm.PrimaryGeneratedColumn()
+  id!: number;
+
+  @typeorm.Column({ type: 'text', name: 'first_name' })
+  firstName!: string;
+
+  @typeorm.Column({ type: 'text', name: 'last_name' })
+  lastName!: string;
+
+  @typeorm.Column({ type: 'text' })
+  email!: string;
+
+  asStruct(): User {
+    return {
+      id: this.id,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      email: this.email,
+    }
+  }
+}
 
 const datasource = new DataSource({
     type: 'postgres',
@@ -61,7 +84,7 @@ const datasource = new DataSource({
     database: 'postgres',
     synchronize: false,
     logging: true,
-    entities: [ORMPost, ORMPlace],
+    entities: [ORMPost, ORMPlace, ORMUser],
 })
 
 const isInitialized = datasource.initialize().then(ds => ds.isInitialized);
@@ -127,4 +150,13 @@ export async function createPlace(newPlace: Feature<Point, DeepPartial<Place>>) 
 
     await repo.save(place);
 
+}
+
+export async function authenticateUser(email: string): Promise<User | null> {
+  await isInitialized;
+
+  const repo = datasource.getRepository(ORMUser);
+  const user = await repo.findOneBy({ email: email });
+
+  return user;
 }
