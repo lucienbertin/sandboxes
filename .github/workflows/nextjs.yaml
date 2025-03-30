@@ -14,8 +14,9 @@ name: CI NextJs
 
 jobs:
   check:
-
     runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
 
     steps:
       - name: Checkout
