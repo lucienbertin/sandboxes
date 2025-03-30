@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth";
 import SignIn from "./signin";
 export default async function Home() {
   const session = await getServerSession();
@@ -7,17 +7,16 @@ export default async function Home() {
   if (session?.user) {
     return (
       // <SessionProvider session={session}>
-        <>Signed in as {session.user?.email} <SignIn /></>
+      <>
+        Signed in as {session.user?.email} <SignIn />
+      </>
       // </ SessionProvider>
-    )
+    );
   }
   return (
     <>
       Not signed in <br />
       <SignIn />
-    </ >
-  )
+    </>
+  );
 }
-
-
-

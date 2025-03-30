@@ -1,22 +1,22 @@
-'use server';
-import { Place, Post, User } from '@/domain';
-import * as typeorm from 'typeorm';
-import 'reflect-metadata';
-import { DataSource, DeepPartial } from 'typeorm';
-import { Feature, FeatureCollection, Point } from 'geojson';
+"use server";
+import { Place, Post, User } from "@/domain";
+import * as typeorm from "typeorm";
+import "reflect-metadata";
+import { DataSource, DeepPartial } from "typeorm";
+import { Feature, FeatureCollection, Point } from "geojson";
 
-@typeorm.Entity({ name: 'posts' })
+@typeorm.Entity({ name: "posts" })
 class ORMPost {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
-  @typeorm.Column({ type: 'text' })
+  @typeorm.Column({ type: "text" })
   title!: string;
 
-  @typeorm.Column({ type: 'text' })
+  @typeorm.Column({ type: "text" })
   body!: string;
 
-  @typeorm.Column({ type: 'boolean' })
+  @typeorm.Column({ type: "boolean" })
   published!: boolean;
 
   asStruct(): Post {
@@ -24,18 +24,18 @@ class ORMPost {
   }
 }
 
-@typeorm.Entity({ name: 'places' })
+@typeorm.Entity({ name: "places" })
 class ORMPlace {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
-  @typeorm.Column({ type: 'text' })
+  @typeorm.Column({ type: "text" })
   name!: string;
 
   @typeorm.Column({
-    type: 'geometry',
+    type: "geometry",
     srid: 4326,
-    spatialFeatureType: 'Point',
+    spatialFeatureType: "Point",
   })
   geometry!: typeorm.Point;
 
@@ -45,24 +45,24 @@ class ORMPlace {
   asGeoJSON(): Feature<Point, Place> {
     return {
       id: this.id,
-      type: 'Feature',
+      type: "Feature",
       properties: this.asStruct(),
       geometry: this.geometry,
     };
   }
 }
-@typeorm.Entity({ name: 'users' })
+@typeorm.Entity({ name: "users" })
 class ORMUser {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
-  @typeorm.Column({ type: 'text', name: 'first_name' })
+  @typeorm.Column({ type: "text", name: "first_name" })
   firstName!: string;
 
-  @typeorm.Column({ type: 'text', name: 'last_name' })
+  @typeorm.Column({ type: "text", name: "last_name" })
   lastName!: string;
 
-  @typeorm.Column({ type: 'text' })
+  @typeorm.Column({ type: "text" })
   email!: string;
 
   asStruct(): User {
@@ -76,12 +76,12 @@ class ORMUser {
 }
 
 const datasource = new DataSource({
-  type: 'postgres',
-  host: 'localhost',
+  type: "postgres",
+  host: "localhost",
   port: 5432,
-  password: 'postgres',
-  username: 'postgres',
-  database: 'postgres',
+  password: "postgres",
+  username: "postgres",
+  database: "postgres",
   synchronize: false,
   logging: true,
   entities: [ORMPost, ORMPlace, ORMUser],
@@ -116,7 +116,7 @@ export async function getPlacesGeoJSON(): Promise<
   const places = await datasource.getRepository(ORMPlace).find();
   await waitforme(10000);
   return {
-    type: 'FeatureCollection',
+    type: "FeatureCollection",
     features: places.map((p) => p.asGeoJSON()),
   };
 }
@@ -124,7 +124,7 @@ export async function getPlacesGeoJSON(): Promise<
 function waitforme(millisec: number) {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve('');
+      resolve("");
     }, millisec);
   });
 }

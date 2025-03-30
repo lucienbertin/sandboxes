@@ -1,8 +1,8 @@
-export const dynamic = 'force-static';
+export const dynamic = "force-static";
 
-import { getPublishedPosts, createPost } from '@/infrastructure';
-import { Post } from '@/domain';
-import { NextRequest } from 'next/server';
+import { getPublishedPosts, createPost } from "@/infrastructure";
+import { Post } from "@/domain";
+import { NextRequest } from "next/server";
 
 export async function GET() {
   const posts = await getPublishedPosts();

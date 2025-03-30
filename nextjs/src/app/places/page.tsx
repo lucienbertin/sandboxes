@@ -4,13 +4,13 @@ import StaticMap from "./staticMap";
 import { Suspense } from "react";
 
 export default async function Page() {
-    const places$ = getPlacesGeoJSON();
+  const places$ = getPlacesGeoJSON();
 
-    return (
-        <>
-            <Suspense fallback={<StaticMap />}>
-                <PlacesMap places$={places$} />
-            </Suspense>
-        </>
-    )
-  }
+  return (
+    <>
+      <Suspense fallback={<StaticMap />}>
+        <PlacesMap places$={places$} />
+      </Suspense>
+    </>
+  );
+}
