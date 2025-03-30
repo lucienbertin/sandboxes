@@ -1,14 +1,14 @@
-export type Place  = {
+export type Place = {
   id: number;
   name: string;
-}
+};
 
 export type Post = {
   id: number;
   title: string;
   body: string;
   published: boolean;
-}
+};
 
 // export enum UserRole {
 //   Reader = 'reader',
@@ -21,4 +21,4 @@ export type User = {
   lastName: string;
   email: string;
   // role: UserRole;
-}
+};
