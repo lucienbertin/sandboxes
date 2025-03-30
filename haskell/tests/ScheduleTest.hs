@@ -7,7 +7,7 @@ import Schedule (
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week),
     YearlySchedule (Year),
-    Schedule (WeeklySchedule, DailySchedule, YearlySchedule, ExceptionalSchedule), PartialYearSchedule (PartialYear), BetweenSchedule (Between), ExceptionalSchedule (RegularExceptBetween))
+    Schedule (WeeklySchedule, DailySchedule, YearlySchedule, ExceptionalSchedule, RepeatingDaysSchedule, AmendedSchedule), PartialYearSchedule (PartialYear), BetweenSchedule (Between), ExceptionalSchedule (RegularExceptBetween), RepeatingDaysSchedule (Repeat), Amendment (Amend), AmendedSchedule (Amended))
 import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight, DayOfWeek (Wednesday), )
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 import Data.SortedList (toSortedList)
@@ -25,6 +25,7 @@ sixAM =   TimeOfDay  6 0 0
 nineAM = TimeOfDay  9 0 0
 onePM = TimeOfDay 13 0 0
 twelveThirtyPM = TimeOfDay 12 30 0
+twoPM = TimeOfDay 14 0 0
 threePM = TimeOfDay 15 0 0
 fivePM =  TimeOfDay 17 0 0
 eightPM = TimeOfDay 20 0 0
@@ -60,6 +61,7 @@ nineToFiveDaily = DailySchedule nineToFive
 nineToFiveWithLunchbreakDaily = DailySchedule nineToFiveWithLunchbreak
 openOnWeekDays = WeeklySchedule (Week Open Open Open Open Open Closed Closed)
 nineToFiveOnWeekDays = WeeklySchedule (Week nineToFive nineToFive nineToFive nineToFive nineToFive Closed Closed)
+sixDaysWeek = RepeatingDaysSchedule (Repeat monday [Open, Open, Open, Open, Closed, Closed])
 
 -- parc de procé
 eightThirtyAM = TimeOfDay 8 30 0
@@ -78,6 +80,11 @@ midfall = fromOrdinalDate 2025 310 -- around mid november
 closedBetweenMondayToSundayExcluded = Between mondayAtNight sundayAtNoon alwaysClosed
 butOpenOnWednesdayAndThursdayUntillLate = Between wednesdayAt1PM thursdayAtNoon (DailySchedule summerOpeningHours)
 procéWithMaintenanceWork = ExceptionalSchedule (RegularExceptBetween procéSchedule [closedBetweenMondayToSundayExcluded, butOpenOnWednesdayAndThursdayUntillLate])
+
+closedBecauseOfStormForecast = Amend tuesdayAt6AM alwaysClosed -- because of an incoming storm, parc will be closed on tuesday untill further notice
+stormHasPassed = Amend thursdayAtNoon (DailySchedule (FromTo onePM threePM)) -- storm has passed, parc will open with limited opening hours starting thursday
+backToRegulaSchedule = Amend sundayAtNoon procéSchedule -- back to regular opening hours on sunday
+procéWithStorm = AmendedSchedule (Amended procéSchedule (toSortedList [closedBecauseOfStormForecast, stormHasPassed, backToRegulaSchedule]))
 
 
 -- tests
@@ -130,6 +137,16 @@ wsNtFOpenOnFridays2 = TestCase (assertBool "should be closed on a friday at midn
 wsNtFOpenOnSaturdays1 = TestCase (assertBool "should be closed on a saturday" (isClosed nineToFiveOnWeekDays saturdayAt9AM))
 wsNtFOpenOnSundays1 = TestCase (assertBool "should be closed on a sunday" (isClosed nineToFiveOnWeekDays sundayAtNoon))
 
+-- repeating days
+-- sixDaysWeek 
+sixDaysWeek1 = TestCase (assertBool "should be open on 1st day" (isOpen sixDaysWeek mondayAtNoon))
+sixDaysWeek2 = TestCase (assertBool "should be open on 2nd day" (isOpen sixDaysWeek tuesdayAt3PM))
+sixDaysWeek3 = TestCase (assertBool "should be open on 3rd day" (isOpen sixDaysWeek wednesdayAt1PM))
+sixDaysWeek4 = TestCase (assertBool "should be open on 4th day" (isOpen sixDaysWeek thursdayAtNoon))
+sixDaysWeek5 = TestCase (assertBool "should be closed on 5th day" (isClosed sixDaysWeek fridayAt3PM))
+sixDaysWeek6 = TestCase (assertBool "should be closed on 6th day" (isClosed sixDaysWeek saturdayAt9AM))
+sixDaysWeek7 = TestCase (assertBool "should be reopen on 7th day" (isOpen sixDaysWeek sundayAtNoon))
+
 -- procé
 procéOnWinter1 = TestCase (assertBool "procé should be closed on a winter dawn" (isClosed procéSchedule (LocalTime midwinter sixAM)))
 procéOnWinter2 = TestCase (assertBool "procé should be open on a winter morning" (isOpen procéSchedule (LocalTime midwinter nineAM)))
@@ -174,6 +191,31 @@ procéMWonTheExceptionalWeek8 = TestCase (assertBool "parc should be closing on 
 procéMWonTheExceptionalWeek9 = TestCase (assertBool "parc should be closed on friday" (isClosed procéWithMaintenanceWork fridayAt3PM))
 procéMWonTheExceptionalWeek10 = TestCase (assertBool "parc should be closed on saturday" (isClosed procéWithMaintenanceWork saturdayAt9AM))
 procéMWonTheExceptionalWeek11 = TestCase (assertBool "parc should reopen on sunday with its regular schedule" (isOpen procéWithMaintenanceWork sundayAtNoon))
+
+-- procé with storm forecast
+procéWithStorm1 = TestCase (assertBool "regular schedule before tuesday - dawn" (isClosed procéWithStorm mondayAt6AM))
+procéWithStorm2 = TestCase (assertBool "regular schedule before tuesday - noon" (isOpen procéWithStorm mondayAtNoon))
+procéWithStorm3 = TestCase (assertBool "regular schedule before tuesday - evening" (isClosed procéWithStorm mondayAt8PM))
+procéWithStorm4 = TestCase (assertBool "1st amendment - closed on tuesday" (isClosed procéWithStorm tuesdayAt3PM))
+procéWithStorm5 = TestCase (assertBool "1st amendment - closed on wednesday" (isClosed procéWithStorm wednesdayAt1PM))
+procéWithStorm6 = TestCase (assertBool "2nd amendment - closed on thursday untill 1Pm" (isClosed procéWithStorm thursdayAtNoon))
+procéWithStorm7 = TestCase (assertBool "2nd amendment - open on thursday from 1 to 3" (isOpen procéWithStorm (LocalTime thursday twoPM)))
+procéWithStorm8 = TestCase (assertBool "2nd amendment - closed on thursday after 3" (isClosed procéWithStorm (LocalTime thursday fivePM)))
+procéWithStorm9 = TestCase (assertBool "2nd amendment - open on friday from 1 to 3" (isOpen procéWithStorm (LocalTime friday twoPM)))
+procéWithStorm10 = TestCase (assertBool "2nd amendment - closed on saturday morning" (isClosed procéWithStorm saturdayAt9AM))
+procéWithStorm11 = TestCase (assertBool "2nd amendment - open on saturday from 1 to 3" (isOpen procéWithStorm (LocalTime saturday twoPM)))
+procéWithStorm12 = TestCase (assertBool "3rd amendment - closed on sunday morning cuz amendment do not apply yet" (isClosed procéWithStorm (LocalTime sunday nineAM)))
+procéWithStorm13 = TestCase (assertBool "3rd amendment - open on sunday noon" (isOpen procéWithStorm sundayAtNoon))
+procéWithStorm14 = TestCase (assertBool "3rd amendment - open on sunday afternoon" (isOpen procéWithStorm (LocalTime sunday fivePM)))
+procéWithStorm15 = TestCase (assertBool "3rd amendment - closed on sunday evening" (isClosed procéWithStorm (LocalTime sunday eightPM)))
+
+-- back to regular schedule
+procéWithStorm21 = TestCase (assertBool "3rd amendment - procé should be closed on a summer dawn" (isClosed procéWithStorm (LocalTime midsummer sixAM)))
+procéWithStorm22 = TestCase (assertBool "3rd amendment - procé should be open on a summer morning" (isOpen procéWithStorm (LocalTime midsummer nineAM)))
+procéWithStorm23 = TestCase (assertBool "3rd amendment - procé should be open on a summer noon" (isOpen procéWithStorm (LocalTime midsummer midday)))
+procéWithStorm24 = TestCase (assertBool "3rd amendment - procé should be open on a summer afternoon" (isOpen procéWithStorm (LocalTime midsummer threePM)))
+procéWithStorm25 = TestCase (assertBool "3rd amendment - procé should be open on a summer evening" (isOpen procéWithStorm (LocalTime midsummer eightPM)))
+procéWithStorm26 = TestCase (assertBool "3rd amendment - procé should be closed on a summer night" (isClosed procéWithStorm (LocalTime midsummer midnight)))
 
 
 tests :: Test
@@ -223,6 +265,15 @@ tests = TestList [
     TestLabel "wsNtFOpenOnSaturdays1" wsNtFOpenOnSaturdays1,
     TestLabel "wsNtFOpenOnSundays1" wsNtFOpenOnSundays1,
 
+    TestLabel "sixDaysWeek1" sixDaysWeek1,
+    TestLabel "sixDaysWeek2" sixDaysWeek2,
+    TestLabel "sixDaysWeek3" sixDaysWeek3,
+    TestLabel "sixDaysWeek4" sixDaysWeek4,
+    TestLabel "sixDaysWeek5" sixDaysWeek5,
+    TestLabel "sixDaysWeek6" sixDaysWeek6,
+    TestLabel "sixDaysWeek7" sixDaysWeek7,
+
+
     TestLabel "procéOnWinter1" procéOnWinter1,
     TestLabel "procéOnWinter2" procéOnWinter2,
     TestLabel "procéOnWinter3" procéOnWinter3,
@@ -264,7 +315,29 @@ tests = TestList [
     TestLabel "procéMWonTheExceptionalWeek8" procéMWonTheExceptionalWeek8,
     TestLabel "procéMWonTheExceptionalWeek9" procéMWonTheExceptionalWeek9,
     TestLabel "procéMWonTheExceptionalWeek10" procéMWonTheExceptionalWeek10,
-    TestLabel "procéMWonTheExceptionalWeek11" procéMWonTheExceptionalWeek11]
+    TestLabel "procéMWonTheExceptionalWeek11" procéMWonTheExceptionalWeek11,
+
+    TestLabel "procéWithStorm1" procéWithStorm1,
+    TestLabel "procéWithStorm2" procéWithStorm2,
+    TestLabel "procéWithStorm3" procéWithStorm3,
+    TestLabel "procéWithStorm4" procéWithStorm4,
+    TestLabel "procéWithStorm5" procéWithStorm5,
+    TestLabel "procéWithStorm6" procéWithStorm6,
+    TestLabel "procéWithStorm7" procéWithStorm7,
+    TestLabel "procéWithStorm8" procéWithStorm8,
+    TestLabel "procéWithStorm9" procéWithStorm9,
+    TestLabel "procéWithStorm10" procéWithStorm10,
+    TestLabel "procéWithStorm11" procéWithStorm11,
+    TestLabel "procéWithStorm12" procéWithStorm12,
+    TestLabel "procéWithStorm13" procéWithStorm13,
+    TestLabel "procéWithStorm14" procéWithStorm14,
+    TestLabel "procéWithStorm15" procéWithStorm15,
+    TestLabel "procéWithStorm21" procéWithStorm21,
+    TestLabel "procéWithStorm22" procéWithStorm22,
+    TestLabel "procéWithStorm23" procéWithStorm23,
+    TestLabel "procéWithStorm24" procéWithStorm24,
+    TestLabel "procéWithStorm25" procéWithStorm25,
+    TestLabel "procéWithStorm26" procéWithStorm26]
 
 main :: IO ()
 main = do
