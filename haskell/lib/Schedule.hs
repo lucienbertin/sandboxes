@@ -2,9 +2,10 @@ module Schedule (
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week), MondaysSchedule, TuesdaysSchedule, WednesdaysSchedule, ThursdaysSchedule, FridaysSchedule, SaturdaysSchedule, SundaysSchedule,
     YearlySchedule (Year), PartialYearSchedule (PartialYear),
+    RepeatingDaysSchedule (Repeat), ReferenceDay, DaysPattern,
     ExceptionalSchedule (RegularExceptBetween), BetweenSchedule (Between), RegularSchedule,
     AmendedSchedule (Amended), InitialSchedule, Amendment (Amend), DateOfEffect,
-    Schedule (DailySchedule, WeeklySchedule, YearlySchedule, ExceptionalSchedule, AmendedSchedule),
+    Schedule (DailySchedule, WeeklySchedule, RepeatingDaysSchedule, YearlySchedule, ExceptionalSchedule, AmendedSchedule),
 
     isOpen, isClosed,
     ioNow, isOpenNow, isClosedNow) where
@@ -110,9 +111,12 @@ isOpenOnDay (RegularExceptBetween rs ex) dt = isOpen applicableSchedule dt where
 -- Amended Schedule
 type DateOfEffect = LocalTime
 data Amendment = Amend DateOfEffect Schedule deriving (Show)
+instance Eq Amendment where
+    Amend d _ == Amend e _ = d == e
 compareAmendments :: Amendment -> Amendment -> Ordering
 compareAmendments (Amend d _) (Amend e _) = compare d e
-
+instance Ord Amendment where
+  compare = compareAmendments
 type InitialSchedule = Schedule
 data AmendedSchedule = Amended InitialSchedule (SortedList Amendment) deriving (Show)
 
