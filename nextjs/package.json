@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.tsx\""
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.0",
