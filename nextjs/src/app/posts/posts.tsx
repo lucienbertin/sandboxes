@@ -32,6 +32,7 @@ export default function Posts({ posts$: posts$ }: { posts$: Promise<Post[]> }) {
             <span className="text-sm ml-2">
               by {post.author.firstName} {post.author.lastName} 
             </span>
+            <>{ !post.published ? (<span>draft</span>) : <></>}</>
             <Link className="text-sm ml-2" href={`/posts/${post.id}`}>
               {" "}
               read
