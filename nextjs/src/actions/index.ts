@@ -14,6 +14,9 @@ export async function getPost(postId: number): Promise<Post> {
     if (!post) {
         return Promise.reject(new Error("post not found"));
     }
+    if (!post.published && post.author.id != agent?.id) {
+        return Promise.reject(new Error("insufficient rights"));
+    }
 
     return post;
 }
