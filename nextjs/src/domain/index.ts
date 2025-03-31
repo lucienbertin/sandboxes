@@ -11,15 +11,15 @@ export type Post = {
   author: User;
 };
 
-// export enum UserRole {
-//   Reader = 'reader',
-//   Writer = 'writer',
-//   Admin = 'admin',
-// }
+export enum UserRole {
+  Reader = 'reader',
+  Writer = 'writer',
+  Admin = 'admin',
+}
 export type User = {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
-  // role: UserRole;
+  role: UserRole;
 };

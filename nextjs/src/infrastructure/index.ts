@@ -1,5 +1,5 @@
 "use server";
-import { Place, Post, User } from "@/domain";
+import { Place, Post, User, UserRole } from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
 import { DataSource, DeepPartial } from "typeorm";
@@ -23,8 +23,15 @@ class ORMUser implements IRecord<User> {
   @typeorm.Column({ type: "text" })
   email!: string;
 
+  @typeorm.Column({
+    type: "enum",
+    enum: UserRole,
+    default: UserRole.Reader
+  })
+  role!: UserRole;
+
   @typeorm.OneToMany(() => ORMPost, post => post.author)
-  posts!: ORMPost[]
+  posts!: ORMPost[];
 
   asRecord(): User {
     return {
@@ -32,6 +39,7 @@ class ORMUser implements IRecord<User> {
       firstName: this.firstName,
       lastName: this.lastName,
       email: this.email,
+      role: this.role,
     };
   }
 }
