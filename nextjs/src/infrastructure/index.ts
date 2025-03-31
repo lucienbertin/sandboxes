@@ -26,11 +26,11 @@ class ORMUser implements IRecord<User> {
   @typeorm.Column({
     type: "enum",
     enum: UserRole,
-    default: UserRole.Reader
+    default: UserRole.Reader,
   })
   role!: UserRole;
 
-  @typeorm.OneToMany(() => ORMPost, post => post.author)
+  @typeorm.OneToMany(() => ORMPost, (post) => post.author)
   posts!: ORMPost[];
 
   asRecord(): User {
@@ -117,34 +117,25 @@ const isInitialized = datasource.initialize().then((ds) => ds.isInitialized);
 
 export async function getPublishedPosts(): Promise<Post[]> {
   await isInitialized;
-  const posts = await datasource
-    .getRepository(ORMPost)
-    .find({
-      where: { published: true },
-      relations: { author: true },
-    });
+  const posts = await datasource.getRepository(ORMPost).find({
+    where: { published: true },
+    relations: { author: true },
+  });
   return posts.map((p) => p.asRecord());
 }
 export async function getMyPostsOrPublishedPosts(me: User): Promise<Post[]> {
   await isInitialized;
-  const posts = await datasource
-    .getRepository(ORMPost)
-    .find({
-      where: [
-        { published: true },
-        {author: {id: me.id}}
-      ],
-      relations: { author: true },
-    });
+  const posts = await datasource.getRepository(ORMPost).find({
+    where: [{ published: true }, { author: { id: me.id } }],
+    relations: { author: true },
+  });
   return posts.map((p) => p.asRecord());
 }
 export async function getAllPosts(): Promise<Post[]> {
   await isInitialized;
-  const posts = await datasource
-    .getRepository(ORMPost)
-    .find({
-      relations: { author: true },
-    });
+  const posts = await datasource.getRepository(ORMPost).find({
+    relations: { author: true },
+  });
   return posts.map((p) => p.asRecord());
 }
 
@@ -152,7 +143,7 @@ export async function getPost(id: number): Promise<Post | null> {
   await isInitialized;
   const post = await datasource.getRepository(ORMPost).findOne({
     where: { id },
-    relations: { author: true }
+    relations: { author: true },
   });
 
   return post?.asRecord() as Post | null;

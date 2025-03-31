@@ -12,9 +12,9 @@ export type Post = {
 };
 
 export enum UserRole {
-  Reader = 'reader',
-  Writer = 'writer',
-  Admin = 'admin',
+  Reader = "reader",
+  Writer = "writer",
+  Admin = "admin",
 }
 export type User = {
   id: number;

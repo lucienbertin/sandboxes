@@ -11,7 +11,7 @@ export default async function Page({
 }) {
   const { id: id_str } = await params;
   const id = parseInt(id_str);
-  const post$ = getPost(id).catch(_ => redirect("/"));
+  const post$ = getPost(id).catch((_) => redirect("/"));
 
   return (
     <article className="min-h-screen flex flex-col items-center justify-center -mt-16">
