@@ -8,6 +8,7 @@ export type Post = {
   title: string;
   body: string;
   published: boolean;
+  author: User;
 };
 
 // export enum UserRole {
