@@ -29,9 +29,9 @@ export default function Posts({ posts$: posts$ }: { posts$: Promise<Post[]> }) {
         {posts.map((post) => (
           <li key={post.id}>
             <span className="font-semibold">{post.title}</span>
-            {/* <span className="text-sm ml-2">
-                by {post.author.firstName} {post.author.lastName} 
-                </span> */}
+            <span className="text-sm ml-2">
+              by {post.author.firstName} {post.author.lastName} 
+            </span>
             <Link className="text-sm ml-2" href={`/posts/${post.id}`}>
               {" "}
               read
