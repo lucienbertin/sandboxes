@@ -117,6 +117,20 @@ export async function getPublishedPosts(): Promise<Post[]> {
     });
   return posts.map((p) => p.asRecord());
 }
+export async function getMyPostsOrPublishedPosts(me: User): Promise<Post[]> {
+  await isInitialized;
+  const posts = await datasource
+    .getRepository(ORMPost)
+    .find({
+      where: [
+        { published: true },
+        {author: {id: me.id}}
+      ],
+      relations: { author: true },
+    });
+  return posts.map((p) => p.asRecord());
+}
+getMyPostsOrPublishedPosts
 
 export async function getPost(id: number): Promise<Post | null> {
   await isInitialized;
