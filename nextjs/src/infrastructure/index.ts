@@ -101,7 +101,7 @@ const datasource = new DataSource({
   username: "postgres",
   database: "postgres",
   synchronize: false,
-  logging: true,
+  logging: false,
   entities: [ORMPost, ORMPlace, ORMUser],
 });
 
