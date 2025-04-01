@@ -1,57 +1,41 @@
 "use server";
 import "reflect-metadata";
-import { DeepPartial } from "typeorm";
-import { Post, User } from "@/domain";
+import { DeepPartial, FindOptionsWhere } from "typeorm";
+import { Post, PostScope, User } from "@/domain";
 import { datasource, isInitialized, ORMPost, ORMUser } from "./datasource";
 
-export async function getPublishedPosts(): Promise<Post[]> {
+function fromScope(scope: PostScope, author: User | null): FindOptionsWhere<ORMPost> | FindOptionsWhere<ORMPost>[] | undefined {
+  let where = undefined;
+  switch (scope) {
+    case PostScope.All: break;
+    case PostScope.PublicAndFromAuthor:
+      where = [{ published: true }, { author: { id: author?.id } }]
+      break;
+    case PostScope.Public:
+    default:
+      where = { published: true };
+      break;
+  }
+
+  return where;
+}
+
+export async function getPosts(scope: PostScope, author: User | null): Promise<Post[]> {
   await isInitialized;
+  const where = fromScope(scope, author);
   const posts = await datasource.getRepository(ORMPost).find({
-    where: { published: true },
+    where,
     relations: { author: true },
   });
   return posts.map((p) => p.asRecord());
 }
-export async function getPublishedPostsCount(): Promise<number> {
+
+export async function countPosts(scope: PostScope, author: User | null): Promise<number> {
   await isInitialized;
+  const where = fromScope(scope, author);
   const cnt = await datasource.getRepository(ORMPost).count({
-    where: { published: true },
+    where,
   });
-  return cnt;
-}
-
-export async function getMyPostsOrPublishedPosts(me: User): Promise<Post[]> {
-  await isInitialized;
-  const posts = await datasource.getRepository(ORMPost).find({
-    where: [{ published: true }, { author: { id: me.id } }],
-    relations: { author: true },
-  });
-  return posts.map((p) => p.asRecord());
-}
-export async function getMyPostsOrPublishedPostsCount(
-  me: User,
-): Promise<number> {
-  await isInitialized;
-  const cnt = await datasource.getRepository(ORMPost).count({
-    where: [{ published: true }, { author: { id: me.id } }],
-    relations: { author: true },
-  });
-  return cnt;
-}
-
-export async function getAllPosts(): Promise<Post[]> {
-  await isInitialized;
-  const posts = await datasource.getRepository(ORMPost).find({
-    relations: { author: true },
-  });
-  return posts.map((p) => p.asRecord());
-}
-export async function getAllPostsCount(): Promise<number> {
-  await isInitialized;
-  const repo = datasource.getRepository(ORMPost);
-
-  const cnt = await repo.count();
-
   return cnt;
 }
 

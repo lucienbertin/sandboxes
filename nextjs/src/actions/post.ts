@@ -1,62 +1,34 @@
 "use server";
-import { Post, UserRole } from "@/domain";
+import { Post } from "@/domain";
+import * as domain from "@/domain";
 import * as infra from "@/infrastructure";
 
 export async function getPost(postId: number): Promise<Post> {
-  const agent = await infra.resolveAgent(); // IO
-
-  const post = await infra.getPost(postId); // IO
-
-  // Domain logic
-  if (!post) {
-    return Promise.reject(new Error("post not found"));
-  }
-  if (!post.published && post.author.id != agent?.id) {
-    return Promise.reject(new Error("insufficient rights"));
-  }
-
-  return post;
+  return domain.getPost(
+    postId,
+    infra.resolveAgent,
+    infra.getPost,
+  );
 }
 
 export async function getPosts(): Promise<Post[]> {
-  const agent = await infra.resolveAgent(); // IO
-
-  let posts = [];
-  // Domain logic
-  if (!agent) {
-    posts = await infra.getPublishedPosts(); // IO
-  } else if (agent.role == UserRole.Admin) {
-    posts = await infra.getAllPosts(); // IO
-  } else {
-    posts = await infra.getMyPostsOrPublishedPosts(agent); // IO
-  }
-
-  return posts;
+  return domain.getPosts(
+    infra.resolveAgent,
+    infra.getPosts
+  );
 }
 
 export async function getPostsCount(): Promise<number> {
-  const agent = await infra.resolveAgent(); // IO
-
-  let cnt;
-  // Domain logic
-  if (!agent) {
-    cnt = await infra.getPublishedPostsCount(); // IO
-  } else if (agent.role == UserRole.Admin) {
-    cnt = await infra.getAllPostsCount(); // IO
-  } else {
-    cnt = await infra.getMyPostsOrPublishedPostsCount(agent); // IO
-  }
-
-  return cnt;
+  return domain.countPosts(
+    infra.resolveAgent,
+    infra.countPosts
+  );
 }
 
 export async function createPost(post: Partial<Post>) {
-  const agent = await infra.resolveAgent(); // IO
-
-  if (!agent || agent.role == UserRole.Reader) {
-    // Domain logic
-    return Promise.reject(new Error("insufficient rights"));
-  }
-
-  await infra.createPost(post, agent); // IO
+  return domain.createPost(
+    post,
+    infra.resolveAgent,
+    infra.createPost,
+  );
 }
