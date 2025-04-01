@@ -14,9 +14,5 @@ export async function getPlacesGeoJSON(): Promise<
 }
 
 export async function createPlace(place: Feature<Point, Partial<Place>>) {
-  return domain.createPlace(
-    place,
-    infra.resolveAgent,
-    infra.createPlace,
-  );
+  return domain.createPlace(place, infra.resolveAgent, infra.createPlace);
 }

@@ -4,12 +4,16 @@ import { DeepPartial, FindOptionsWhere } from "typeorm";
 import { Post, PostScope, User } from "@/domain";
 import { datasource, isInitialized, ORMPost, ORMUser } from "./datasource";
 
-function fromScope(scope: PostScope, author: User | null): FindOptionsWhere<ORMPost> | FindOptionsWhere<ORMPost>[] | undefined {
+function fromScope(
+  scope: PostScope,
+  author: User | null,
+): FindOptionsWhere<ORMPost> | FindOptionsWhere<ORMPost>[] | undefined {
   let where = undefined;
   switch (scope) {
-    case PostScope.All: break;
+    case PostScope.All:
+      break;
     case PostScope.PublicAndFromAuthor:
-      where = [{ published: true }, { author: { id: author?.id } }]
+      where = [{ published: true }, { author: { id: author?.id } }];
       break;
     case PostScope.Public:
     default:
@@ -20,7 +24,10 @@ function fromScope(scope: PostScope, author: User | null): FindOptionsWhere<ORMP
   return where;
 }
 
-export async function getPosts(scope: PostScope, author: User | null): Promise<Post[]> {
+export async function getPosts(
+  scope: PostScope,
+  author: User | null,
+): Promise<Post[]> {
   await isInitialized;
   const where = fromScope(scope, author);
   const posts = await datasource.getRepository(ORMPost).find({
@@ -30,7 +37,10 @@ export async function getPosts(scope: PostScope, author: User | null): Promise<P
   return posts.map((p) => p.asRecord());
 }
 
-export async function countPosts(scope: PostScope, author: User | null): Promise<number> {
+export async function countPosts(
+  scope: PostScope,
+  author: User | null,
+): Promise<number> {
   await isInitialized;
   const where = fromScope(scope, author);
   const cnt = await datasource.getRepository(ORMPost).count({

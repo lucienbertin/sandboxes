@@ -31,7 +31,7 @@ type GetPostDelegate = (postId: number) => Promise<Post | null>;
 
 export async function getPost(
   postId: number,
-  agentDelegate:AgentDelegate,
+  agentDelegate: AgentDelegate,
   getPostDelegate: GetPostDelegate,
 ): Promise<Post> {
   const agent = await agentDelegate(); // IO - injected
@@ -48,7 +48,10 @@ export async function getPost(
   return post;
 }
 
-type GetPostsDelegate = (scope: PostScope, author: User | null) => Promise<Post[]>;
+type GetPostsDelegate = (
+  scope: PostScope,
+  author: User | null,
+) => Promise<Post[]>;
 export enum PostScope {
   All, // only admins are allowed this scope
   Public, // this is for anonymous users and readers
@@ -56,10 +59,10 @@ export enum PostScope {
   // i miss rust's enums, here i'd be using PublicAndFromAuthor(User) to inject the author into the enum value
 }
 export async function getPosts(
-  agentDelegate:AgentDelegate,
+  agentDelegate: AgentDelegate,
   getPostsDelegate: GetPostsDelegate,
 ): Promise<Post[]> {
-  const agent =  await agentDelegate(); // IO - injected
+  const agent = await agentDelegate(); // IO - injected
 
   // Domain logic
   let scope = PostScope.Public;
@@ -74,9 +77,12 @@ export async function getPosts(
   return posts;
 }
 
-type CountPostsDelegate = (scope: PostScope, author: User | null) => Promise<number>;
+type CountPostsDelegate = (
+  scope: PostScope,
+  author: User | null,
+) => Promise<number>;
 export async function countPosts(
-  agentDelegate:AgentDelegate,
+  agentDelegate: AgentDelegate,
   countPostsDelegate: CountPostsDelegate,
 ): Promise<number> {
   const agent = await agentDelegate(); // IO - injected
@@ -101,7 +107,7 @@ export async function createPost(
   createPostDelegate: CreatePostDelegate,
 ) {
   const agent = await agentDelegate(); // IO - injected
-  
+
   // Domain logic
   if (!agent || agent.role == UserRole.Reader) {
     return Promise.reject(new Error("insufficient rights"));
@@ -110,7 +116,7 @@ export async function createPost(
   await createPostDelegate(post, agent); // IO - injected
 }
 
-type GetPlacesGeoJSONDelegate = () => Promise<FeatureCollection<Point, Place>>
+type GetPlacesGeoJSONDelegate = () => Promise<FeatureCollection<Point, Place>>;
 export async function getPlacesAsGeoJSON(
   // agentDelegate: AgentDelegate,
   getPlacesDelegate: GetPlacesGeoJSONDelegate,
@@ -123,7 +129,9 @@ export async function getPlacesAsGeoJSON(
   return places;
 }
 
-type CreatePlaceDelegate = (place: Feature<Point, Partial<Place>>) => Promise<void>
+type CreatePlaceDelegate = (
+  place: Feature<Point, Partial<Place>>,
+) => Promise<void>;
 export async function createPlace(
   place: Feature<Point, Partial<Place>>,
   agentDelegate: AgentDelegate,
