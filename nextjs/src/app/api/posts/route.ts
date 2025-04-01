@@ -1,7 +1,7 @@
 export const dynamic = "force-static";
 
 import { getPublishedPosts, createPost } from "@/infrastructure";
-import { Post } from "@/domain";
+import { Post, UserRole } from "@/domain";
 import { NextRequest } from "next/server";
 
 export async function GET() {
@@ -17,7 +17,16 @@ export async function POST(request: NextRequest) {
     body: requestBody.body,
   };
 
-  await createPost(newPost);
+  // HARD CODE
+  const johnDoe = {
+    id: 1,
+    firstName: "john",
+    lastName: "doe",
+    email: "john@d.oe",
+    role: UserRole.Writer,
+  }
+
+  await createPost(newPost, johnDoe);
 
   return new Response(null, { status: 201 });
 }
