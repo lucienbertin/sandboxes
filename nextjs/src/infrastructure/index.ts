@@ -1,12 +1,51 @@
 "use server";
-import { Place, Post, User } from "@/domain";
+import { Place, Post, User, UserRole } from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
 import { DataSource, DeepPartial } from "typeorm";
 import { Feature, FeatureCollection, Point } from "geojson";
 
+interface IRecord<T> {
+  asRecord(): T;
+}
+
+@typeorm.Entity({ name: "users" })
+class ORMUser implements IRecord<User> {
+  @typeorm.PrimaryGeneratedColumn()
+  id!: number;
+
+  @typeorm.Column({ type: "text", name: "first_name" })
+  firstName!: string;
+
+  @typeorm.Column({ type: "text", name: "last_name" })
+  lastName!: string;
+
+  @typeorm.Column({ type: "text" })
+  email!: string;
+
+  @typeorm.Column({
+    type: "enum",
+    enum: UserRole,
+    default: UserRole.Reader,
+  })
+  role!: UserRole;
+
+  @typeorm.OneToMany(() => ORMPost, (post) => post.author)
+  posts!: ORMPost[];
+
+  asRecord(): User {
+    return {
+      id: this.id,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      email: this.email,
+      role: this.role,
+    };
+  }
+}
+
 @typeorm.Entity({ name: "posts" })
-class ORMPost {
+class ORMPost implements IRecord<Post> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
@@ -19,13 +58,23 @@ class ORMPost {
   @typeorm.Column({ type: "boolean" })
   published!: boolean;
 
-  asStruct(): Post {
-    return { ...this } as Post;
+  @typeorm.ManyToOne(() => ORMUser)
+  @typeorm.JoinColumn({ name: "author_id" })
+  author!: ORMUser;
+
+  asRecord(): Post {
+    return {
+      id: this.id,
+      title: this.title,
+      body: this.body,
+      published: this.published,
+      author: this.author.asRecord(),
+    } as Post;
   }
 }
 
 @typeorm.Entity({ name: "places" })
-class ORMPlace {
+class ORMPlace implements IRecord<Place> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
@@ -39,38 +88,15 @@ class ORMPlace {
   })
   geometry!: typeorm.Point;
 
-  asStruct(): Place {
+  asRecord(): Place {
     return { ...this } as Place;
   }
   asGeoJSON(): Feature<Point, Place> {
     return {
       id: this.id,
       type: "Feature",
-      properties: this.asStruct(),
+      properties: this.asRecord(),
       geometry: this.geometry,
-    };
-  }
-}
-@typeorm.Entity({ name: "users" })
-class ORMUser {
-  @typeorm.PrimaryGeneratedColumn()
-  id!: number;
-
-  @typeorm.Column({ type: "text", name: "first_name" })
-  firstName!: string;
-
-  @typeorm.Column({ type: "text", name: "last_name" })
-  lastName!: string;
-
-  @typeorm.Column({ type: "text" })
-  email!: string;
-
-  asStruct(): User {
-    return {
-      id: this.id,
-      firstName: this.firstName,
-      lastName: this.lastName,
-      email: this.email,
     };
   }
 }
@@ -83,7 +109,7 @@ const datasource = new DataSource({
   username: "postgres",
   database: "postgres",
   synchronize: false,
-  logging: true,
+  logging: false,
   entities: [ORMPost, ORMPlace, ORMUser],
 });
 
@@ -91,22 +117,42 @@ const isInitialized = datasource.initialize().then((ds) => ds.isInitialized);
 
 export async function getPublishedPosts(): Promise<Post[]> {
   await isInitialized;
-  const posts = await datasource
-    .getRepository(ORMPost)
-    .findBy({ published: true });
-  return posts.map((p) => p.asStruct());
+  const posts = await datasource.getRepository(ORMPost).find({
+    where: { published: true },
+    relations: { author: true },
+  });
+  return posts.map((p) => p.asRecord());
+}
+export async function getMyPostsOrPublishedPosts(me: User): Promise<Post[]> {
+  await isInitialized;
+  const posts = await datasource.getRepository(ORMPost).find({
+    where: [{ published: true }, { author: { id: me.id } }],
+    relations: { author: true },
+  });
+  return posts.map((p) => p.asRecord());
+}
+export async function getAllPosts(): Promise<Post[]> {
+  await isInitialized;
+  const posts = await datasource.getRepository(ORMPost).find({
+    relations: { author: true },
+  });
+  return posts.map((p) => p.asRecord());
 }
 
 export async function getPost(id: number): Promise<Post | null> {
   await isInitialized;
-  const post = await datasource.getRepository(ORMPost).findOneBy({ id });
-  return post?.asStruct() as Post | null;
+  const post = await datasource.getRepository(ORMPost).findOne({
+    where: { id },
+    relations: { author: true },
+  });
+
+  return post?.asRecord() as Post | null;
 }
 
 export async function getPlaces(): Promise<Place[]> {
   await isInitialized;
   const places = await datasource.getRepository(ORMPlace).find();
-  return places.map((p) => p.asStruct());
+  return places.map((p) => p.asRecord());
 }
 
 export async function getPlacesGeoJSON(): Promise<
@@ -160,6 +206,15 @@ export async function createPlace(
 }
 
 export async function authenticateUser(email: string): Promise<User | null> {
+  await isInitialized;
+
+  const repo = datasource.getRepository(ORMUser);
+  const user = await repo.findOneBy({ email: email });
+
+  return user;
+}
+
+export async function getUserByEmail(email: string): Promise<User | null> {
   await isInitialized;
 
   const repo = datasource.getRepository(ORMUser);
