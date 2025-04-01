@@ -11,7 +11,7 @@ export async function GET(
   try {
     const post = await getPost(id);
     return Response.json(post);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
     return new Response(null, {
       status: 404,
