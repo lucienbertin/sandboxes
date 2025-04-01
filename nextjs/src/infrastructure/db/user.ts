@@ -1,4 +1,4 @@
-"use server"
+"use server";
 import { User } from "@/domain";
 import { datasource, isInitialized, ORMUser } from "./datasource";
 

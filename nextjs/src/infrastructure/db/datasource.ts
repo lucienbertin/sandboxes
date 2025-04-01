@@ -12,26 +12,26 @@ interface IRecord<T> {
 export class ORMUser implements IRecord<User> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
-  
+
   @typeorm.Column({ type: "text", name: "first_name" })
   firstName!: string;
-  
+
   @typeorm.Column({ type: "text", name: "last_name" })
   lastName!: string;
-  
+
   @typeorm.Column({ type: "text" })
   email!: string;
-  
+
   @typeorm.Column({
     type: "enum",
     enum: UserRole,
     default: UserRole.Reader,
   })
   role!: UserRole;
-  
+
   @typeorm.OneToMany(() => ORMPost, (post) => post.author)
   posts!: ORMPost[];
-  
+
   asRecord(): User {
     return {
       id: this.id,
@@ -47,20 +47,20 @@ export class ORMUser implements IRecord<User> {
 export class ORMPost implements IRecord<Post> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
-  
+
   @typeorm.Column({ type: "text" })
   title!: string;
-  
+
   @typeorm.Column({ type: "text" })
   body!: string;
-  
+
   @typeorm.Column({ type: "boolean" })
   published!: boolean;
-  
+
   @typeorm.ManyToOne(() => ORMUser)
   @typeorm.JoinColumn({ name: "author_id" })
   author!: ORMUser;
-  
+
   asRecord(): Post {
     return {
       id: this.id,
@@ -76,17 +76,17 @@ export class ORMPost implements IRecord<Post> {
 export class ORMPlace implements IRecord<Place> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
-  
+
   @typeorm.Column({ type: "text" })
   name!: string;
-  
+
   @typeorm.Column({
     type: "geometry",
     srid: 4326,
     spatialFeatureType: "Point",
   })
   geometry!: typeorm.Point;
-  
+
   asRecord(): Place {
     return { ...this } as Place;
   }
@@ -111,4 +111,6 @@ export const datasource = new DataSource({
   logging: false,
   entities: [ORMPost, ORMPlace, ORMUser],
 });
-export const isInitialized = datasource.initialize().then((ds) => ds.isInitialized);
+export const isInitialized = datasource
+  .initialize()
+  .then((ds) => ds.isInitialized);

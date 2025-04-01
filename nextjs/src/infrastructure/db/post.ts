@@ -5,7 +5,6 @@ import "reflect-metadata";
 import { datasource, isInitialized, ORMPost } from "./datasource";
 import { DeepPartial } from "typeorm";
 
-
 export async function getPublishedPosts(): Promise<Post[]> {
   await isInitialized;
   const posts = await datasource.getRepository(ORMPost).find({
