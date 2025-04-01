@@ -1,6 +1,6 @@
 "use client";
 
-import { createPost, getPostsCount } from "@/infrastructure";
+import { createPost, getPostsCount } from "@/actions";
 import { Post } from "@/domain";
 import { use, useState } from "react";
 
@@ -24,7 +24,7 @@ export default function PostForm({ cnt$ }: { cnt$: Promise<number> }) {
         <input type="text" name="body" />
         <button type="submit">Create</button>
       </form>
-      <p>there are currently {cnt} posts in db</p>
+      <p>i can consult {cnt} posts in db</p>
     </>
   );
 }

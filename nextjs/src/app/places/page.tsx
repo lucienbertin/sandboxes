@@ -1,5 +1,5 @@
 import PlacesMap from "./map";
-import { getPlacesGeoJSON } from "@/infrastructure";
+import { getPlacesGeoJSON } from "@/actions";
 import StaticMap from "./staticMap";
 import { Suspense } from "react";
 

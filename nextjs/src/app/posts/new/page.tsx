@@ -1,4 +1,4 @@
-import { createPost, getPostsCount } from "@/infrastructure";
+import { createPost, getPostsCount } from "@/actions";
 import Link from "next/link";
 import PostForm from "./form";
 import { Suspense } from "react";
@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 
 export default async function Page() {
   const cnt$ = getPostsCount();
-  // let cnt = await getPostsCount();
+  const cnt = await getPostsCount();
   const handler = async (formData: FormData) => {
     "use server";
     const newPost = {
@@ -28,7 +28,7 @@ export default async function Page() {
           <input type="text" name="body" />
           <button type="submit">Create</button>
         </form>
-        {/* <p>there are currently {cnt} posts in db</p> */}
+        <p>i can consult {cnt} posts in db</p>
         <Suspense fallback={<div>Loading...</div>}>
           <PostForm cnt$={cnt$} />
         </Suspense>
