@@ -1,4 +1,3 @@
-"use server";
 import { Place, Post, User, UserRole } from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
