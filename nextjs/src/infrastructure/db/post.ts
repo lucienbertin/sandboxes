@@ -28,7 +28,9 @@ export async function getMyPostsOrPublishedPosts(me: User): Promise<Post[]> {
   });
   return posts.map((p) => p.asRecord());
 }
-export async function getMyPostsOrPublishedPostsCount(me: User): Promise<number> {
+export async function getMyPostsOrPublishedPostsCount(
+  me: User,
+): Promise<number> {
   await isInitialized;
   const cnt = await datasource.getRepository(ORMPost).count({
     where: [{ published: true }, { author: { id: me.id } }],
@@ -53,7 +55,6 @@ export async function getAllPostsCount(): Promise<number> {
   return cnt;
 }
 
-
 export async function getPost(id: number): Promise<Post | null> {
   await isInitialized;
   const post = await datasource.getRepository(ORMPost).findOne({
@@ -69,7 +70,9 @@ export async function createPost(newPost: DeepPartial<Post>, author: User) {
   const repo = datasource.getRepository(ORMPost);
   const post = repo.create(newPost as DeepPartial<Post>);
 
-  const ormAuthor = await datasource.getRepository(ORMUser).findOneByOrFail({ id: author.id });
+  const ormAuthor = await datasource
+    .getRepository(ORMUser)
+    .findOneByOrFail({ id: author.id });
   post.author = ormAuthor;
 
   await repo.save(post);

@@ -70,7 +70,8 @@ export async function createPost(post: Partial<Post>) {
     me = await infra.getUserByEmail(session?.user?.email); // IO
   }
 
-  if (!me || me.role == UserRole.Reader) { // Domain logic
+  if (!me || me.role == UserRole.Reader) {
+    // Domain logic
     return Promise.reject(new Error("insufficient rights"));
   }
 

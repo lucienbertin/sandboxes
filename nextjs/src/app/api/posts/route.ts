@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     lastName: "doe",
     email: "john@d.oe",
     role: UserRole.Writer,
-  }
+  };
 
   await createPost(newPost, johnDoe);
 
