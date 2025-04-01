@@ -1,3 +1,5 @@
+import { Feature, FeatureCollection, Point } from "geojson";
+
 export type Place = {
   id: number;
   name: string;
@@ -25,15 +27,15 @@ export type User = {
 };
 
 type AgentDelegate = () => Promise<User | null>;
-type PostDelegate = (postId: number) => Promise<Post | null>;
+type GetPostDelegate = (postId: number) => Promise<Post | null>;
 
 export async function getPost(
   postId: number,
   agentDelegate:AgentDelegate,
-  postDelegate: PostDelegate,
+  getPostDelegate: GetPostDelegate,
 ): Promise<Post> {
   const agent = await agentDelegate(); // IO - injected
-  const post = await postDelegate(postId); // IO - injected
+  const post = await getPostDelegate(postId); // IO - injected
 
   // Domain logic
   if (!post) {
@@ -46,7 +48,7 @@ export async function getPost(
   return post;
 }
 
-type PostsDelegate = (scope: PostScope, author: User | null) => Promise<Post[]>;
+type GetPostsDelegate = (scope: PostScope, author: User | null) => Promise<Post[]>;
 export enum PostScope {
   All, // only admins are allowed this scope
   Public, // this is for anonymous users and readers
@@ -55,7 +57,7 @@ export enum PostScope {
 }
 export async function getPosts(
   agentDelegate:AgentDelegate,
-  postsDelegate: PostsDelegate,
+  getPostsDelegate: GetPostsDelegate,
 ): Promise<Post[]> {
   const agent =  await agentDelegate(); // IO - injected
 
@@ -67,15 +69,15 @@ export async function getPosts(
     scope = PostScope.PublicAndFromAuthor;
   }
 
-  const posts = await postsDelegate(scope, agent); // IO - injected
+  const posts = await getPostsDelegate(scope, agent); // IO - injected
 
   return posts;
 }
 
-type PostsCountDelegate = (scope: PostScope, author: User | null) => Promise<number>;
+type CountPostsDelegate = (scope: PostScope, author: User | null) => Promise<number>;
 export async function countPosts(
   agentDelegate:AgentDelegate,
-  postsCountDelegate: PostsCountDelegate,
+  countPostsDelegate: CountPostsDelegate,
 ): Promise<number> {
   const agent = await agentDelegate(); // IO - injected
 
@@ -87,7 +89,7 @@ export async function countPosts(
     scope = PostScope.PublicAndFromAuthor;
   }
 
-  const cnt = await postsCountDelegate(scope, agent); // IO - injected
+  const cnt = await countPostsDelegate(scope, agent); // IO - injected
 
   return cnt;
 }
@@ -106,4 +108,33 @@ export async function createPost(
   }
 
   await createPostDelegate(post, agent); // IO - injected
+}
+
+type GetPlacesGeoJSONDelegate = () => Promise<FeatureCollection<Point, Place>>
+export async function getPlacesAsGeoJSON(
+  // agentDelegate: AgentDelegate,
+  getPlacesDelegate: GetPlacesGeoJSONDelegate,
+): Promise<FeatureCollection<Point, Place>> {
+  // const agent = await agentDelegate(); // IO - injected
+
+  const places = await getPlacesDelegate(); // IO - injected
+  // should the transformation to geojson happen here or in another layer ?
+
+  return places;
+}
+
+type CreatePlaceDelegate = (place: Feature<Point, Partial<Place>>) => Promise<void>
+export async function createPlace(
+  place: Feature<Point, Partial<Place>>,
+  agentDelegate: AgentDelegate,
+  createPlaceDelegate: CreatePlaceDelegate,
+) {
+  const agent = await agentDelegate(); // IO - injected
+
+  // Domain logic
+  if (!agent || agent.role == UserRole.Reader) {
+    return Promise.reject(new Error("insufficient rights"));
+  }
+
+  await createPlaceDelegate(place); // IO - injected
 }
