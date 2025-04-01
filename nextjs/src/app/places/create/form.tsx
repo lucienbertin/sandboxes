@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import Map from "react-map-gl/mapbox";
-import { createPlace } from "@/infrastructure";
+import { createPlace } from "@/actions";
 
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import { useControl } from "react-map-gl/mapbox";
