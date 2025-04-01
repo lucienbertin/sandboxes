@@ -28,7 +28,6 @@ export type User = {
 
 type AgentDelegate = () => Promise<User | null>;
 type GetPostDelegate = (postId: number) => Promise<Post | null>;
-
 export async function getPost(
   postId: number,
   agentDelegate: AgentDelegate,
@@ -48,16 +47,16 @@ export async function getPost(
   return post;
 }
 
-type GetPostsDelegate = (
-  scope: PostScope,
-  author: User | null,
-) => Promise<Post[]>;
 export enum PostScope {
   All, // only admins are allowed this scope
   Public, // this is for anonymous users and readers
   PublicAndFromAuthor, // this is for writers
   // i miss rust's enums, here i'd be using PublicAndFromAuthor(User) to inject the author into the enum value
 }
+type GetPostsDelegate = (
+  scope: PostScope,
+  author: User | null,
+) => Promise<Post[]>;
 export async function getPosts(
   agentDelegate: AgentDelegate,
   getPostsDelegate: GetPostsDelegate,
