@@ -1,12 +1,54 @@
-const { getPost, NotFoundError, UnauthorizedError, ForbiddenError, UserRole } = require("../");
+import {
+  getPost,
+  NotFoundError,
+  UnauthorizedError,
+  ForbiddenError,
+  UserRole,
+} from "../";
 
-const reader = { id: 1, firstName: "john", lastName: "doe", email: "john@d.oe", role: UserRole.Reader };
-const writer = { id: 2, firstName: "kurt", lastName: "vonnegut", email: "kurt@vonneg.ut", role: UserRole.Writer };
-const otherWriter = { id: 3, firstName: "enki", lastName: "billal", email: "enki@bill.al", role: UserRole.Writer };
-const admin = { id: 4, firstName: "lucien", lastName: "bertin", email: "lucien@bert.in", role: UserRole.Admin };
+const reader = {
+  id: 1,
+  firstName: "john",
+  lastName: "doe",
+  email: "john@d.oe",
+  role: UserRole.Reader,
+};
+const writer = {
+  id: 2,
+  firstName: "kurt",
+  lastName: "vonnegut",
+  email: "kurt@vonneg.ut",
+  role: UserRole.Writer,
+};
+const otherWriter = {
+  id: 3,
+  firstName: "enki",
+  lastName: "billal",
+  email: "enki@bill.al",
+  role: UserRole.Writer,
+};
+const admin = {
+  id: 4,
+  firstName: "lucien",
+  lastName: "bertin",
+  email: "lucien@bert.in",
+  role: UserRole.Admin,
+};
 
-const publishedPost = { id: 1, title: "breakfast of champions", body: "The expression 'breakfast of champions' is a registered trademark of General Mills, Inc., for use on a breakfast cereal product", published: true, author: writer }
-const unpublishedPost = { id: 1, title: "draft", body: "work in progress", published: false, author: writer };
+const publishedPost = {
+  id: 1,
+  title: "breakfast of champions",
+  body: "The expression 'breakfast of champions' is a registered trademark of General Mills, Inc., for use on a breakfast cereal product",
+  published: true,
+  author: writer,
+};
+const unpublishedPost = {
+  id: 1,
+  title: "draft",
+  body: "work in progress",
+  published: false,
+  author: writer,
+};
 
 const nullDelegate = () => Promise.resolve(null);
 
@@ -25,11 +67,7 @@ test("getPost rejects with 'not found' when post delegate returns nothing", () =
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).rejects.toBeInstanceOf(NotFoundError);
@@ -42,11 +80,7 @@ test("getPost resolves with post when post delegate returns a published post", (
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).resolves.toEqual(publishedPost);
@@ -59,11 +93,7 @@ test("getPost resolves with post when post delegate returns an unpublished post 
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).resolves.toEqual(unpublishedPost);
@@ -76,11 +106,7 @@ test("getPost rejects with 'forbidden' when post delegate returns an unpublished
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).rejects.toBeInstanceOf(ForbiddenError);
@@ -93,11 +119,7 @@ test("getPost rejects with 'unauthorized' when post delegate returns an unpublis
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
@@ -110,11 +132,7 @@ test("getPost rejects with 'forbidden' when post delegate returns an unpublished
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).rejects.toBeInstanceOf(ForbiddenError);
@@ -127,11 +145,7 @@ test("getPost resolves with post when post delegate returns an unpublished post 
   const postId = 1;
 
   // act
-  const promise = getPost(
-    postId,
-    agentDelegate,
-    getPostDelegate,
-  );
+  const promise = getPost(postId, agentDelegate, getPostDelegate);
 
   // assert
   expect(promise).resolves.toEqual(unpublishedPost);
