@@ -8,7 +8,7 @@ import {
   PostScope,
   countPosts,
   createPost,
-} from "../";
+} from "./";
 
 const reader = {
   id: 1,
