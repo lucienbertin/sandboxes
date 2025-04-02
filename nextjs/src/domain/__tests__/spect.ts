@@ -6,6 +6,7 @@ import {
   UserRole,
   getPosts,
   PostScope,
+  countPosts,
 } from "../";
 
 const reader = {
@@ -157,7 +158,8 @@ describe("getPost", () => {
 });
 
 describe("getPosts", () => {
-  const postsDelegate = () => Promise.resolve([publishedPost, unpublishedPost]);
+  const postCollection = [publishedPost, unpublishedPost];
+  const postsDelegate = () => Promise.resolve(postCollection);
   test("resolves with what getPostsDelegate returns", () => {
     // arrange
     const agentDelegate = nullDelegate;
@@ -167,7 +169,7 @@ describe("getPosts", () => {
     const promise = getPosts(agentDelegate, getPostsDelegate);
   
     // assert
-    expect(promise).resolves.toEqual([publishedPost, unpublishedPost]);
+    expect(promise).resolves.toEqual(postCollection);
   });
   test("for anonymous agent, scope should be only published posts", async () => {
     // arrange
@@ -220,5 +222,72 @@ describe("getPosts", () => {
     // assert
     expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
     expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.All, admin);
+  });
+});
+
+describe("countPosts", () => {
+  const count = 2;
+  const countDelegate = () => Promise.resolve(count);
+  test("resolves with what countDelegate returns", () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+  
+    // act
+    const promise = countPosts(agentDelegate, countDelegate);
+  
+    // assert
+    expect(promise).resolves.toEqual(count);
+  });
+  test("for anonymous agent, scope should be only published posts", async () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+    const mockGetCountDelegate =  jest.fn();
+    mockGetCountDelegate.mockImplementation(countDelegate);
+
+    // act
+    await countPosts(agentDelegate, mockGetCountDelegate);
+
+    // assert
+    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.Public, null);
+  });
+  test("for reader agent, scope should be only published posts", async () => {
+    // arrange
+    const agentDelegate = readerDelegate;
+    const mockGetCountDelegate =  jest.fn();
+    mockGetCountDelegate.mockImplementation(countDelegate);
+
+    // act
+    await countPosts(agentDelegate, mockGetCountDelegate);
+
+    // assert
+    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.Public, reader);
+  });
+  test("for writer agent, scope should be published posts and their posts", async () => {
+    // arrange
+    const agentDelegate = writerDelegate;
+    const mockGetCountDelegate =  jest.fn();
+    mockGetCountDelegate.mockImplementation(countDelegate);
+
+    // act
+    await countPosts(agentDelegate, mockGetCountDelegate);
+
+    // assert
+    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.PublicAndFromAuthor, writer);
+  });
+  test("for admin agent, scope should be all posts", async () => {
+    // arrange
+    const agentDelegate = adminDelegate;
+    const mockGetCountDelegate =  jest.fn();
+    mockGetCountDelegate.mockImplementation(countDelegate);
+
+    // act
+    await countPosts(agentDelegate, mockGetCountDelegate);
+
+    // assert
+    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.All, admin);
   });
 });
