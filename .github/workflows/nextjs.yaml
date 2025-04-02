@@ -29,6 +29,8 @@ jobs:
         run: npm ci --prefix nextjs
       - name: Build
         run: npm run build --prefix nextjs -- --experimental-build-mode compile
+      - name: Test
+        run: npm run test --prefix nextjs
       - name: Lint
         run: npm run lint --prefix nextjs
       - name: Pretty

@@ -28,6 +28,9 @@ export type User = {
 
 type AgentDelegate = () => Promise<User | null>;
 type GetPostDelegate = (postId: number) => Promise<Post | null>;
+export class NotFoundError extends Error {}
+export class UnauthorizedError extends Error {}
+export class ForbiddenError extends Error {}
 export async function getPost(
   postId: number,
   agentDelegate: AgentDelegate,
@@ -38,13 +41,19 @@ export async function getPost(
 
   // Domain logic
   if (!post) {
-    return Promise.reject(new Error("post not found"));
+    return Promise.reject(new NotFoundError());
+  }
+  if (!post.published && agent === null) {
+    return Promise.reject(new UnauthorizedError());
+  }
+  if (!post.published && agent?.role === UserRole.Admin) {
+    return post;
   }
   if (!post.published && post.author.id != agent?.id) {
-    return Promise.reject(new Error("insufficient rights"));
+    return Promise.reject(new ForbiddenError());
+  } else {
+    return post;
   }
-
-  return post;
 }
 
 export enum PostScope {
@@ -108,8 +117,10 @@ export async function createPost(
   const agent = await agentDelegate(); // IO - injected
 
   // Domain logic
-  if (!agent || agent.role == UserRole.Reader) {
-    return Promise.reject(new Error("insufficient rights"));
+  if (!agent) {
+    return Promise.reject(new UnauthorizedError());
+  } else if (agent.role == UserRole.Reader) {
+    return Promise.reject(new ForbiddenError());
   }
 
   await createPostDelegate(post, agent); // IO - injected
@@ -139,8 +150,10 @@ export async function createPlace(
   const agent = await agentDelegate(); // IO - injected
 
   // Domain logic
-  if (!agent || agent.role == UserRole.Reader) {
-    return Promise.reject(new Error("insufficient rights"));
+  if (!agent) {
+    return Promise.reject(new UnauthorizedError());
+  } else if (agent.role == UserRole.Reader) {
+    return Promise.reject(new ForbiddenError());
   }
 
   await createPlaceDelegate(place); // IO - injected
