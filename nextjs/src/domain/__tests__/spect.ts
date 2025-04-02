@@ -4,6 +4,8 @@ import {
   UnauthorizedError,
   ForbiddenError,
   UserRole,
+  getPosts,
+  PostScope,
 } from "../";
 
 const reader = {
@@ -60,93 +62,163 @@ const adminDelegate = () => Promise.resolve(admin);
 const publishedPostDelegate = () => Promise.resolve(publishedPost);
 const unpublishedPostDelegate = () => Promise.resolve(unpublishedPost);
 
-test("getPost rejects with 'not found' when post delegate returns nothing", () => {
-  // arrange
-  const agentDelegate = nullDelegate;
-  const getPostDelegate = nullDelegate;
-  const postId = 1;
-
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
-
-  // assert
-  expect(promise).rejects.toBeInstanceOf(NotFoundError);
+describe("getPost", () => {
+  test("rejects with 'not found' when post delegate returns nothing", () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+    const getPostDelegate = nullDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).rejects.toBeInstanceOf(NotFoundError);
+  });
+  
+  test("resolves with post when post delegate returns a published post", () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+    const getPostDelegate = publishedPostDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).resolves.toEqual(publishedPost);
+  });
+  
+  test("resolves with post when post delegate returns an unpublished post and agent delegate returns its author", () => {
+    // arrange
+    const agentDelegate = writerDelegate;
+    const getPostDelegate = unpublishedPostDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).resolves.toEqual(unpublishedPost);
+  });
+  
+  test("rejects with 'forbidden' when post delegate returns an unpublished post and agent delegate returns another writer", () => {
+    // arrange
+    const agentDelegate = otherWriterDelegate;
+    const getPostDelegate = unpublishedPostDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+  });
+  
+  test("rejects with 'unauthorized' when post delegate returns an unpublished post and agent delegate returns nothing", () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+    const getPostDelegate = unpublishedPostDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+  
+  test("rejects with 'forbidden' when post delegate returns an unpublished post and agent delegate returns someone else than its author", () => {
+    // arrange
+    const agentDelegate = readerDelegate;
+    const getPostDelegate = unpublishedPostDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+  });
+  
+  test("resolves with post when post delegate returns an unpublished post and agent delegate returns an admin", () => {
+    // arrange
+    const agentDelegate = adminDelegate;
+    const getPostDelegate = unpublishedPostDelegate;
+    const postId = 1;
+  
+    // act
+    const promise = getPost(postId, agentDelegate, getPostDelegate);
+  
+    // assert
+    expect(promise).resolves.toEqual(unpublishedPost);
+  });
+  
 });
 
-test("getPost resolves with post when post delegate returns a published post", () => {
-  // arrange
-  const agentDelegate = nullDelegate;
-  const getPostDelegate = publishedPostDelegate;
-  const postId = 1;
+describe("getPosts", () => {
+  const postsDelegate = () => Promise.resolve([publishedPost, unpublishedPost]);
+  test("resolves with what getPostsDelegate returns", () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+    const getPostsDelegate = postsDelegate;
+  
+    // act
+    const promise = getPosts(agentDelegate, getPostsDelegate);
+  
+    // assert
+    expect(promise).resolves.toEqual([publishedPost, unpublishedPost]);
+  });
+  test("for anonymous agent, scope should be only published posts", async () => {
+    // arrange
+    const agentDelegate = nullDelegate;
+    const mockGetPostsDelegate =  jest.fn();
+    mockGetPostsDelegate.mockImplementation(postsDelegate);
 
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
+    // act
+    await getPosts(agentDelegate, mockGetPostsDelegate);
 
-  // assert
-  expect(promise).resolves.toEqual(publishedPost);
-});
+    // assert
+    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.Public, null);
+  });
+  test("for reader agent, scope should be only published posts", async () => {
+    // arrange
+    const agentDelegate = readerDelegate;
+    const mockGetPostsDelegate =  jest.fn();
+    mockGetPostsDelegate.mockImplementation(postsDelegate);
 
-test("getPost resolves with post when post delegate returns an unpublished post and agent delegate returns its author", () => {
-  // arrange
-  const agentDelegate = writerDelegate;
-  const getPostDelegate = unpublishedPostDelegate;
-  const postId = 1;
+    // act
+    await getPosts(agentDelegate, mockGetPostsDelegate);
 
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
+    // assert
+    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.Public, reader);
+  });
+  test("for writer agent, scope should be published posts and their posts", async () => {
+    // arrange
+    const agentDelegate = writerDelegate;
+    const mockGetPostsDelegate =  jest.fn();
+    mockGetPostsDelegate.mockImplementation(postsDelegate);
 
-  // assert
-  expect(promise).resolves.toEqual(unpublishedPost);
-});
+    // act
+    await getPosts(agentDelegate, mockGetPostsDelegate);
 
-test("getPost rejects with 'forbidden' when post delegate returns an unpublished post and agent delegate returns another writer", () => {
-  // arrange
-  const agentDelegate = otherWriterDelegate;
-  const getPostDelegate = unpublishedPostDelegate;
-  const postId = 1;
+    // assert
+    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.PublicAndFromAuthor, writer);
+  });
+  test("for admin agent, scope should be all posts", async () => {
+    // arrange
+    const agentDelegate = adminDelegate;
+    const mockGetPostsDelegate =  jest.fn();
+    mockGetPostsDelegate.mockImplementation(postsDelegate);
 
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
+    // act
+    await getPosts(agentDelegate, mockGetPostsDelegate);
 
-  // assert
-  expect(promise).rejects.toBeInstanceOf(ForbiddenError);
-});
-
-test("getPost rejects with 'unauthorized' when post delegate returns an unpublished post and agent delegate returns nothing", () => {
-  // arrange
-  const agentDelegate = nullDelegate;
-  const getPostDelegate = unpublishedPostDelegate;
-  const postId = 1;
-
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
-
-  // assert
-  expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
-});
-
-test("getPost rejects with 'forbidden' when post delegate returns an unpublished post and agent delegate returns someone else than its author", () => {
-  // arrange
-  const agentDelegate = readerDelegate;
-  const getPostDelegate = unpublishedPostDelegate;
-  const postId = 1;
-
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
-
-  // assert
-  expect(promise).rejects.toBeInstanceOf(ForbiddenError);
-});
-
-test("getPost resolves with post when post delegate returns an unpublished post and agent delegate returns an admin", () => {
-  // arrange
-  const agentDelegate = adminDelegate;
-  const getPostDelegate = unpublishedPostDelegate;
-  const postId = 1;
-
-  // act
-  const promise = getPost(postId, agentDelegate, getPostDelegate);
-
-  // assert
-  expect(promise).resolves.toEqual(unpublishedPost);
+    // assert
+    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
+    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.All, admin);
+  });
 });
