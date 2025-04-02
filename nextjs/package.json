@@ -9,7 +9,8 @@
     "lint": "next lint",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.tsx\"",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.0",
