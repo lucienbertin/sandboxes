@@ -299,7 +299,7 @@ describe("countPosts", () => {
   });
 });
 
-describe("create post", () => {
+describe("createPost", () => {
   const post = {
     title: "ma vie mon oeuvre",
     body: "je suis né un mardi matin a 8h52",
