@@ -8,14 +8,14 @@ export default async function Home() {
     return (
       // <SessionProvider session={session}>
       <>
-        Signed in as {session.user?.email} <SignIn />
+        Server session: Signed in as {session.user?.email} <br /><SignIn />
       </>
       // </ SessionProvider>
     );
   }
   return (
     <>
-      Not signed in <br />
+      Server session:  Not signed in <br />
       <SignIn />
     </>
   );
