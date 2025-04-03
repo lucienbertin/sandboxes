@@ -14,3 +14,9 @@ jwt = "0.16.0"
 diesel = { version = "2", features = ["postgres", "r2d2"] }
 postgis_diesel = { version = "2", features = ["serde"] }
 r2d2 = "0.8"
+lapin = "2.5.2"
+
+[dev-dependencies]
+tokio = "1.44.1"
+futures-lite = "2.6.0"
+async-global-executor = "3.1.0"
