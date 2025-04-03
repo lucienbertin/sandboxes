@@ -12,13 +12,10 @@ use dotenvy::dotenv;
 use std::env;
 
 // Alias to the type for a pool of Diesel PostgreSQL connections.
-pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
-// pub type PooledConn = PooledConnection<ConnectionManager<PgConnection>>;
-pub struct PoolState {
-    pub pool: Pool,
-}
+pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+
 // initializes a data pool
-pub fn init_pool() -> Result<Pool, Error> {
+pub fn init_pool() -> Result<DbPool, Error> {
     dotenv()?;
     let database_url = env::var("DATABASE_URL")?;
     let manager = ConnectionManager::<PgConnection>::new(database_url);
