@@ -154,22 +154,24 @@ pub async fn publish_post(
     })?;
     let chan = &server_state.rmq_channel;
 
-    let result = conn.build_transaction().run(|conn| ({
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
-        let result = db::find_post(conn, id)?;
-        let result = result.ok_or(Error::NotFound)?;
+    let result = conn.build_transaction().run(|conn| {
+        ({
+            let subject = find_user(conn, subject.email)?;
+            let subject = subject.ok_or(Error::Unauthorized)?;
+            let result = db::find_post(conn, id)?;
+            let result = result.ok_or(Error::NotFound)?;
 
-        use domain::usecases::{publish_post, PublishPostResult::*};
-        let result = publish_post(&subject, &result);
+            use domain::usecases::{publish_post, PublishPostResult::*};
+            let result = publish_post(&subject, &result);
 
-        match result {
-            CantPublishAnotherOnesPost => Err(Error::Forbidden),
-            CantPublishAlreadyPublishedPost => Ok(None), // treat it as Ok for idempotency purpose
-            DoPublish(post_id) => db::publish_post(conn, post_id).map(|_| Some(post_id)),
-            CantPublishAsReader => Err(Error::Forbidden),
-        }
-    }))?;
+            match result {
+                CantPublishAnotherOnesPost => Err(Error::Forbidden),
+                CantPublishAlreadyPublishedPost => Ok(None), // treat it as Ok for idempotency purpose
+                DoPublish(post_id) => db::publish_post(conn, post_id).map(|_| Some(post_id)),
+                CantPublishAsReader => Err(Error::Forbidden),
+            }
+        })
+    })?;
     if let Some(post_id) = result {
         println!("publishing to rmq");
         rmq::publish(chan, "post published", format!("id: {}", post_id)).await?;
