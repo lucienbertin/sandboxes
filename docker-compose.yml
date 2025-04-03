@@ -17,3 +17,12 @@ services:
 
     environment:
       POSTGRES_PASSWORD: postgres
+    
+  rmq:
+    image: rabbitmq:4-management
+    ports:
+    - 5672:5672
+    - 15672:15672
+    volumes:
+      - /tank/lulu/volumes/sandbox-rmq/data/:/var/lib/rabbitmq/
+      - /tank/lulu/volumes/sandbox-rmq/log/:/var/log/rabbitmq/
