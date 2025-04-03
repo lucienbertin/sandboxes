@@ -6,6 +6,7 @@ extern crate rocket;
 mod api;
 mod auth;
 mod db;
+mod rmq;
 mod error;
 
 #[launch]
