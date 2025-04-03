@@ -17,22 +17,27 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: actions-rs/cargo@v1
+        run: rustup component add rustfmt
+      - name: Check
+        uses: actions-rs/cargo@v1
         with:
           command: check
           args: --all-targets --manifest-path rust/Cargo.toml
-      - uses: actions-rs/cargo@v1
+      - name: Test
+        uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all-targets --manifest-path rust/Cargo.toml
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
+      - name: Fmt
+        uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all --manifest-path rust/Cargo.toml -- --check
