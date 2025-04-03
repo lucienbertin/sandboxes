@@ -27,10 +27,10 @@ jobs:
           override: true
       - name: Setup rustfmt
         run: rustup component add rustfmt
-      - name: Check
+      - name: Build
         uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: build
           args: --all-targets --manifest-path rust/Cargo.toml
       - name: Test
         uses: actions-rs/cargo@v1
