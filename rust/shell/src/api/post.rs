@@ -1,6 +1,7 @@
 use crate::auth::JwtIdentifiedSubject;
-use crate::db::{self, find_user, PoolState};
+use crate::db::{self, find_user};
 use crate::error::Error;
+use crate::{rmq, ServerState};
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket::{
@@ -78,10 +79,10 @@ impl From<PatchPost> for domain::models::PostEdition {
 
 #[get("/posts", format = "json")]
 pub async fn get_posts(
-    state: &State<PoolState>,
+    server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
 ) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
-    let mut conn = state.pool.get().map_err(|e| {
+    let mut conn = server_state.db_pool.get().map_err(|e| {
         rocket::response::status::Custom(
             Status::InternalServerError,
             format!("error: {:?}", e).to_string(),
@@ -110,11 +111,11 @@ pub async fn get_posts(
 
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
-    state: &State<PoolState>,
+    server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
     id: i32,
 ) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
-    let mut conn = state.pool.get().map_err(|e| {
+    let mut conn = server_state.db_pool.get().map_err(|e| {
         rocket::response::status::Custom(
             Status::InternalServerError,
             format!("error: {:?}", e).to_string(),
@@ -140,19 +141,20 @@ pub fn get_post(
 }
 
 #[post("/post/<id>/publish")]
-pub fn publish_post(
-    state: &State<PoolState>,
+pub async fn publish_post(
+    server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<Status, rocket::response::status::Custom<String>> {
-    let mut conn = state.pool.get().map_err(|e| {
+    let mut conn = server_state.db_pool.get().map_err(|e| {
         rocket::response::status::Custom(
             Status::InternalServerError,
             format!("error: {:?}", e).to_string(),
         )
     })?;
+    let chan = &server_state.rmq_channel;
 
-    conn.build_transaction().run(|conn| {
+    let result = conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
         let result = db::find_post(conn, id)?;
@@ -163,22 +165,26 @@ pub fn publish_post(
 
         match result {
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
-            CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-            DoPublish(post_id) => db::publish_post(conn, post_id),
+            CantPublishAlreadyPublishedPost => Ok(None), // treat it as Ok for idempotency purpose
+            DoPublish(post_id) => db::publish_post(conn, post_id).map(|_| Some(post_id)),
             CantPublishAsReader => Err(Error::Forbidden),
         }
     })?;
+    if let Some(post_id) = result {
+        println!("publishing to rmq");
+        rmq::publish(chan, "post published", format!("id: {}", post_id)).await?;
+    }
 
     Ok(Status::NoContent)
 }
 
 #[post("/posts", data = "<data>")]
 pub fn post_post(
-    state: &State<PoolState>,
+    server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
-    let mut conn = state.pool.get().map_err(|e| {
+    let mut conn = server_state.db_pool.get().map_err(|e| {
         rocket::response::status::Custom(
             Status::InternalServerError,
             format!("error: {:?}", e).to_string(),
@@ -205,11 +211,11 @@ pub fn post_post(
 
 #[delete("/post/<id>")]
 pub fn delete_post(
-    state: &State<PoolState>,
+    server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-    let mut conn = state.pool.get().map_err(|e| {
+    let mut conn = server_state.db_pool.get().map_err(|e| {
         rocket::response::status::Custom(
             Status::InternalServerError,
             format!("error: {:?}", e).to_string(),
@@ -239,12 +245,12 @@ pub fn delete_post(
 
 #[patch("/post/<id>", data = "<data>")]
 pub fn patch_post(
-    state: &State<PoolState>,
+    server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
     id: i32,
     data: Form<PatchPost>,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-    let mut conn = state.pool.get().map_err(|e| {
+    let mut conn = server_state.db_pool.get().map_err(|e| {
         rocket::response::status::Custom(
             Status::InternalServerError,
             format!("error: {:?}", e).to_string(),

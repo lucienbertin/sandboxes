@@ -1,13 +1,15 @@
 #[derive(Debug)]
 pub enum Error {
     AuthError(AuthError),
-    JwtError(jwt::Error),
-    DotEnvyError(dotenvy::Error),
-    StdEnvVarError(std::env::VarError),
     DieselConnectionError(diesel::result::ConnectionError),
     DieselQueryError(diesel::result::Error),
+    DotEnvyError(dotenvy::Error),
     HMacError(hmac::digest::InvalidLength),
+    JwtError(jwt::Error),
+    LapinError(lapin::Error),
     R2D2Error(r2d2::Error),
+    StdEnvVarError(std::env::VarError),
+
     NotFound,
     Forbidden,
     Unauthorized,
@@ -17,21 +19,6 @@ pub enum Error {
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
         Error::AuthError(value)
-    }
-}
-impl From<jwt::Error> for Error {
-    fn from(value: jwt::Error) -> Self {
-        Error::JwtError(value)
-    }
-}
-impl From<dotenvy::Error> for Error {
-    fn from(value: dotenvy::Error) -> Self {
-        Error::DotEnvyError(value)
-    }
-}
-impl From<std::env::VarError> for Error {
-    fn from(value: std::env::VarError) -> Self {
-        Error::StdEnvVarError(value)
     }
 }
 impl From<diesel::result::ConnectionError> for Error {
@@ -44,9 +31,24 @@ impl From<diesel::result::Error> for Error {
         Error::DieselQueryError(value)
     }
 }
+impl From<dotenvy::Error> for Error {
+    fn from(value: dotenvy::Error) -> Self {
+        Error::DotEnvyError(value)
+    }
+}
 impl From<hmac::digest::InvalidLength> for Error {
     fn from(value: hmac::digest::InvalidLength) -> Self {
         Error::HMacError(value)
+    }
+}
+impl From<jwt::Error> for Error {
+    fn from(value: jwt::Error) -> Self {
+        Error::JwtError(value)
+    }
+}
+impl From<lapin::Error> for Error {
+    fn from(value: lapin::Error) -> Self {
+        Error::LapinError(value)
     }
 }
 impl From<r2d2::Error> for Error {
@@ -54,6 +56,12 @@ impl From<r2d2::Error> for Error {
         Error::R2D2Error(value)
     }
 }
+impl From<std::env::VarError> for Error {
+    fn from(value: std::env::VarError) -> Self {
+        Error::StdEnvVarError(value)
+    }
+}
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("shell error")
@@ -100,6 +108,10 @@ impl From<Error> for rocket::response::status::Custom<String> {
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
             Error::R2D2Error(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::LapinError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
