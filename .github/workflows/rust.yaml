@@ -25,6 +25,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Setup rustfmt
         run: rustup component add rustfmt
       - name: Check
         uses: actions-rs/cargo@v1
