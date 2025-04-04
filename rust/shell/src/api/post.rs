@@ -207,7 +207,6 @@ pub fn delete_post(
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
-
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
@@ -243,7 +242,6 @@ pub fn patch_post(
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
-
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;

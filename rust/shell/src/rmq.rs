@@ -1,7 +1,9 @@
 use crate::error::Error;
 use dotenvy::dotenv;
 use lapin::{
-    options::{BasicPublishOptions, ExchangeDeclareOptions}, types::FieldTable, BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind
+    options::{BasicPublishOptions, ExchangeDeclareOptions},
+    types::FieldTable,
+    BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
 
 use std::env;

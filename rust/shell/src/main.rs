@@ -13,7 +13,7 @@ mod rmq;
 
 pub struct ServerState {
     pub db_pool: DbPool,
-    pub rmq_sender: std::sync::mpsc::Sender<(String, String)>
+    pub rmq_sender: std::sync::mpsc::Sender<(String, String)>,
 }
 #[launch]
 async fn rocket() -> _ {
@@ -68,7 +68,7 @@ async fn rocket() -> _ {
             println!("publishing to rmq");
             let publish = rmq::publish(&rmq_channel_clone, routing_key, message).await;
             match publish {
-                _ => () // just dump error
+                _ => (), // just dump error
             };
             println!("published to rmq");
         }
