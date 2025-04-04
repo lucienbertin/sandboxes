@@ -82,12 +82,8 @@ pub async fn get_posts(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
 ) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
-    let mut conn = server_state.db_pool.get().map_err(|e| {
-        rocket::response::status::Custom(
-            Status::InternalServerError,
-            format!("error: {:?}", e).to_string(),
-        )
-    })?;
+    let mut conn = db::get_conn(&server_state.db_pool)?;
+
     let results = conn.build_transaction().read_only().run(|conn| {
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
@@ -115,12 +111,8 @@ pub fn get_post(
     subject: JwtIdentifiedSubject, // is allowed with no auth
     id: i32,
 ) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
-    let mut conn = server_state.db_pool.get().map_err(|e| {
-        rocket::response::status::Custom(
-            Status::InternalServerError,
-            format!("error: {:?}", e).to_string(),
-        )
-    })?;
+    let mut conn = db::get_conn(&server_state.db_pool)?;
+
     let result = conn.build_transaction().read_only().run(|conn| {
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
@@ -146,15 +138,10 @@ pub async fn publish_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<Status, rocket::response::status::Custom<String>> {
-    let mut conn = server_state.db_pool.get().map_err(|e| {
-        rocket::response::status::Custom(
-            Status::InternalServerError,
-            format!("error: {:?}", e).to_string(),
-        )
-    })?;
-    let chan = &server_state.rmq_channel;
+    let mut conn = db::get_conn(&server_state.db_pool)?;
+    let chan: &lapin::Channel = &server_state.rmq_channel;
 
-    let result = conn.build_transaction().run(|conn| {
+    conn.build_transaction().run(move |conn| {
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
         let result = db::find_post(conn, id)?;
@@ -165,15 +152,15 @@ pub async fn publish_post(
 
         match result {
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
-            CantPublishAlreadyPublishedPost => Ok(None), // treat it as Ok for idempotency purpose
-            DoPublish(post_id) => db::publish_post(conn, post_id).map(|_| Some(post_id)),
             CantPublishAsReader => Err(Error::Forbidden),
+            CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+            DoPublishAndNotify(post_id) => {  
+                db::publish_post(conn, post_id)?;
+                rmq::publish_fnf(chan, "post.published".to_string(), format!("id: {}", post_id));
+                Ok(())
+            },
         }
     })?;
-    if let Some(post_id) = result {
-        println!("publishing to rmq");
-        rmq::publish(chan, "post published", format!("id: {}", post_id)).await?;
-    }
 
     Ok(Status::NoContent)
 }
@@ -184,12 +171,8 @@ pub fn post_post(
     subject: JwtIdentifiedSubject,
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
-    let mut conn = server_state.db_pool.get().map_err(|e| {
-        rocket::response::status::Custom(
-            Status::InternalServerError,
-            format!("error: {:?}", e).to_string(),
-        )
-    })?;
+    let mut conn = db::get_conn(&server_state.db_pool)?;
+    let chan: &lapin::Channel = &server_state.rmq_channel;
 
     let result = conn.build_transaction().run(|conn| {
         use domain::usecases::{create_post, CreatePostResult::*};
@@ -199,8 +182,13 @@ pub fn post_post(
 
         let result = create_post(&subject, data.into_inner().into());
         match result {
-            DoCreate(new_post) => db::insert_new_post(conn, new_post),
             CantCreateAsReader => Err(Error::Forbidden),
+            DoCreateAndNotify(new_post) => {
+                let post_id = db::insert_new_post(conn, new_post)?;
+                rmq::publish_fnf(chan, "post.created".to_string(), format!("id: {}", post_id));
+
+                Ok(post_id)
+            },
         }
     })?;
 
@@ -215,12 +203,8 @@ pub fn delete_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-    let mut conn = server_state.db_pool.get().map_err(|e| {
-        rocket::response::status::Custom(
-            Status::InternalServerError,
-            format!("error: {:?}", e).to_string(),
-        )
-    })?;
+    let mut conn = db::get_conn(&server_state.db_pool)?;
+    let chan: &lapin::Channel = &server_state.rmq_channel;
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
@@ -233,10 +217,15 @@ pub fn delete_post(
 
         use domain::usecases::DeletePostResult::*;
         match result {
-            DoDelete(post_id) => db::delete_post(conn, post_id),
             CantDeleteAnotherOnesPost => Err(Error::Forbidden),
             CantDeletePublishedPost => Err(Error::Conflict),
             CantDeleteAsReader => Err(Error::Forbidden),
+            DoDeleteAndNotify(post_id) => {
+                db::delete_post(conn, post_id)?;
+                rmq::publish_fnf(chan, "post.deleted".to_string(), format!("id: {}", post_id));
+
+                Ok(())
+            },
         }
     })?;
 
@@ -250,12 +239,8 @@ pub fn patch_post(
     id: i32,
     data: Form<PatchPost>,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-    let mut conn = server_state.db_pool.get().map_err(|e| {
-        rocket::response::status::Custom(
-            Status::InternalServerError,
-            format!("error: {:?}", e).to_string(),
-        )
-    })?;
+    let mut conn = db::get_conn(&server_state.db_pool)?;
+    let chan = &server_state.rmq_channel;
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
@@ -267,11 +252,16 @@ pub fn patch_post(
 
         use domain::usecases::EditPostResult::*;
         match result {
-            DoUpdate(post_id, post_edition) => db::update_post(conn, post_id, post_edition),
-            NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
             CantEditAnotherOnesPost => Err(Error::Forbidden),
             CantEditPublishedPost => Err(Error::Conflict),
             CantEditAsReader => Err(Error::Forbidden),
+            NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
+            DoUpdateAndNotify(post_id, post_edition) => {
+                db::update_post(conn, post_id, post_edition)?;
+                rmq::publish_fnf(chan, "post.updated".to_string(), format!("id: {}", post_id));
+
+                Ok(())
+            },
         }
     })?;
 
