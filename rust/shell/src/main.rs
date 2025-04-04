@@ -1,5 +1,6 @@
+use std::sync::mpsc;
+
 use db::DbPool;
-use lapin::Channel;
 
 #[macro_use]
 extern crate rocket;
@@ -12,10 +13,11 @@ mod rmq;
 
 pub struct ServerState {
     pub db_pool: DbPool,
-    pub rmq_channel: Channel,
+    pub rmq_sender: std::sync::mpsc::Sender<(String, String)>,
 }
 #[launch]
 async fn rocket() -> _ {
+    let (tx, rx) = mpsc::channel::<(String, String)>();
     // init rmq
     // connect to rmq, create chan, queue and consumer
     // listen to queue `test`
@@ -26,6 +28,7 @@ async fn rocket() -> _ {
     };
 
     let rmq_channel = rmq::init_channel().await.expect("couldnt connect to rmq");
+    let rmq_channel_clone = rmq_channel.clone();
 
     // all this should go somewhere else
     let queue = rmq_channel
@@ -59,6 +62,18 @@ async fn rocket() -> _ {
         }
     })
     .detach();
+
+    async_global_executor::spawn(async move {
+        for (routing_key, message) in rx {
+            println!("publishing to rmq");
+            let publish = rmq::publish(&rmq_channel_clone, routing_key, message).await;
+            match publish {
+                _ => (), // just dump error
+            };
+            println!("published to rmq");
+        }
+    })
+    .detach();
     // untill here
 
     // init db
@@ -78,6 +93,6 @@ async fn rocket() -> _ {
         })
         .manage(ServerState {
             db_pool: db_pool,
-            rmq_channel: rmq_channel,
+            rmq_sender: tx,
         })
 }
