@@ -2,7 +2,7 @@ use crate::models::{Post, PostEdition, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum EditPostResult {
-    DoUpdate(i32, PostEdition),
+    DoUpdateAndNotify(i32, PostEdition),
     NothingToUpdate,
     CantEditAnotherOnesPost,
     CantEditPublishedPost,
@@ -33,7 +33,7 @@ pub fn edit_post(subject: &User, post: &Post, request: PostEdition) -> EditPostR
 
     let result = check_subject
         .or(check_edits)
-        .or(Some(EditPostResult::DoUpdate(post.id, edits)))
+        .or(Some(EditPostResult::DoUpdateAndNotify(post.id, edits)))
         .unwrap();
 
     result
@@ -241,45 +241,48 @@ mod test {
         // assert
         assert!(matches!(
             result_diff_title_no_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_no_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_diff_title_no_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
         }
         assert!(matches!(
             result_diff_title_same_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_diff_title_same_body
+        {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
         }
         assert!(matches!(
             result_no_title_diff_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_no_title_diff_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_no_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
         }
         assert!(matches!(
             result_same_title_diff_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_same_title_diff_body
+        {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
         }
         assert!(matches!(
             result_diff_title_diff_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_diff_title_diff_body
+        {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, Some(different_body.to_string()));
@@ -351,45 +354,48 @@ mod test {
         // assert
         assert!(matches!(
             result_diff_title_no_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_no_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_diff_title_no_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
         }
         assert!(matches!(
             result_diff_title_same_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_diff_title_same_body
+        {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
         }
         assert!(matches!(
             result_no_title_diff_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_no_title_diff_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_no_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
         }
         assert!(matches!(
             result_same_title_diff_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_same_title_diff_body
+        {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
         }
         assert!(matches!(
             result_diff_title_diff_body,
-            EditPostResult::DoUpdate(_, _)
+            EditPostResult::DoUpdateAndNotify(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body {
+        if let EditPostResult::DoUpdateAndNotify(id_to_edit, edition) = result_diff_title_diff_body
+        {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, Some(different_body.to_string()));

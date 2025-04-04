@@ -2,7 +2,7 @@ use crate::models::{Post, Role::*, User};
 
 #[derive(PartialEq, Debug)]
 pub enum PublishPostResult {
-    DoPublish(i32),
+    DoPublishAndNotify(i32),
     CantPublishAnotherOnesPost,
     CantPublishAlreadyPublishedPost,
     CantPublishAsReader,
@@ -13,7 +13,7 @@ pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
         Reader => PublishPostResult::CantPublishAsReader,
         Writer if subject.id != post.author.id => PublishPostResult::CantPublishAnotherOnesPost,
         _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
-        _ => PublishPostResult::DoPublish(post.id),
+        _ => PublishPostResult::DoPublishAndNotify(post.id),
     }
 }
 
@@ -135,7 +135,7 @@ mod test {
         let result = publish_post(&subject, &post);
 
         // assert
-        assert_eq!(result, PublishPostResult::DoPublish(id));
+        assert_eq!(result, PublishPostResult::DoPublishAndNotify(id));
     }
 
     #[test]
@@ -177,8 +177,14 @@ mod test {
         let result_my_published_post = publish_post(&subject, &my_published_post);
 
         // assert
-        assert_eq!(result_someone_elses_post, PublishPostResult::DoPublish(id));
-        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublish(id));
+        assert_eq!(
+            result_someone_elses_post,
+            PublishPostResult::DoPublishAndNotify(id)
+        );
+        assert_eq!(
+            result_my_unpublished_post,
+            PublishPostResult::DoPublishAndNotify(id)
+        );
         assert_eq!(
             result_my_published_post,
             PublishPostResult::CantPublishAlreadyPublishedPost

@@ -28,19 +28,31 @@ pub async fn init_channel() -> Result<Channel, Error> {
     Ok(chan)
 }
 
-pub async fn publish(chan: &Channel, routing_key: &str, msg: String) -> Result<(), Error> {
+pub async fn publish(chan: &Channel, routing_key: String, message: String) -> Result<(), Error> {
     dotenv()?;
     let exchange_name = env::var("RMQ_EXCHANGE")?;
     chan.basic_publish(
         exchange_name.as_str(),
-        routing_key,
+        routing_key.as_str(),
         BasicPublishOptions::default(),
-        msg.as_bytes(),
+        message.as_bytes(),
         BasicProperties::default(),
     )
     .await?;
 
     Ok(())
+}
+
+/// same as publish but in a Fire N Forget way
+/// will not stall execution, will not break happy path
+pub fn publish_fnf<'a>(chan: &Channel, routing_key: String, message: String) -> () {
+    let chan_clone = chan.clone();
+    let routing_key_clone = routing_key.clone();
+    let message_clone = message.clone();
+    std::thread::spawn(move || async move {
+        let rmq_publish = publish(&chan_clone, routing_key_clone, message_clone).await;
+        rmq_publish.unwrap_or(()); // just dump error
+    });
 }
 
 #[cfg(test)]
