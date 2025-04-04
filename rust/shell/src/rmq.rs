@@ -1,10 +1,9 @@
 use crate::error::Error;
 use dotenvy::dotenv;
 use lapin::{
-    options::{BasicPublishOptions, ExchangeDeclareOptions},
-    types::FieldTable,
-    BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
+    options::{BasicPublishOptions, ExchangeDeclareOptions}, types::FieldTable, BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind
 };
+
 use std::env;
 
 // initialize connection
@@ -31,6 +30,7 @@ pub async fn init_channel() -> Result<Channel, Error> {
 pub async fn publish(chan: &Channel, routing_key: String, message: String) -> Result<(), Error> {
     dotenv()?;
     let exchange_name = env::var("RMQ_EXCHANGE")?;
+
     chan.basic_publish(
         exchange_name.as_str(),
         routing_key.as_str(),
@@ -41,18 +41,6 @@ pub async fn publish(chan: &Channel, routing_key: String, message: String) -> Re
     .await?;
 
     Ok(())
-}
-
-/// same as publish but in a Fire N Forget way
-/// will not stall execution, will not break happy path
-pub fn publish_fnf<'a>(chan: &Channel, routing_key: String, message: String) -> () {
-    let chan_clone = chan.clone();
-    let routing_key_clone = routing_key.clone();
-    let message_clone = message.clone();
-    std::thread::spawn(move || async move {
-        let rmq_publish = publish(&chan_clone, routing_key_clone, message_clone).await;
-        rmq_publish.unwrap_or(()); // just dump error
-    });
 }
 
 #[cfg(test)]
