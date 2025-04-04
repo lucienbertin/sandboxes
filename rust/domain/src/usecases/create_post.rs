@@ -2,7 +2,7 @@ use crate::models::{NewPost, NewPostRequest, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum CreatePostResult {
-    DoCreate(NewPost),
+    DoCreateAndNotify(NewPost),
     CantCreateAsReader,
 }
 
@@ -14,7 +14,7 @@ pub fn create_post(subject: &User, create_post_request: NewPostRequest) -> Creat
                 body: create_post_request.body,
                 author: subject.clone(),
             };
-            CreatePostResult::DoCreate(new_post)
+            CreatePostResult::DoCreateAndNotify(new_post)
         }
         Role::Reader => CreatePostResult::CantCreateAsReader,
     }
@@ -65,8 +65,8 @@ mod test {
         let result = create_post(&subject, request);
 
         // assert
-        assert!(matches!(result, CreatePostResult::DoCreate(_)));
-        if let CreatePostResult::DoCreate(new_post) = result {
+        assert!(matches!(result, CreatePostResult::DoCreateAndNotify(_)));
+        if let CreatePostResult::DoCreateAndNotify(new_post) = result {
             assert_eq!(new_post.author.id, subject.id);
         }
     }
@@ -90,8 +90,8 @@ mod test {
         let result = create_post(&subject, request);
 
         // assert
-        assert!(matches!(result, CreatePostResult::DoCreate(_)));
-        if let CreatePostResult::DoCreate(new_post) = result {
+        assert!(matches!(result, CreatePostResult::DoCreateAndNotify(_)));
+        if let CreatePostResult::DoCreateAndNotify(new_post) = result {
             assert_eq!(new_post.author.id, subject.id);
         }
     }
