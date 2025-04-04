@@ -1,7 +1,7 @@
 use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
 use crate::error::Error;
-use crate::{rmq, ServerState};
+use crate::ServerState;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket::{
@@ -139,7 +139,7 @@ pub async fn publish_post(
     id: i32,
 ) -> Result<Status, rocket::response::status::Custom<String>> {
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let chan: &lapin::Channel = &server_state.rmq_channel;
+    let rmq_sender = &server_state.rmq_sender;
 
     conn.build_transaction().run(move |conn| {
         let subject = find_user(conn, subject.email)?;
@@ -156,11 +156,8 @@ pub async fn publish_post(
             CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
             DoPublishAndNotify(post_id) => {
                 db::publish_post(conn, post_id)?;
-                rmq::publish_fnf(
-                    chan,
-                    "post.published".to_string(),
-                    format!("id: {}", post_id),
-                );
+                let _ = rmq_sender.send(("post.published".to_string(), format!("id: {}", post_id)));
+
                 Ok(())
             }
         }
@@ -176,7 +173,7 @@ pub fn post_post(
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let chan: &lapin::Channel = &server_state.rmq_channel;
+    let rmq_sender = &server_state.rmq_sender;
 
     let result = conn.build_transaction().run(|conn| {
         use domain::usecases::{create_post, CreatePostResult::*};
@@ -189,7 +186,7 @@ pub fn post_post(
             CantCreateAsReader => Err(Error::Forbidden),
             DoCreateAndNotify(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
-                rmq::publish_fnf(chan, "post.created".to_string(), format!("id: {}", post_id));
+                let _ = rmq_sender.send(("post.created".to_string(), format!("id: {}", post_id)));
 
                 Ok(post_id)
             }
@@ -208,7 +205,8 @@ pub fn delete_post(
     id: i32,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let chan: &lapin::Channel = &server_state.rmq_channel;
+    let rmq_sender = &server_state.rmq_sender;
+
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
@@ -226,7 +224,7 @@ pub fn delete_post(
             CantDeleteAsReader => Err(Error::Forbidden),
             DoDeleteAndNotify(post_id) => {
                 db::delete_post(conn, post_id)?;
-                rmq::publish_fnf(chan, "post.deleted".to_string(), format!("id: {}", post_id));
+                let _ = rmq_sender.send(("post.deleted".to_string(), format!("id: {}", post_id)));
 
                 Ok(())
             }
@@ -244,7 +242,8 @@ pub fn patch_post(
     data: Form<PatchPost>,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let chan = &server_state.rmq_channel;
+    let rmq_sender = &server_state.rmq_sender;
+
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
@@ -262,7 +261,7 @@ pub fn patch_post(
             NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
             DoUpdateAndNotify(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;
-                rmq::publish_fnf(chan, "post.updated".to_string(), format!("id: {}", post_id));
+                let _ = rmq_sender.send(("post.updated".to_string(), format!("id: {}", post_id)));
 
                 Ok(())
             }
