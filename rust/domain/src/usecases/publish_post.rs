@@ -177,8 +177,14 @@ mod test {
         let result_my_published_post = publish_post(&subject, &my_published_post);
 
         // assert
-        assert_eq!(result_someone_elses_post, PublishPostResult::DoPublishAndNotify(id));
-        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublishAndNotify(id));
+        assert_eq!(
+            result_someone_elses_post,
+            PublishPostResult::DoPublishAndNotify(id)
+        );
+        assert_eq!(
+            result_my_unpublished_post,
+            PublishPostResult::DoPublishAndNotify(id)
+        );
         assert_eq!(
             result_my_published_post,
             PublishPostResult::CantPublishAlreadyPublishedPost

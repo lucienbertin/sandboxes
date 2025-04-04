@@ -154,11 +154,15 @@ pub async fn publish_post(
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
             CantPublishAsReader => Err(Error::Forbidden),
             CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-            DoPublishAndNotify(post_id) => {  
+            DoPublishAndNotify(post_id) => {
                 db::publish_post(conn, post_id)?;
-                rmq::publish_fnf(chan, "post.published".to_string(), format!("id: {}", post_id));
+                rmq::publish_fnf(
+                    chan,
+                    "post.published".to_string(),
+                    format!("id: {}", post_id),
+                );
                 Ok(())
-            },
+            }
         }
     })?;
 
@@ -188,7 +192,7 @@ pub fn post_post(
                 rmq::publish_fnf(chan, "post.created".to_string(), format!("id: {}", post_id));
 
                 Ok(post_id)
-            },
+            }
         }
     })?;
 
@@ -225,7 +229,7 @@ pub fn delete_post(
                 rmq::publish_fnf(chan, "post.deleted".to_string(), format!("id: {}", post_id));
 
                 Ok(())
-            },
+            }
         }
     })?;
 
@@ -261,7 +265,7 @@ pub fn patch_post(
                 rmq::publish_fnf(chan, "post.updated".to_string(), format!("id: {}", post_id));
 
                 Ok(())
-            },
+            }
         }
     })?;
 
