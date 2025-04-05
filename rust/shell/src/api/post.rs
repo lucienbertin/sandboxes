@@ -84,15 +84,11 @@ impl From<PatchPost> for domain::models::PostEdition {
 pub async fn get_posts(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
-    etag: Option<EtaggedRequest>,
+    etagged_request: Option<EtaggedRequest>,
 ) -> Result<EtagJson<Vec<Post>>, rocket::response::status::Custom<String>> {
     let cache_key = "posts".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = etag.map(|er| {
-        let etag = er.etag;
-
-        match_etag(&mut redis_conn, &cache_key, etag)
-    });
+    let use_cache = etagged_request.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
         Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
@@ -117,7 +113,7 @@ pub async fn get_posts(
     })?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
-    let etag = redis::get_etag(&mut redis_conn, &cache_key)?;
+    let etag = redis::get_etag(&mut redis_conn, &cache_key).unwrap_or(None); // i dont want to 500 on a redis error when i have the results available
 
     let result = EtagJson {
         body: Json(results),
@@ -132,15 +128,11 @@ pub fn get_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
     id: i32,
-    etag: Option<EtaggedRequest>,
+    etagged_request: Option<EtaggedRequest>,
 ) -> Result<EtagJson<Post>, rocket::response::status::Custom<String>> {
     let cache_key = format!("posts.{}", id).to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = etag.map(|er| {
-        let etag = er.etag;
-
-        match_etag(&mut redis_conn, &cache_key, etag)
-    });
+    let use_cache = etagged_request.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
         Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
@@ -164,7 +156,7 @@ pub fn get_post(
         }
     })?;
 
-    let etag = redis::get_etag(&mut redis_conn, &cache_key)?;
+    let etag = redis::get_etag(&mut redis_conn, &cache_key).unwrap_or(None); // i dont want to 500 on a redis error when i have the results available
 
     let result = EtagJson {
         body: Json(result.into()),
@@ -180,8 +172,6 @@ pub async fn publish_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<Status, rocket::response::status::Custom<String>> {
-    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
@@ -202,6 +192,9 @@ pub async fn publish_post(
             DoPublishAndNotify(post_id) => {
                 db::publish_post(conn, post_id)?;
                 let _ = rmq_sender.send(("post.published".to_string(), format!("id: {}", post_id)));
+
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
                 for cache_key in cache_keys {
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
@@ -220,8 +213,7 @@ pub fn post_post(
     subject: JwtIdentifiedSubject,
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
-    let cache_key = "posts".to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
@@ -238,6 +230,9 @@ pub fn post_post(
             DoCreateAndNotify(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
                 let _ = rmq_sender.send(("post.created".to_string(), format!("id: {}", post_id)));
+
+                let cache_key = "posts".to_string();
+                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
                 redis::refresh_etag(&mut redis_conn, &cache_key)?;
 
                 Ok(post_id)
@@ -256,9 +251,6 @@ pub fn delete_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -279,6 +271,9 @@ pub fn delete_post(
             DoDeleteAndNotify(post_id) => {
                 db::delete_post(conn, post_id)?;
                 let _ = rmq_sender.send(("post.deleted".to_string(), format!("id: {}", post_id)));
+
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
                 for cache_key in cache_keys {
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
@@ -298,8 +293,6 @@ pub fn patch_post(
     id: i32,
     data: Form<PatchPost>,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
@@ -321,6 +314,9 @@ pub fn patch_post(
             DoUpdateAndNotify(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;
                 let _ = rmq_sender.send(("post.updated".to_string(), format!("id: {}", post_id)));
+
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
                 for cache_key in cache_keys {
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
