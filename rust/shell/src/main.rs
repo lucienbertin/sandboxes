@@ -68,12 +68,7 @@ async fn rocket() -> _ {
 
     async_global_executor::spawn(async move {
         for (routing_key, message) in rx {
-            println!("publishing to rmq");
-            let publish = rmq::publish(&rmq_channel_clone, routing_key, message).await;
-            match publish {
-                _ => (), // just dump error
-            };
-            println!("published to rmq");
+            let _ = rmq::publish(&rmq_channel_clone, routing_key, message).await;
         }
     })
     .detach();
