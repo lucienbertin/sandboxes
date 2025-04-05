@@ -1,6 +1,5 @@
 #[derive(Debug)]
 pub enum Error {
-    AuthError(AuthError),
     DieselConnectionError(diesel::result::ConnectionError),
     DieselQueryError(diesel::result::Error),
     DotEnvyError(dotenvy::Error),
@@ -11,15 +10,24 @@ pub enum Error {
     RedisError(redis::RedisError),
     StdEnvVarError(std::env::VarError),
 
+    AuthError(AuthError),
+    HttpError(HttpError),
+
     NotFound,
     Forbidden,
     Unauthorized,
     Conflict,
     Gone,
+    NotModified,
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
         Error::AuthError(value)
+    }
+}
+impl From<HttpError> for Error {
+    fn from(value: HttpError) -> Self {
+        Error::HttpError(value)
     }
 }
 impl From<diesel::result::ConnectionError> for Error {
@@ -82,11 +90,20 @@ pub enum AuthError {
     NoSubjectClaim,
 }
 
+#[derive(Debug)]
+pub enum HttpError {
+    NoETagHeader,
+}
+
 impl From<Error> for rocket::response::status::Custom<String> {
     fn from(value: Error) -> Self {
         match value {
             Error::AuthError(e) => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
+                format!("error: {:?}", e).to_string(),
+            ),
+            Error::HttpError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ),
             Error::JwtError(e) => rocket::response::status::Custom(
@@ -139,10 +156,14 @@ impl From<Error> for rocket::response::status::Custom<String> {
             ),
             Error::Gone => {
                 rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
-            }
+            },
             Error::Unauthorized => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
                 "unauthorized".to_string(),
+            ),
+            Error::NotModified => rocket::response::status::Custom(
+                rocket::http::Status::NotModified,
+                "not modified".to_string(),
             ),
         }
     }
