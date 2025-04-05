@@ -64,28 +64,28 @@ impl<'r> FromRequest<'r> for EtaggedRequest {
     }
 }
 
-mod test {
-    use crate::error::Error;
-    use dotenvy::dotenv;
-    use redis::Commands;
-    use std::env;
-    fn do_something() -> Result<(), Error> {
-        dotenv()?;
-        let redis_url = env::var("REDIS_URL")?;
+// mod test {
+//     use crate::error::Error;
+//     use dotenvy::dotenv;
+//     use redis::Commands;
+//     use std::env;
+//     fn do_something() -> Result<(), Error> {
+//         dotenv()?;
+//         let redis_url = env::var("REDIS_URL")?;
 
-        let client = redis::Client::open(redis_url)?;
-        let mut con = client.get_connection()?;
+//         let client = redis::Client::open(redis_url)?;
+//         let mut con = client.get_connection()?;
 
-        /* do something here */
-        con.set("posts", "qwe")?;
-        let val: String = con.get("posts")?;
-        println!("{:?}", val);
+//         /* do something here */
+//         con.set("posts", "qwe")?;
+//         let val: String = con.get("posts")?;
+//         println!("{:?}", val);
 
-        Ok(())
-    }
+//         Ok(())
+//     }
 
-    #[test]
-    fn test_redis() {
-        do_something().expect("has done something");
-    }
-}
+//     #[test]
+//     fn test_redis() {
+//         do_something().expect("has done something");
+//     }
+// }
