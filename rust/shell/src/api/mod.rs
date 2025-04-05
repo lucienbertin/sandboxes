@@ -1,19 +1,19 @@
 mod post;
 
-
-
 pub use post::*;
 use rocket::http::{ContentType, Header};
-use rocket::response::Responder;
 use rocket::request::Request;
+use rocket::response::Responder;
 use rocket::serde::json::Json;
 use serde::Serialize;
 
-pub struct EtagJson<T> where T: Serialize {
+pub struct EtagJson<T>
+where
+    T: Serialize,
+{
     body: Json<T>,
     etag: Option<String>,
 }
-
 
 #[rocket::async_trait]
 impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
@@ -23,8 +23,11 @@ impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
             .status(rocket::http::Status::Ok)
             .header(ContentType::JSON);
         let builder = match self.etag {
-            Some(tag) => builder.header(Header { name: "ETag".to_string().into(), value: tag.into()}),
-            None => builder
+            Some(tag) => builder.header(Header {
+                name: "ETag".to_string().into(),
+                value: tag.into(),
+            }),
+            None => builder,
         };
 
         builder.ok()
