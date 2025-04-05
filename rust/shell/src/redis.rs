@@ -6,7 +6,7 @@ use std::env;
 pub type RedisPool = r2d2::Pool<redis::Client>;
 pub type RedisConn = r2d2::PooledConnection<redis::Client>;
 
-pub fn init_pool()-> Result<RedisPool, Error>  {
+pub fn init_pool() -> Result<RedisPool, Error> {
     dotenv()?;
     let redis_url = env::var("REDIS_URL")?;
     let client = redis::Client::open(redis_url)?;
@@ -47,7 +47,9 @@ fn extract_etag(req: &Request<'_>) -> Result<EtaggedRequest, Error> {
         .get_one("If-None-Match")
         .ok_or(Error::AuthError(AuthError::NoAuthorizationHeader))?;
 
-    Ok(EtaggedRequest { etag: etag.to_string() })
+    Ok(EtaggedRequest {
+        etag: etag.to_string(),
+    })
 }
 
 #[rocket::async_trait]

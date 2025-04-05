@@ -1,7 +1,7 @@
 use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
-use crate::redis::{self, match_etag, EtaggedRequest};
 use crate::error::Error;
+use crate::redis::{self, match_etag, EtaggedRequest};
 use crate::ServerState;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
@@ -94,8 +94,6 @@ pub async fn get_posts(
         Some(true) => Err(Error::NotModified),
         _ => Ok(()),
     }?;
-
-
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
 
