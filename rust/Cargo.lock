@@ -1938,6 +1938,7 @@ dependencies = [
  "itoa",
  "num-bigint",
  "percent-encoding",
+ "r2d2",
  "ryu",
  "sha1_smol",
  "socket2 0.5.8",
