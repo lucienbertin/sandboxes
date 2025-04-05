@@ -1,5 +1,6 @@
 use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
+use crate::redis::{self, match_etag, EtaggedRequest};
 use crate::error::Error;
 use crate::ServerState;
 use rocket::serde::{Deserialize, Serialize};
@@ -81,10 +82,24 @@ impl From<PatchPost> for domain::models::PostEdition {
 pub async fn get_posts(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
+    etag: Option<EtaggedRequest>,
 ) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
-    let mut conn = db::get_conn(&server_state.db_pool)?;
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    let use_cache = etag.map(move |er| {
+        let etag = er.etag;
 
-    let results = conn.build_transaction().read_only().run(|conn| {
+        match_etag(&mut redis_conn, "posts".to_string(), etag)
+    });
+    match use_cache {
+        Some(true) => Err(Error::NotModified),
+        _ => Ok(()),
+    }?;
+
+
+
+    let mut db_conn = db::get_conn(&server_state.db_pool)?;
+
+    let results = db_conn.build_transaction().read_only().run(|conn| {
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
 
