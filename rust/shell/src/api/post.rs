@@ -223,7 +223,7 @@ pub fn post_post(
     data: Form<NewPost>,
     if_match: Option<IfMatchHeader>,
 ) -> Result<Created<Json<Post>>, ResponseError> {
-    let cache_key = format!("posts.{}", id).to_string();
+    let cache_key = "posts".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = if_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
@@ -231,7 +231,7 @@ pub fn post_post(
         Some(Ok(true)) => Ok(()),
         _ => Err(Error::PreconditionFailed),
     }?;
-
+    
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
