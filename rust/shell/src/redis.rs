@@ -28,15 +28,21 @@ pub fn match_etag(conn: &mut RedisConn, key: &String, etag: String) -> Result<bo
 }
 
 pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<Option<String>, Error> {
-    // use rand::{distr::Alphanumeric, Rng}; // 0.8
-
-    // let etag: String = rand::rng()
-    //     .sample_iter(&Alphanumeric)
-    //     .take(12)
-    //     .map(char::from)
-    //     .collect();
-
     let etag = conn.get::<&String, Option<String>>(key)?;
+
+    Ok(etag)
+}
+
+pub fn refresh_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error> {
+    use rand::{distr::Alphanumeric, Rng}; // 0.8
+
+    let etag: String = rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(12)
+        .map(char::from)
+        .collect();
+
+    conn.set::<&String, String, ()>(key, etag.clone())?;
 
     Ok(etag)
 }
