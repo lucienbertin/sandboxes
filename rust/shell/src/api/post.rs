@@ -12,6 +12,8 @@ use rocket::{
     serde::json::Json,
 };
 
+use super::EtagJson;
+
 #[derive(Serialize, Deserialize)]
 pub struct User {
     // pub id: i32,
@@ -83,7 +85,7 @@ pub async fn get_posts(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
     etag: Option<EtaggedRequest>,
-) -> Result<Json<Vec<Post>>, rocket::response::status::Custom<String>> {
+) -> Result<EtagJson<Vec<Post>>, rocket::response::status::Custom<String>> {
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = etag.map(move |er| {
         let etag = er.etag;
@@ -115,7 +117,12 @@ pub async fn get_posts(
 
     let results = results.into_iter().map(|x| x.into()).collect();
 
-    Ok(Json(results))
+    let result = EtagJson {
+        body: Json(results),
+        etag: "zxc".to_string(),
+    };
+
+    Ok(result)
 }
 
 #[get("/post/<id>", format = "json")]
