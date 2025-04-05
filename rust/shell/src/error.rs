@@ -1,6 +1,5 @@
 #[derive(Debug)]
 pub enum Error {
-    AuthError(AuthError),
     DieselConnectionError(diesel::result::ConnectionError),
     DieselQueryError(diesel::result::Error),
     DotEnvyError(dotenvy::Error),
@@ -8,17 +7,28 @@ pub enum Error {
     JwtError(jwt::Error),
     LapinError(lapin::Error),
     R2D2Error(r2d2::Error),
+    RedisError(redis::RedisError),
     StdEnvVarError(std::env::VarError),
+
+    AuthError(AuthError),
+    HttpError(HttpError),
 
     NotFound,
     Forbidden,
     Unauthorized,
     Conflict,
     Gone,
+    NotModified,
+    PreconditionFailed,
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
         Error::AuthError(value)
+    }
+}
+impl From<HttpError> for Error {
+    fn from(value: HttpError) -> Self {
+        Error::HttpError(value)
     }
 }
 impl From<diesel::result::ConnectionError> for Error {
@@ -56,6 +66,11 @@ impl From<r2d2::Error> for Error {
         Error::R2D2Error(value)
     }
 }
+impl From<redis::RedisError> for Error {
+    fn from(value: redis::RedisError) -> Self {
+        Error::RedisError(value)
+    }
+}
 impl From<std::env::VarError> for Error {
     fn from(value: std::env::VarError) -> Self {
         Error::StdEnvVarError(value)
@@ -76,11 +91,23 @@ pub enum AuthError {
     NoSubjectClaim,
 }
 
-impl From<Error> for rocket::response::status::Custom<String> {
+#[derive(Debug)]
+pub enum HttpError {
+    NoIfMatchHeader,
+    NoIfNoneMatchHeader,
+}
+
+pub type ResponseError = rocket::response::status::Custom<String>;
+
+impl From<Error> for ResponseError {
     fn from(value: Error) -> Self {
         match value {
             Error::AuthError(e) => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
+                format!("error: {:?}", e).to_string(),
+            ),
+            Error::HttpError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ),
             Error::JwtError(e) => rocket::response::status::Custom(
@@ -111,6 +138,10 @@ impl From<Error> for rocket::response::status::Custom<String> {
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
+            Error::RedisError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
             Error::LapinError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
@@ -133,6 +164,14 @@ impl From<Error> for rocket::response::status::Custom<String> {
             Error::Unauthorized => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
                 "unauthorized".to_string(),
+            ),
+            Error::NotModified => rocket::response::status::Custom(
+                rocket::http::Status::NotModified,
+                "not modified".to_string(),
+            ),
+            Error::PreconditionFailed => rocket::response::status::Custom(
+                rocket::http::Status::PreconditionFailed,
+                "precondition failed".to_string(),
             ),
         }
     }
