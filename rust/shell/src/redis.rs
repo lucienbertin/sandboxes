@@ -27,8 +27,10 @@ pub fn match_etag(conn: &mut RedisConn, key: &String, etag: String) -> Result<bo
     Ok(*cached_etag == etag)
 }
 
-pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<Option<String>, Error> {
-    let etag = conn.get::<&String, Option<String>>(key)?;
+pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error> {
+    let etag = conn
+        .get::<&String, Option<String>>(key)?
+        .unwrap_or(refresh_etag(conn, &key)?);
 
     Ok(etag)
 }
