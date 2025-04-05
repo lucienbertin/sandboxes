@@ -9,6 +9,7 @@ mod api;
 mod auth;
 mod db;
 mod error;
+mod redis;
 mod rmq;
 
 pub struct ServerState {
