@@ -8,6 +8,7 @@ pub enum Error {
     JwtError(jwt::Error),
     LapinError(lapin::Error),
     R2D2Error(r2d2::Error),
+    RedisError(redis::RedisError),
     StdEnvVarError(std::env::VarError),
 
     NotFound,
@@ -54,6 +55,11 @@ impl From<lapin::Error> for Error {
 impl From<r2d2::Error> for Error {
     fn from(value: r2d2::Error) -> Self {
         Error::R2D2Error(value)
+    }
+}
+impl From<redis::RedisError> for Error {
+    fn from(value: redis::RedisError) -> Self {
+        Error::RedisError(value)
     }
 }
 impl From<std::env::VarError> for Error {
@@ -108,6 +114,10 @@ impl From<Error> for rocket::response::status::Custom<String> {
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
             Error::R2D2Error(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::RedisError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
