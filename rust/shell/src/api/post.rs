@@ -172,7 +172,6 @@ pub async fn publish_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<Status, rocket::response::status::Custom<String>> {
-
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -213,8 +212,6 @@ pub fn post_post(
     subject: JwtIdentifiedSubject,
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
-
-
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -293,7 +290,6 @@ pub fn patch_post(
     id: i32,
     data: Form<PatchPost>,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
-
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
