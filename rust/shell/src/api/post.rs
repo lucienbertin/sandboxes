@@ -1,7 +1,7 @@
 use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
-use crate::error::Error;
-use crate::redis::{self, match_etag, EtaggedRequest};
+use crate::error::{Error, ResponseError};
+use crate::redis::{self, match_etag, IfMatchHeader, IfNoneMatchHeader};
 use crate::ServerState;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
@@ -84,11 +84,11 @@ impl From<PatchPost> for domain::models::PostEdition {
 pub async fn get_posts(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
-    etagged_request: Option<EtaggedRequest>,
-) -> Result<EtagJson<Vec<Post>>, rocket::response::status::Custom<String>> {
+    if_none_match: Option<IfNoneMatchHeader>,
+) -> Result<EtagJson<Vec<Post>>, ResponseError> {
     let cache_key = "posts".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = etagged_request.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+    let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
         Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
@@ -128,11 +128,11 @@ pub fn get_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
     id: i32,
-    etagged_request: Option<EtaggedRequest>,
-) -> Result<EtagJson<Post>, rocket::response::status::Custom<String>> {
+    if_none_match: Option<IfNoneMatchHeader>,
+) -> Result<EtagJson<Post>, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = etagged_request.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+    let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
         Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
@@ -171,7 +171,17 @@ pub async fn publish_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
     id: i32,
-) -> Result<Status, rocket::response::status::Custom<String>> {
+    if_match: Option<IfMatchHeader>,
+) -> Result<Status, ResponseError> {
+    let cache_key = format!("posts.{}", id).to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    let use_cache = if_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+    match use_cache {
+        None => Ok(()),
+        Some(Ok(true)) => Ok(()),
+        _ => Err(Error::PreconditionFailed),
+    }?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -211,7 +221,17 @@ pub fn post_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
     data: Form<NewPost>,
-) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
+    if_match: Option<IfMatchHeader>,
+) -> Result<Created<Json<Post>>, ResponseError> {
+    let cache_key = format!("posts.{}", id).to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    let use_cache = if_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+    match use_cache {
+        None => Ok(()),
+        Some(Ok(true)) => Ok(()),
+        _ => Err(Error::PreconditionFailed),
+    }?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -246,8 +266,18 @@ pub fn post_post(
 pub fn delete_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
+    if_match: Option<IfMatchHeader>,
     id: i32,
-) -> Result<NoContent, rocket::response::status::Custom<String>> {
+) -> Result<NoContent, ResponseError> {
+    let cache_key = format!("posts.{}", id).to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    let use_cache = if_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+    match use_cache {
+        None => Ok(()),
+        Some(Ok(true)) => Ok(()),
+        _ => Err(Error::PreconditionFailed),
+    }?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -270,7 +300,6 @@ pub fn delete_post(
                 let _ = rmq_sender.send(("post.deleted".to_string(), format!("id: {}", post_id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
                 for cache_key in cache_keys {
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
@@ -287,9 +316,19 @@ pub fn delete_post(
 pub fn patch_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject,
+    if_match: Option<IfMatchHeader>,
     id: i32,
     data: Form<PatchPost>,
-) -> Result<NoContent, rocket::response::status::Custom<String>> {
+) -> Result<NoContent, ResponseError> {
+    let cache_key = format!("posts.{}", id).to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    let use_cache = if_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+    match use_cache {
+        None => Ok(()),
+        Some(Ok(true)) => Ok(()),
+        _ => Err(Error::PreconditionFailed),
+    }?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -312,7 +351,6 @@ pub fn patch_post(
                 let _ = rmq_sender.send(("post.updated".to_string(), format!("id: {}", post_id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
                 for cache_key in cache_keys {
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }

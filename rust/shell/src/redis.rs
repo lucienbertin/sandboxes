@@ -52,28 +52,57 @@ use rocket::{
     request::{FromRequest, Outcome},
     Request,
 };
-pub struct EtaggedRequest {
+pub struct IfNoneMatchHeader {
     pub etag: String,
 }
 
-fn extract_etag(req: &Request<'_>) -> Result<EtaggedRequest, Error> {
-    use super::error::AuthError;
+fn extract_if_none_match(req: &Request<'_>) -> Result<IfNoneMatchHeader, Error> {
+    use super::error::HttpError;
     let etag = req
         .headers()
         .get_one("If-None-Match")
-        .ok_or(Error::AuthError(AuthError::NoAuthorizationHeader))?;
+        .ok_or(Error::HttpError(HttpError::NoIfNoneMatchHeader))?;
 
-    Ok(EtaggedRequest {
+    Ok(IfNoneMatchHeader {
         etag: etag.to_string(),
     })
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for EtaggedRequest {
+impl<'r> FromRequest<'r> for IfNoneMatchHeader {
     type Error = super::error::Error;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let result = extract_etag(req);
+        let result = extract_if_none_match(req);
+
+        match result {
+            Ok(e) => Outcome::Success(e),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
+    }
+}
+pub struct IfMatchHeader {
+    pub etag: String,
+}
+
+fn extract_if_match(req: &Request<'_>) -> Result<IfMatchHeader, Error> {
+    use super::error::HttpError;
+    let etag = req
+        .headers()
+        .get_one("If-Match")
+        .ok_or(Error::HttpError(HttpError::NoIfMatchHeader))?;
+
+    Ok(IfMatchHeader {
+        etag: etag.to_string(),
+    })
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for IfMatchHeader {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_if_match(req);
 
         match result {
             Ok(e) => Outcome::Success(e),

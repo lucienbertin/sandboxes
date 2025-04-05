@@ -19,6 +19,7 @@ pub enum Error {
     Conflict,
     Gone,
     NotModified,
+    PreconditionFailed,
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
@@ -92,10 +93,13 @@ pub enum AuthError {
 
 #[derive(Debug)]
 pub enum HttpError {
-    NoETagHeader,
+    NoIfMatchHeader,
+    NoIfNoneMatchHeader,
 }
 
-impl From<Error> for rocket::response::status::Custom<String> {
+pub type ResponseError = rocket::response::status::Custom<String>;
+
+impl From<Error> for ResponseError {
     fn from(value: Error) -> Self {
         match value {
             Error::AuthError(e) => rocket::response::status::Custom(
@@ -154,9 +158,10 @@ impl From<Error> for rocket::response::status::Custom<String> {
                 rocket::http::Status::Conflict,
                 "conflict".to_string(),
             ),
-            Error::Gone => {
-                rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
-            }
+            Error::Gone => rocket::response::status::Custom(
+                rocket::http::Status::Gone,
+                "gone".to_string()
+            ),
             Error::Unauthorized => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
                 "unauthorized".to_string(),
@@ -164,6 +169,10 @@ impl From<Error> for rocket::response::status::Custom<String> {
             Error::NotModified => rocket::response::status::Custom(
                 rocket::http::Status::NotModified,
                 "not modified".to_string(),
+            ),
+            Error::PreconditionFailed => rocket::response::status::Custom(
+                rocket::http::Status::PreconditionFailed,
+                "precondition failed".to_string(),
             ),
         }
     }
