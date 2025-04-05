@@ -113,7 +113,10 @@ pub async fn get_posts(
     })?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
-    let etag = redis::get_etag(&mut redis_conn, &cache_key)?; // i dont want to 500 on a redis error when i have the results available
+    let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
+        Ok(t) => Some(t),
+        _ => None, // i dont want to 500 on a redis error when i have the results available
+    };
 
     let result = EtagJson {
         body: Json(results),
@@ -156,8 +159,10 @@ pub fn get_post(
         }
     })?;
 
-    let etag = redis::get_etag(&mut redis_conn, &cache_key)?; // i dont want to 500 on a redis error when i have the results available
-
+    let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
+        Ok(t) => Some(t),
+        _ => None, // i dont want to 500 on a redis error when i have the results available
+    };
     let result = EtagJson {
         body: Json(result.into()),
         etag: etag,

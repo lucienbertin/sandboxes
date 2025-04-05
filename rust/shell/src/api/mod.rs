@@ -12,19 +12,24 @@ where
     T: Serialize,
 {
     body: Json<T>,
-    etag: String,
+    etag: Option<String>,
 }
 
 #[rocket::async_trait]
 impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
     fn respond_to(self, req: &'r Request<'_>) -> rocket::response::Result<'static> {
-        rocket::response::Response::build_from(self.body.respond_to(req)?)
+        let mut builder = rocket::response::Response::build_from(self.body.respond_to(req)?);
+        let builder = builder
             .status(rocket::http::Status::Ok)
-            .header(ContentType::JSON)
-            .header(Header {
+            .header(ContentType::JSON);
+        let builder = match self.etag {
+            Some(tag) => builder.header(Header {
                 name: "ETag".to_string().into(),
-                value: self.etag.into(),
-            })
-            .ok()
+                value: tag.into(),
+            }),
+            None => builder,
+        };
+
+        builder.ok()
     }
 }
