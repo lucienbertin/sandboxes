@@ -1,6 +1,7 @@
 use std::sync::mpsc;
 
 use db::DbPool;
+use redis::RedisPool;
 
 #[macro_use]
 extern crate rocket;
@@ -15,11 +16,12 @@ mod rmq;
 pub struct ServerState {
     pub db_pool: DbPool,
     pub rmq_sender: std::sync::mpsc::Sender<(String, String)>,
+    pub redis_pool: RedisPool,
 }
 #[launch]
 async fn rocket() -> _ {
-    let (tx, rx) = mpsc::channel::<(String, String)>();
     // init rmq
+    let (tx, rx) = mpsc::channel::<(String, String)>();
     // connect to rmq, create chan, queue and consumer
     // listen to queue `test`
     use futures_lite::stream::StreamExt;
@@ -79,6 +81,7 @@ async fn rocket() -> _ {
 
     // init db
     let db_pool = db::init_pool().expect("couldnt init db pool");
+    let redis_pool = redis::init_pool().expect("couldnt init redis pool");
 
     rocket::build()
         .mount("/api/", {
@@ -95,5 +98,6 @@ async fn rocket() -> _ {
         .manage(ServerState {
             db_pool: db_pool,
             rmq_sender: tx,
+            redis_pool: redis_pool,
         })
 }
