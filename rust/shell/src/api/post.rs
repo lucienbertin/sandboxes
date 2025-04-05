@@ -231,7 +231,7 @@ pub fn post_post(
         Some(Ok(true)) => Ok(()),
         _ => Err(Error::PreconditionFailed),
     }?;
-    
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
