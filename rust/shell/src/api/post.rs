@@ -86,14 +86,15 @@ pub async fn get_posts(
     subject: JwtIdentifiedSubject, // is allowed with no auth
     etag: Option<EtaggedRequest>,
 ) -> Result<EtagJson<Vec<Post>>, rocket::response::status::Custom<String>> {
+    let cache_key = "posts".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = etag.map(move |er| {
+    let use_cache = etag.map(|er| {
         let etag = er.etag;
 
-        match_etag(&mut redis_conn, "posts".to_string(), etag)
+        match_etag(&mut redis_conn, &cache_key, etag)
     });
     match use_cache {
-        Some(true) => Err(Error::NotModified),
+        Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
     }?;
 
@@ -117,9 +118,11 @@ pub async fn get_posts(
 
     let results = results.into_iter().map(|x| x.into()).collect();
 
+    let etag = redis::get_etag(&mut redis_conn, &cache_key)?;
+
     let result = EtagJson {
         body: Json(results),
-        etag: "zxc".to_string(),
+        etag: etag,
     };
 
     Ok(result)
