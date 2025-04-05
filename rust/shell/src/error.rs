@@ -158,10 +158,9 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::Conflict,
                 "conflict".to_string(),
             ),
-            Error::Gone => rocket::response::status::Custom(
-                rocket::http::Status::Gone,
-                "gone".to_string()
-            ),
+            Error::Gone => {
+                rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
+            }
             Error::Unauthorized => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
                 "unauthorized".to_string(),
