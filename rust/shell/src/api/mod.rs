@@ -24,6 +24,7 @@ impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
             .header(Header {
                 name: "ETag".to_string().into(),
                 value: self.etag.into(),
-            }).ok()
+            })
+            .ok()
     }
 }
