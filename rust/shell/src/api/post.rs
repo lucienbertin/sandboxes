@@ -117,7 +117,6 @@ pub async fn get_posts(
     })?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
-
     let etag = redis::get_etag(&mut redis_conn, &cache_key)?;
 
     let result = EtagJson {
@@ -133,7 +132,20 @@ pub fn get_post(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
     id: i32,
-) -> Result<Json<Post>, rocket::response::status::Custom<String>> {
+    etag: Option<EtaggedRequest>,
+) -> Result<EtagJson<Post>, rocket::response::status::Custom<String>> {
+    let cache_key = format!("posts.{}", id).to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    let use_cache = etag.map(|er| {
+        let etag = er.etag;
+
+        match_etag(&mut redis_conn, &cache_key, etag)
+    });
+    match use_cache {
+        Some(Ok(true)) => Err(Error::NotModified),
+        _ => Ok(()),
+    }?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
     let result = conn.build_transaction().read_only().run(|conn| {
@@ -152,7 +164,14 @@ pub fn get_post(
         }
     })?;
 
-    Ok(Json(result.into()))
+    let etag = redis::get_etag(&mut redis_conn, &cache_key)?;
+
+    let result = EtagJson {
+        body: Json(result.into()),
+        etag: etag,
+    };
+
+    Ok(result)
 }
 
 #[post("/post/<id>/publish")]
@@ -161,6 +180,9 @@ pub async fn publish_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<Status, rocket::response::status::Custom<String>> {
+    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -180,6 +202,9 @@ pub async fn publish_post(
             DoPublishAndNotify(post_id) => {
                 db::publish_post(conn, post_id)?;
                 let _ = rmq_sender.send(("post.published".to_string(), format!("id: {}", post_id)));
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
 
                 Ok(())
             }
@@ -195,6 +220,9 @@ pub fn post_post(
     subject: JwtIdentifiedSubject,
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, rocket::response::status::Custom<String>> {
+    let cache_key = "posts".to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -210,6 +238,7 @@ pub fn post_post(
             DoCreateAndNotify(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
                 let _ = rmq_sender.send(("post.created".to_string(), format!("id: {}", post_id)));
+                redis::refresh_etag(&mut redis_conn, &cache_key)?;
 
                 Ok(post_id)
             }
@@ -227,6 +256,9 @@ pub fn delete_post(
     subject: JwtIdentifiedSubject,
     id: i32,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
+    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -247,6 +279,9 @@ pub fn delete_post(
             DoDeleteAndNotify(post_id) => {
                 db::delete_post(conn, post_id)?;
                 let _ = rmq_sender.send(("post.deleted".to_string(), format!("id: {}", post_id)));
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
 
                 Ok(())
             }
@@ -263,6 +298,9 @@ pub fn patch_post(
     id: i32,
     data: Form<PatchPost>,
 ) -> Result<NoContent, rocket::response::status::Custom<String>> {
+    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_sender = &server_state.rmq_sender;
 
@@ -283,6 +321,9 @@ pub fn patch_post(
             DoUpdateAndNotify(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;
                 let _ = rmq_sender.send(("post.updated".to_string(), format!("id: {}", post_id)));
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
 
                 Ok(())
             }
