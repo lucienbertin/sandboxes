@@ -21,14 +21,24 @@ pub fn get_conn(redis_pool: &RedisPool) -> Result<RedisConn, Error> {
     Ok(conn)
 }
 
-pub fn match_etag(conn: &mut RedisConn, key: String, etag: String) -> bool {
-    let cached_etag: &Result<String, Error> = &conn.get(key).map_err(|e| e.into());
+pub fn match_etag(conn: &mut RedisConn, key: &String, etag: String) -> Result<bool, Error> {
+    let cached_etag = &conn.get::<&String, String>(key)?;
 
-    match cached_etag {
-        Ok(tag) if *tag == etag => true,
-        Ok(_) => false,
-        Err(_) => false, // dump error, we dont care
-    }
+    Ok(*cached_etag == etag)
+}
+
+pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<Option<String>, Error> {
+    // use rand::{distr::Alphanumeric, Rng}; // 0.8
+
+    // let etag: String = rand::rng()
+    //     .sample_iter(&Alphanumeric)
+    //     .take(12)
+    //     .map(char::from)
+    //     .collect();
+
+    let etag = conn.get::<&String, Option<String>>(key)?;
+
+    Ok(etag)
 }
 
 use rocket::{
