@@ -8,7 +8,6 @@ services:
     # restart: always
     ports:
       - "5432:5432"
-
     # set shared memory limit when using docker-compose
     shm_size: 128mb
     # or set shared memory limit when deploy via swarm stack
@@ -17,7 +16,7 @@ services:
 
     environment:
       POSTGRES_PASSWORD: postgres
-    
+
   rmq:
     image: rabbitmq:4-management
     ports:
@@ -26,3 +25,9 @@ services:
     volumes:
       - /tank/lulu/volumes/sandbox-rmq/data/:/var/lib/rabbitmq/
       - /tank/lulu/volumes/sandbox-rmq/log/:/var/log/rabbitmq/
+
+  redis:
+    image: redis:latest
+    command: redis-server
+    ports:
+    - 6379:6379
