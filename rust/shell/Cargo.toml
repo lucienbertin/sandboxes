@@ -18,6 +18,7 @@ lapin = "2.5.2"
 async-global-executor = "3.1.0"
 futures-lite = "2.6.0"
 redis = { version = "0.29.2", features = ["r2d2"] }
+rand = "0.9.0"
 
 [dev-dependencies]
 tokio = "1.44.1"
