@@ -2,12 +2,17 @@
 import "reflect-metadata";
 import { DeepPartial, FindOptionsWhere } from "typeorm";
 import { Post, PostScope, User } from "@/domain";
-import { datasource, isInitialized, ORMPost, ORMUser } from "./datasource";
+import {
+  datasource,
+  isInitialized,
+  Post as EPost,
+  User as EUser,
+} from "./datasource";
 
 function fromScope(
   scope: PostScope,
   author: User | null,
-): FindOptionsWhere<ORMPost> | FindOptionsWhere<ORMPost>[] | undefined {
+): FindOptionsWhere<Post> | FindOptionsWhere<Post>[] | undefined {
   let where = undefined;
   switch (scope) {
     case PostScope.All:
@@ -30,7 +35,7 @@ export async function getPosts(
 ): Promise<Post[]> {
   await isInitialized;
   const where = fromScope(scope, author);
-  const posts = await datasource.getRepository(ORMPost).find({
+  const posts = await datasource.getRepository(EPost).find({
     where,
     relations: { author: true },
   });
@@ -43,7 +48,7 @@ export async function countPosts(
 ): Promise<number> {
   await isInitialized;
   const where = fromScope(scope, author);
-  const cnt = await datasource.getRepository(ORMPost).count({
+  const cnt = await datasource.getRepository(EPost).count({
     where,
   });
   return cnt;
@@ -51,7 +56,7 @@ export async function countPosts(
 
 export async function getPost(id: number): Promise<Post | null> {
   await isInitialized;
-  const post = await datasource.getRepository(ORMPost).findOne({
+  const post = await datasource.getRepository(EPost).findOne({
     where: { id },
     relations: { author: true },
   });
@@ -61,11 +66,11 @@ export async function getPost(id: number): Promise<Post | null> {
 
 export async function createPost(newPost: DeepPartial<Post>, author: User) {
   await isInitialized;
-  const repo = datasource.getRepository(ORMPost);
+  const repo = datasource.getRepository(EPost);
   const post = repo.create(newPost as DeepPartial<Post>);
 
   const ormAuthor = await datasource
-    .getRepository(ORMUser)
+    .getRepository(EUser)
     .findOneByOrFail({ id: author.id });
   post.author = ormAuthor;
 

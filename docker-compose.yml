@@ -7,13 +7,12 @@ services:
     image: postgis/postgis
     # restart: always
     ports:
-      - "5432:5432"
+      - 5432:5432
     # set shared memory limit when using docker-compose
     shm_size: 128mb
     # or set shared memory limit when deploy via swarm stack
     volumes:
       - /tank/lulu/volumes/sandbox-db:/var/lib/postgresql/data
-
     environment:
       POSTGRES_PASSWORD: postgres
 

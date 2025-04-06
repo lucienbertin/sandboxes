@@ -1,4 +1,9 @@
-import { Place, Post, User, UserRole } from "@/domain";
+import {
+  Place as DPlace,
+  Post as DPost,
+  User as DUser,
+  UserRole,
+} from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
 import { DataSource } from "typeorm";
@@ -8,15 +13,15 @@ interface IRecord<T> {
   asRecord(): T;
 }
 
-@typeorm.Entity({ name: "users" })
-export class ORMUser implements IRecord<User> {
+@typeorm.Entity()
+export class User implements IRecord<DUser> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
-  @typeorm.Column({ type: "text", name: "first_name" })
+  @typeorm.Column({ type: "text" })
   firstName!: string;
 
-  @typeorm.Column({ type: "text", name: "last_name" })
+  @typeorm.Column({ type: "text" })
   lastName!: string;
 
   @typeorm.Column({ type: "text" })
@@ -29,10 +34,10 @@ export class ORMUser implements IRecord<User> {
   })
   role!: UserRole;
 
-  @typeorm.OneToMany(() => ORMPost, (post) => post.author)
-  posts!: ORMPost[];
+  @typeorm.OneToMany(() => Post, (post) => post.author)
+  posts!: Post[];
 
-  asRecord(): User {
+  asRecord(): DUser {
     return {
       id: this.id,
       firstName: this.firstName,
@@ -43,8 +48,8 @@ export class ORMUser implements IRecord<User> {
   }
 }
 
-@typeorm.Entity({ name: "posts" })
-export class ORMPost implements IRecord<Post> {
+@typeorm.Entity()
+export class Post implements IRecord<DPost> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
@@ -57,23 +62,22 @@ export class ORMPost implements IRecord<Post> {
   @typeorm.Column({ type: "boolean" })
   published!: boolean;
 
-  @typeorm.ManyToOne(() => ORMUser)
-  @typeorm.JoinColumn({ name: "author_id" })
-  author!: ORMUser;
+  @typeorm.ManyToOne(() => User)
+  author!: User;
 
-  asRecord(): Post {
+  asRecord(): DPost {
     return {
       id: this.id,
       title: this.title,
       body: this.body,
       published: this.published,
       author: this.author.asRecord(),
-    } as Post;
+    } as DPost;
   }
 }
 
-@typeorm.Entity({ name: "places" })
-export class ORMPlace implements IRecord<Place> {
+@typeorm.Entity()
+export class Place implements IRecord<DPlace> {
   @typeorm.PrimaryGeneratedColumn()
   id!: number;
 
@@ -87,10 +91,10 @@ export class ORMPlace implements IRecord<Place> {
   })
   geometry!: typeorm.Point;
 
-  asRecord(): Place {
-    return { ...this } as Place;
+  asRecord(): DPlace {
+    return { ...this } as DPlace;
   }
-  asGeoJSON(): Feature<Point, Place> {
+  asGeoJSON(): Feature<Point, DPlace> {
     return {
       id: this.id,
       type: "Feature",
@@ -104,12 +108,12 @@ export const datasource = new DataSource({
   type: "postgres",
   host: "localhost",
   port: 5432,
-  password: "postgres",
-  username: "postgres",
-  database: "postgres",
-  synchronize: false,
+  password: "nextjs",
+  username: "nextjs",
+  database: "nextjs-db",
+  synchronize: true,
   logging: false,
-  entities: [ORMPost, ORMPlace, ORMUser],
+  entities: [Post, Place, User],
 });
 export const isInitialized = datasource
   .initialize()
