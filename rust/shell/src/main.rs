@@ -1,7 +1,6 @@
-use std::sync::mpsc;
-
 use db::DbPool;
 use redis::RedisPool;
+use rmq::RmqMessage;
 
 #[macro_use]
 extern crate rocket;
@@ -15,66 +14,14 @@ mod rmq;
 
 pub struct ServerState {
     pub db_pool: DbPool,
-    pub rmq_sender: std::sync::mpsc::Sender<(String, String)>,
     pub redis_pool: RedisPool,
+    pub rmq_sender: std::sync::mpsc::Sender<RmqMessage>,
 }
 #[launch]
 async fn rocket() -> _ {
-    // init rmq
-    let (tx, rx) = mpsc::channel::<(String, String)>();
-    // connect to rmq, create chan, queue and consumer
-    // listen to queue `test`
-    use futures_lite::stream::StreamExt;
-    use lapin::{
-        options::{BasicAckOptions, BasicConsumeOptions, QueueDeclareOptions},
-        types::FieldTable,
-    };
-
-    let rmq_channel = rmq::init_channel().await.expect("couldnt connect to rmq");
-    let rmq_channel_clone = rmq_channel.clone();
-
-    // all this should go somewhere else
-    let queue = rmq_channel
-        .queue_declare(
-            "test",
-            QueueDeclareOptions::default(),
-            FieldTable::default(),
-        )
+    let rmq_sender = rmq::init()
         .await
-        .expect("should create queue test");
-
-    let mut consumer = rmq_channel
-        .basic_consume(
-            queue.name().as_str(),
-            "test_consumer",
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        )
-        .await
-        .expect("should consume queue");
-
-    async_global_executor::spawn(async move {
-        while let Some(delivery) = consumer.next().await {
-            let delivery = delivery.expect("error in consumer");
-            println!(
-                "delivery key:{:?} | msg: {:?}",
-                delivery.routing_key.as_str(),
-                String::from_utf8(delivery.data.clone())
-            );
-            delivery.ack(BasicAckOptions::default()).await.expect("ack");
-        }
-    })
-    .detach();
-
-    async_global_executor::spawn(async move {
-        for (routing_key, message) in rx {
-            let _ = rmq::publish(&rmq_channel_clone, routing_key, message).await;
-        }
-    })
-    .detach();
-    // untill here
-
-    // init db
+        .expect("couldnt init rmq's consumer/publisher duo");
     let db_pool = db::init_pool().expect("couldnt init db pool");
     let redis_pool = redis::init_pool().expect("couldnt init redis pool");
 
@@ -92,7 +39,7 @@ async fn rocket() -> _ {
         })
         .manage(ServerState {
             db_pool: db_pool,
-            rmq_sender: tx,
+            rmq_sender: rmq_sender,
             redis_pool: redis_pool,
         })
 }
