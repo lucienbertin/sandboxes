@@ -1,4 +1,9 @@
-import { Place as DPlace, Post as DPost, User as DUser, UserRole } from "@/domain";
+import {
+  Place as DPlace,
+  Post as DPost,
+  User as DUser,
+  UserRole,
+} from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
 import { DataSource } from "typeorm";
