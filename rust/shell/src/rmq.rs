@@ -1,18 +1,20 @@
 use crate::error::Error;
 use dotenvy::dotenv;
+use futures_lite::StreamExt;
 use lapin::{
-    options::{BasicPublishOptions, ExchangeDeclareOptions},
+    options::{
+        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions,
+        QueueDeclareOptions,
+    },
     types::FieldTable,
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
 
-use std::env;
+use std::{env, sync::mpsc};
 
 // initialize connection
-pub async fn init_channel() -> Result<Channel, Error> {
-    dotenv()?;
-    let amqp_url = env::var("AMQP_URL")?;
-    let exchange_name = env::var("RMQ_EXCHANGE")?;
+async fn init_channel(amqp_url: &String, exchange_name: &String) -> Result<Channel, Error> {
+
 
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
@@ -29,10 +31,7 @@ pub async fn init_channel() -> Result<Channel, Error> {
     Ok(chan)
 }
 
-pub async fn publish(chan: &Channel, routing_key: String, message: String) -> Result<(), Error> {
-    dotenv()?;
-    let exchange_name = env::var("RMQ_EXCHANGE")?;
-
+async fn publish(chan: &Channel, exchange_name: &String, routing_key: String, message: String) -> Result<(), Error> {
     chan.basic_publish(
         exchange_name.as_str(),
         routing_key.as_str(),
@@ -43,6 +42,58 @@ pub async fn publish(chan: &Channel, routing_key: String, message: String) -> Re
     .await?;
 
     Ok(())
+}
+
+pub type RmqMessage = (String, String);
+pub async fn init() -> Result<std::sync::mpsc::Sender<RmqMessage>, Error> {
+    dotenv()?;
+    let amqp_url = env::var("AMQP_URL")?;
+    let exchange_name = env::var("RMQ_EXCHANGE")?;
+    
+    let channel = init_channel(&amqp_url, &exchange_name).await?;
+    let channel_clone = channel.clone();
+    let (tx, rx) = mpsc::channel::<RmqMessage>();
+
+    // consumer thread init
+    let queue = channel
+        .queue_declare(
+            "test",
+            QueueDeclareOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+    let mut consumer = channel
+        .basic_consume(
+            queue.name().as_str(),
+            "test_consumer",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+    async_global_executor::spawn(async move {
+        while let Some(delivery) = consumer.next().await {
+            let delivery = delivery.expect("error in consumer");
+            println!(
+                "delivery key: {:?} | msg: {:?}",
+                delivery.routing_key.as_str(),
+                String::from_utf8(delivery.data.clone())
+            );
+            delivery.ack(BasicAckOptions::default()).await.expect("ack");
+        }
+    })
+    .detach();
+
+    // publisher thread
+    async_global_executor::spawn(async move {
+        for (routing_key, message) in rx {
+            let _ = publish(&channel_clone, &exchange_name, routing_key, message).await;
+        }
+    })
+    .detach();
+
+    Ok(tx)
 }
 
 #[cfg(test)]
