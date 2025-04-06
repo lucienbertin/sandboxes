@@ -14,8 +14,6 @@ use std::{env, sync::mpsc};
 
 // initialize connection
 async fn init_channel(amqp_url: &String, exchange_name: &String) -> Result<Channel, Error> {
-
-
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
     let chan = conn.create_channel().await?;
@@ -31,7 +29,12 @@ async fn init_channel(amqp_url: &String, exchange_name: &String) -> Result<Chann
     Ok(chan)
 }
 
-async fn publish(chan: &Channel, exchange_name: &String, routing_key: String, message: String) -> Result<(), Error> {
+async fn publish(
+    chan: &Channel,
+    exchange_name: &String,
+    routing_key: String,
+    message: String,
+) -> Result<(), Error> {
     chan.basic_publish(
         exchange_name.as_str(),
         routing_key.as_str(),
@@ -49,7 +52,7 @@ pub async fn init() -> Result<std::sync::mpsc::Sender<RmqMessage>, Error> {
     dotenv()?;
     let amqp_url = env::var("AMQP_URL")?;
     let exchange_name = env::var("RMQ_EXCHANGE")?;
-    
+
     let channel = init_channel(&amqp_url, &exchange_name).await?;
     let channel_clone = channel.clone();
     let (tx, rx) = mpsc::channel::<RmqMessage>();
