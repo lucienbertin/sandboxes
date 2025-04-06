@@ -2,12 +2,12 @@
 import "reflect-metadata";
 import { DeepPartial, FindOptionsWhere } from "typeorm";
 import { Post, PostScope, User } from "@/domain";
-import { datasource, isInitialized, ORMPost, ORMUser } from "./datasource";
+import { datasource, isInitialized, Post as ORMPost, User as ORMUser } from "./datasource";
 
 function fromScope(
   scope: PostScope,
   author: User | null,
-): FindOptionsWhere<ORMPost> | FindOptionsWhere<ORMPost>[] | undefined {
+): FindOptionsWhere<Post> | FindOptionsWhere<Post>[] | undefined {
   let where = undefined;
   switch (scope) {
     case PostScope.All:
