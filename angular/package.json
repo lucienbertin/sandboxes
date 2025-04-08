@@ -10,8 +10,8 @@
     "test:ci": "ng test --no-watch --no-progress --code-coverage --browsers=ChromeHeadless",
     "serve:ssr:angular": "node dist/angular/server/server.mjs",
     "lint": "ng lint",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.tsx\""
   },
   "private": true,
   "dependencies": {
