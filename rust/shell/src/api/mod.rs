@@ -9,7 +9,6 @@ use rocket::serde::json::Json;
 use rocket::Response;
 use serde::Serialize;
 
-
 /// Catches all OPTION requests in order to get the CORS related Fairing triggered.
 #[options("/<_..>")]
 pub fn all_options() {
