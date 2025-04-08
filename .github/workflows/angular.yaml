@@ -31,3 +31,5 @@ jobs:
         run: npm run test:ci --prefix angular
       - name: Lint
         run: npm run lint --prefix angular
+      - name: Fmt
+        run: npm run format:check --prefix angular
