@@ -10,11 +10,8 @@ describe('PostsComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PostsComponent],
-      providers: [
-        provideHttpClient(),
-      ]
-    })
-    .compileComponents();
+      providers: [provideHttpClient()],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(PostsComponent);
     component = fixture.componentInstance;
