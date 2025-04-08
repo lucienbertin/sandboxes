@@ -9,7 +9,9 @@
     "test": "ng test",
     "test:ci": "ng test --no-watch --no-progress --code-coverage --browsers=ChromeHeadless",
     "serve:ssr:angular": "node dist/angular/server/server.mjs",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "private": true,
   "dependencies": {
@@ -42,6 +44,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "prettier": "^3.5.3",
     "typescript": "~5.7.2",
     "typescript-eslint": "8.27.0"
   }
