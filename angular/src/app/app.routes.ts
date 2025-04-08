@@ -5,8 +5,7 @@ export const routes: Routes = [
   { path: 'posts', component: PostsComponent },
   {
     path: 'posts-ll',
-    loadComponent: () =>
-      import('./posts').then((m) => m.PostsComponent),
+    loadComponent: () => import('./posts').then((m) => m.PostsComponent),
   },
   { path: '**', redirectTo: '/posts' },
 ];
