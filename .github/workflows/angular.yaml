@@ -28,6 +28,6 @@ jobs:
       - name: Build
         run: npm run build --prefix angular
       - name: Test
-        run: npm run test --prefix angular
+        run: npm run test:ci --prefix angular
       - name: Lint
         run: npm run lint --prefix angular
