@@ -10,8 +10,8 @@
     "test:ci": "ng test --no-watch --no-progress --code-coverage --browsers=ChromeHeadless",
     "serve:ssr:angular": "node dist/angular/server/server.mjs",
     "lint": "ng lint",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.html\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.html\""
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.html\" \"src/**/*.scss\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.html\" \"src/**/*.scss\""
   },
   "private": true,
   "dependencies": {
