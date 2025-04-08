@@ -1,3 +1,4 @@
+use api::Cors;
 use db::DbPool;
 use redis::RedisPool;
 use rmq::RmqMessage;
@@ -29,6 +30,7 @@ async fn rocket() -> _ {
         .mount("/api/", {
             use api::*;
             routes![
+                all_options,
                 get_posts,
                 get_post,
                 post_post,
@@ -37,6 +39,7 @@ async fn rocket() -> _ {
                 patch_post
             ]
         })
+        .attach(Cors)
         .manage(ServerState {
             db_pool: db_pool,
             rmq_sender: rmq_sender,
