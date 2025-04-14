@@ -12,4 +12,8 @@ export class PostService {
   findAll(): Promise<Post[]> {
     return this.repo.find();
   }
+
+  findOneById(id: number): Promise<Post | null> {
+    return this.repo.findOneBy({ id: id });
+  }
 }
