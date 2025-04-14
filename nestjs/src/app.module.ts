@@ -3,9 +3,16 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostModule } from './post';
+import { GraphQLModule } from '@nestjs/graphql';
+import { MercuriusDriver, MercuriusDriverConfig } from '@nestjs/mercurius';
+import { GraphqlOptions } from './graphql.options';
 
 @Module({
   imports: [
+    GraphQLModule.forRootAsync<MercuriusDriverConfig>({
+      driver: MercuriusDriver,
+      useClass: GraphqlOptions,
+   }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
@@ -14,7 +21,7 @@ import { PostModule } from './post';
       username: 'postgres',
       autoLoadEntities: true,
       database: 'postgres',
-      synchronize: false,
+      synchronize: true,
       logging: true,
     }),
     PostModule,
