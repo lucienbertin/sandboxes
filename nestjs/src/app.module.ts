@@ -10,7 +10,7 @@ import { GraphqlOptions } from './graphql.options';
     GraphQLModule.forRootAsync<MercuriusDriverConfig>({
       driver: MercuriusDriver,
       useClass: GraphqlOptions,
-   }),
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',

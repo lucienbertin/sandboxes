@@ -12,4 +12,3 @@ export class GraphqlOptions implements GqlOptionsFactory {
     };
   }
 }
-

@@ -4,7 +4,7 @@ import { Field, Int, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 @Entity({ name: 'posts' })
 export class Post {
-  @Field(type => Int)
+  @Field(() => Int)
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -16,7 +16,7 @@ export class Post {
   @Column({ type: 'text' })
   body: string;
 
-  @Field(type => Boolean)
+  @Field(() => Boolean)
   @Column({ type: 'boolean' })
   published: boolean;
 }
