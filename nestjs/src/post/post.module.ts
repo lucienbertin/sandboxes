@@ -11,11 +11,8 @@ import { Cat, CatSchema } from './cat.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Post]),
-    MongooseModule.forFeature([{ name: Cat.name, schema: CatSchema }])
+    MongooseModule.forFeature([{ name: Cat.name, schema: CatSchema }]),
   ],
-  providers: [
-    CatService, CatResolver,
-    PostService, PostResolver,
-  ],
+  providers: [CatService, CatResolver, PostService, PostResolver],
 })
 export class PostModule {}

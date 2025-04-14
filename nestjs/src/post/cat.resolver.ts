@@ -12,9 +12,7 @@ export class CatResolver {
   }
 
   @Mutation(() => Cat)
-  async createCat(
-    @Args('cat') cat: CreateCatDto,
-  ) {
+  async createCat(@Args('cat') cat: CreateCatDto) {
     return await this.catService.create(cat);
   }
 }
