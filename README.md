@@ -8,7 +8,7 @@ here are the contents:
 
 ## root
 
-you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis. run it with a 
+you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis, a mongodb and its mongo-express. run it with a 
 
 ```
 $ docker compose up
@@ -69,9 +69,11 @@ Angular seems built with the _dependency injection_ pattern in mind so i'll use 
 
 ## Nestjs
 
-very basic nestjs backend, it uses typeorm for binding to the db and exposes some basic REST endpoint but i'll migrate this to a graphQL exposition at some point.
+very basic nestjs backend, it uses typeorm for binding to the postgres instance and mongoose for binding to mongodb. it exposes its stuff through a graphql endpoint available under /graphql, and a sandbox under /graphiql
 
-Nest seems built with the _dependency injection_ pattern in mind so i'll use that for this part of the codebase
+Nest seems built with the _dependency injection_ pattern in mind so i'll use that for this part of the codebase.
+
+Also the modules definition pattern is very nice when you want to use the _vertical slice_ pattern so i'll try using that at some point
 
 once again `npm run` + scripts used by the nests community.
 
