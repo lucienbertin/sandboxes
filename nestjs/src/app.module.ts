@@ -4,6 +4,7 @@ import { PostModule } from './post';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MercuriusDriver, MercuriusDriverConfig } from '@nestjs/mercurius';
 import { GraphqlOptions } from './graphql.options';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { GraphqlOptions } from './graphql.options';
       synchronize: true,
       logging: true,
     }),
+    MongooseModule.forRoot('mongodb://localhost/nestjs'),
     PostModule,
   ],
 })
