@@ -13,7 +13,7 @@ export const typeOrmConfig = {
 }
 
 // used by nestjs so no 
-export default registerAs('typeorm', () => typeOrmConfig);
+// export default registerAs('typeorm', () => typeOrmConfig);
 
 // used by typeorm cli
 export const connectionSource = new DataSource({
