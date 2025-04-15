@@ -3,7 +3,7 @@
 
 services:
 
-  db:
+  postgres:
     image: postgis/postgis
     # restart: always
     ports:
