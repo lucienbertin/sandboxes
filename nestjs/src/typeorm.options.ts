@@ -1,5 +1,3 @@
-import { DataSource, DataSourceOptions } from 'typeorm';
-
 export const typeOrmConfig = {
   type: 'postgres',
   host: 'localhost',
