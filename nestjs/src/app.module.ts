@@ -13,9 +13,7 @@ import { typeOrmConfig } from './typeorm.options';
       driver: MercuriusDriver,
       useClass: GraphqlOptions,
     }),
-    TypeOrmModule.forRoot(
-      typeOrmConfig as TypeOrmModuleOptions
-    ),
+    TypeOrmModule.forRoot(typeOrmConfig as TypeOrmModuleOptions),
     MongooseModule.forRoot('mongodb://localhost/nestjs'),
     PostModule,
   ],
