@@ -1,4 +1,9 @@
+{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 module Schedule (
+    SortedList (SortedList), toSortedList, fromSortedList,
+
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week), MondaysSchedule, TuesdaysSchedule, WednesdaysSchedule, ThursdaysSchedule, FridaysSchedule, SaturdaysSchedule, SundaysSchedule,
     YearlySchedule (Year), PartialYearSchedule (PartialYear),
@@ -10,17 +15,37 @@ module Schedule (
     isOpen, isClosed,
     ioNow, isOpenNow, isClosedNow) where
 
+import GHC.Generics (Generic (Rep))
 import Data.Time (
-    LocalTime (LocalTime),
+    LocalTime (..),
     dayOfWeek, DayOfWeek(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday),
-    TimeOfDay (TimeOfDay),
+    TimeOfDay (..),
     getZonedTime, ZonedTime (ZonedTime),
-    MonthOfYear, DayOfMonth, isLeapYear, Day, diffDays)
-
-import Data.SortedList (SortedList, fromSortedList)
+    MonthOfYear, DayOfMonth, isLeapYear, Day (toModifiedJulianDay, ModifiedJulianDay), diffDays)
+-- import Data.SortedList (SortedList, fromSortedList, toSortedList)
 import Data.Time.Calendar.OrdinalDate (toOrdinalDate)
 import Data.Time.Calendar.MonthDay (monthAndDayToDayOfYear)
 import Data.Ix (Ix(index))
+import Data.Serialize (Serialize (put, get))
+import qualified Data.List as List
+import Data.Kind (Constraint)
+
+instance Serialize Day where
+  put = put . toModifiedJulianDay
+  get = ModifiedJulianDay <$> get
+instance Serialize TimeOfDay where
+  put TimeOfDay {..} = put todHour >> put todMin >> put (toRational todSec)
+  get = TimeOfDay <$> get <*> get <*> (fromRational <$> get)
+instance Serialize LocalTime where
+  put LocalTime {..} = put localDay >> put localTimeOfDay
+  get = LocalTime <$> get <*> get
+
+newtype SortedList a = SortedList [a] deriving (Eq, Ord, Show, Generic)
+fromSortedList :: SortedList a -> [a]
+fromSortedList (SortedList xs) = xs
+toSortedList :: Ord a => [a] -> SortedList a
+toSortedList = SortedList . List.sort
+instance Serialize a => Serialize (SortedList a)
 
 -- daily schedule
 data DailySchedule =
@@ -28,7 +53,9 @@ data DailySchedule =
     | Closed
     | FromTo TimeOfDay TimeOfDay
     | Switch (SortedList TimeOfDay) -- on each ToD of the list toggles between open and closed, starts closed
-    deriving (Show)
+    deriving (Show, Generic, Eq)
+
+instance Serialize DailySchedule
 
 isOpenAt :: DailySchedule -> TimeOfDay -> Bool
 isOpenAt Open   _ = True
@@ -45,7 +72,8 @@ type FridaysSchedule = DailySchedule
 type SaturdaysSchedule = DailySchedule
 type SundaysSchedule = DailySchedule
 
-data WeeklySchedule = Week MondaysSchedule TuesdaysSchedule WednesdaysSchedule ThursdaysSchedule FridaysSchedule SaturdaysSchedule SundaysSchedule deriving (Show)
+data WeeklySchedule = Week MondaysSchedule TuesdaysSchedule WednesdaysSchedule ThursdaysSchedule FridaysSchedule SaturdaysSchedule SundaysSchedule deriving (Show, Generic, Eq)
+instance Serialize WeeklySchedule
 
 data WeekTime = WeekTime DayOfWeek TimeOfDay
 weekTime :: LocalTime -> WeekTime
@@ -63,7 +91,8 @@ isOpenOnDayOfWeek (Week _ _ _ _ _ _ sun) (WeekTime Sunday    t) = isOpenAt sun t
 -- repeating days schedule
 type ReferenceDay = Day
 type DaysPattern = [DailySchedule] -- try add constraint length >= 1
-data RepeatingDaysSchedule = Repeat ReferenceDay DaysPattern deriving (Show)
+data RepeatingDaysSchedule = Repeat ReferenceDay DaysPattern deriving (Show, Generic, Eq)
+instance Serialize RepeatingDaysSchedule
 
 isOpenAccordingToPattern :: RepeatingDaysSchedule -> LocalTime -> Bool
 isOpenAccordingToPattern (Repeat refDay pattern) (LocalTime day time) = isOpenAt applicableSchedule time where
@@ -73,17 +102,17 @@ isOpenAccordingToPattern (Repeat refDay pattern) (LocalTime day time) = isOpenAt
     patternLen = toInteger $ length pattern
 
 -- yearly schedule
-data PartialYearSchedule = PartialYear MonthOfYear DayOfMonth Schedule deriving (Show)
-instance Eq PartialYearSchedule where
-    PartialYear m d _ == PartialYear n e _ = m == n && d == e
+data PartialYearSchedule = PartialYear MonthOfYear DayOfMonth Schedule deriving (Show, Generic, Eq)
 
 comparePartialYearSchedule :: PartialYearSchedule -> PartialYearSchedule -> Ordering
 comparePartialYearSchedule (PartialYear m d _) (PartialYear n e _) | m == n = compare d e
 comparePartialYearSchedule (PartialYear m d _) (PartialYear n e _) = compare m n
 instance Ord PartialYearSchedule where
   compare = comparePartialYearSchedule
+instance Serialize PartialYearSchedule
 
-newtype YearlySchedule = Year (SortedList PartialYearSchedule) deriving (Show)
+newtype YearlySchedule = Year (SortedList PartialYearSchedule) deriving (Show, Generic, Eq)
+instance Serialize YearlySchedule
 
 partialYearScheduleIsApplicable (PartialYear moy dom _) isLeapYear = (<=) (monthAndDayToDayOfYear isLeapYear moy dom)
 
@@ -98,9 +127,11 @@ isOpenOnDayOfYear (Year schedules) dt = isOpen schedule dt
         (PartialYear _ _ schedule) = last applicableSchedulesAndFallback
 
 -- Exceptional Schedule
-data BetweenSchedule = Between LocalTime LocalTime Schedule deriving (Show) -- end day excluded
+data BetweenSchedule = Between LocalTime LocalTime Schedule deriving (Show, Generic, Eq) -- end day excluded
+instance Serialize BetweenSchedule
 type RegularSchedule = Schedule
-data ExceptionalSchedule = RegularExceptBetween RegularSchedule [BetweenSchedule] deriving (Show)
+data ExceptionalSchedule = RegularExceptBetween RegularSchedule [BetweenSchedule] deriving (Show, Generic, Eq)
+instance Serialize ExceptionalSchedule
 
 isOpenOnDay :: ExceptionalSchedule -> LocalTime -> Bool
 isOpenOnDay (RegularExceptBetween rs ex) dt = isOpen applicableSchedule dt where
@@ -110,15 +141,16 @@ isOpenOnDay (RegularExceptBetween rs ex) dt = isOpen applicableSchedule dt where
 
 -- Amended Schedule
 type DateOfEffect = LocalTime
-data Amendment = Amend DateOfEffect Schedule deriving (Show)
-instance Eq Amendment where
-    Amend d _ == Amend e _ = d == e
+data Amendment = Amend DateOfEffect Schedule deriving (Show, Generic, Eq)
 compareAmendments :: Amendment -> Amendment -> Ordering
 compareAmendments (Amend d _) (Amend e _) = compare d e
 instance Ord Amendment where
   compare = compareAmendments
+instance Serialize Amendment
+
 type InitialSchedule = Schedule
-data AmendedSchedule = Amended InitialSchedule (SortedList Amendment) deriving (Show)
+data AmendedSchedule = Amended InitialSchedule (SortedList Amendment) deriving (Show, Generic, Eq)
+instance Serialize AmendedSchedule
 
 isOpenWithAmendments :: AmendedSchedule -> LocalTime -> Bool
 isOpenWithAmendments (Amended initialSchedule amendments) dt = isOpen applicableSchedule dt where
@@ -133,7 +165,8 @@ data Schedule =
     | RepeatingDaysSchedule RepeatingDaysSchedule
     | YearlySchedule YearlySchedule
     | ExceptionalSchedule ExceptionalSchedule
-    | AmendedSchedule AmendedSchedule deriving (Show)
+    | AmendedSchedule AmendedSchedule deriving (Show, Generic, Eq)
+instance Serialize Schedule
 
 isOpen :: Schedule -> LocalTime -> Bool
 isOpen (DailySchedule ds) (LocalTime _ time) = isOpenAt ds time
