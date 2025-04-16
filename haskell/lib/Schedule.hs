@@ -29,10 +29,12 @@ import Data.Ix (Ix(index))
 import Data.Serialize (Serialize (put, get))
 import qualified Data.List as List
 import Data.Kind (Constraint)
+import Data.Aeson (FromJSON, ToJSON(toEncoding), genericToEncoding, defaultOptions)
 
 instance Serialize Day where
   put = put . toModifiedJulianDay
   get = ModifiedJulianDay <$> get
+
 instance Serialize TimeOfDay where
   put TimeOfDay {..} = put todHour >> put todMin >> put (toRational todSec)
   get = TimeOfDay <$> get <*> get <*> (fromRational <$> get)
@@ -46,7 +48,9 @@ fromSortedList (SortedList xs) = xs
 toSortedList :: Ord a => [a] -> SortedList a
 toSortedList = SortedList . List.sort
 instance Serialize a => Serialize (SortedList a)
-
+instance ToJSON a => ToJSON (SortedList a) where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON a => FromJSON (SortedList a)
 -- daily schedule
 data DailySchedule =
       Open
@@ -56,6 +60,9 @@ data DailySchedule =
     deriving (Show, Generic, Eq)
 
 instance Serialize DailySchedule
+instance ToJSON DailySchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON DailySchedule
 
 isOpenAt :: DailySchedule -> TimeOfDay -> Bool
 isOpenAt Open   _ = True
@@ -74,6 +81,9 @@ type SundaysSchedule = DailySchedule
 
 data WeeklySchedule = Week MondaysSchedule TuesdaysSchedule WednesdaysSchedule ThursdaysSchedule FridaysSchedule SaturdaysSchedule SundaysSchedule deriving (Show, Generic, Eq)
 instance Serialize WeeklySchedule
+instance ToJSON WeeklySchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON WeeklySchedule
 
 data WeekTime = WeekTime DayOfWeek TimeOfDay
 weekTime :: LocalTime -> WeekTime
@@ -93,6 +103,9 @@ type ReferenceDay = Day
 type DaysPattern = [DailySchedule] -- try add constraint length >= 1
 data RepeatingDaysSchedule = Repeat ReferenceDay DaysPattern deriving (Show, Generic, Eq)
 instance Serialize RepeatingDaysSchedule
+instance ToJSON RepeatingDaysSchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON RepeatingDaysSchedule
 
 isOpenAccordingToPattern :: RepeatingDaysSchedule -> LocalTime -> Bool
 isOpenAccordingToPattern (Repeat refDay pattern) (LocalTime day time) = isOpenAt applicableSchedule time where
@@ -110,9 +123,15 @@ comparePartialYearSchedule (PartialYear m d _) (PartialYear n e _) = compare m n
 instance Ord PartialYearSchedule where
   compare = comparePartialYearSchedule
 instance Serialize PartialYearSchedule
+instance ToJSON PartialYearSchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON PartialYearSchedule
 
 newtype YearlySchedule = Year (SortedList PartialYearSchedule) deriving (Show, Generic, Eq)
 instance Serialize YearlySchedule
+instance ToJSON YearlySchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON YearlySchedule
 
 partialYearScheduleIsApplicable (PartialYear moy dom _) isLeapYear = (<=) (monthAndDayToDayOfYear isLeapYear moy dom)
 
@@ -129,9 +148,15 @@ isOpenOnDayOfYear (Year schedules) dt = isOpen schedule dt
 -- Exceptional Schedule
 data BetweenSchedule = Between LocalTime LocalTime Schedule deriving (Show, Generic, Eq) -- end day excluded
 instance Serialize BetweenSchedule
+instance ToJSON BetweenSchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON BetweenSchedule
 type RegularSchedule = Schedule
 data ExceptionalSchedule = RegularExceptBetween RegularSchedule [BetweenSchedule] deriving (Show, Generic, Eq)
 instance Serialize ExceptionalSchedule
+instance ToJSON ExceptionalSchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON ExceptionalSchedule
 
 isOpenOnDay :: ExceptionalSchedule -> LocalTime -> Bool
 isOpenOnDay (RegularExceptBetween rs ex) dt = isOpen applicableSchedule dt where
@@ -147,10 +172,16 @@ compareAmendments (Amend d _) (Amend e _) = compare d e
 instance Ord Amendment where
   compare = compareAmendments
 instance Serialize Amendment
+instance ToJSON Amendment where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Amendment
 
 type InitialSchedule = Schedule
 data AmendedSchedule = Amended InitialSchedule (SortedList Amendment) deriving (Show, Generic, Eq)
 instance Serialize AmendedSchedule
+instance ToJSON AmendedSchedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON AmendedSchedule
 
 isOpenWithAmendments :: AmendedSchedule -> LocalTime -> Bool
 isOpenWithAmendments (Amended initialSchedule amendments) dt = isOpen applicableSchedule dt where
@@ -167,6 +198,9 @@ data Schedule =
     | ExceptionalSchedule ExceptionalSchedule
     | AmendedSchedule AmendedSchedule deriving (Show, Generic, Eq)
 instance Serialize Schedule
+instance ToJSON Schedule where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON Schedule
 
 isOpen :: Schedule -> LocalTime -> Bool
 isOpen (DailySchedule ds) (LocalTime _ time) = isOpenAt ds time
