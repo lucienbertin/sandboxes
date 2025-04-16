@@ -3,6 +3,7 @@ import Test.HUnit
 import qualified System.Exit as Exit
 
 import Schedule (
+    SortedList(SortedList), toSortedList,
     isOpen, isClosed,
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week),
@@ -10,7 +11,12 @@ import Schedule (
     Schedule (WeeklySchedule, DailySchedule, YearlySchedule, ExceptionalSchedule, RepeatingDaysSchedule, AmendedSchedule), PartialYearSchedule (PartialYear), BetweenSchedule (Between), ExceptionalSchedule (RegularExceptBetween), RepeatingDaysSchedule (Repeat), Amendment (Amend), AmendedSchedule (Amended))
 import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight, DayOfWeek (Wednesday), )
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
-import Data.SortedList (toSortedList)
+-- import Data.SortedList (toSortedList)
+import Data.Serialize (Serialize)
+import Data.Aeson ( toJSON, fromJSON, Result(Success))
+import qualified Data.Serialize
+import qualified Data.Aeson
+
 
 -- date and times
 monday =    fromOrdinalDate 2025 6 -- 1st complete week of 2025
@@ -217,6 +223,16 @@ procéWithStorm24 = TestCase (assertBool "3rd amendment - procé should be open 
 procéWithStorm25 = TestCase (assertBool "3rd amendment - procé should be open on a summer evening" (isOpen procéWithStorm (LocalTime midsummer eightPM)))
 procéWithStorm26 = TestCase (assertBool "3rd amendment - procé should be closed on a summer night" (isClosed procéWithStorm (LocalTime midsummer midnight)))
 
+-- serialization
+bsSer = Data.Serialize.encode procéWithStorm
+bsDe :: Schedule
+Right bsDe = Data.Serialize.decode bsSer
+serDe1 = TestCase (assertEqual "procéWithStorm after byteString ser-de" procéWithStorm bsDe)
+
+jsonSer = Data.Aeson.encode procéWithMaintenanceWork
+jsonDe :: Schedule
+Just jsonDe = Data.Aeson.decode jsonSer
+serDe2 = TestCase (assertEqual "procéWithMaintenanceWork after json ser-de" procéWithMaintenanceWork jsonDe)
 
 tests :: Test
 tests = TestList [
@@ -337,7 +353,10 @@ tests = TestList [
     TestLabel "procéWithStorm23" procéWithStorm23,
     TestLabel "procéWithStorm24" procéWithStorm24,
     TestLabel "procéWithStorm25" procéWithStorm25,
-    TestLabel "procéWithStorm26" procéWithStorm26]
+    TestLabel "procéWithStorm26" procéWithStorm26,
+
+    TestLabel "serDe1" serDe1,
+    TestLabel "serDe2" serDe2]
 
 main :: IO ()
 main = do
