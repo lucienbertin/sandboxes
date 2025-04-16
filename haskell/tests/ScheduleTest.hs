@@ -3,6 +3,7 @@ import Test.HUnit
 import qualified System.Exit as Exit
 
 import Schedule (
+    SortedList(SortedList), toSortedList,
     isOpen, isClosed,
     DailySchedule (Open, Closed, FromTo, Switch),
     WeeklySchedule (Week),
@@ -10,7 +11,8 @@ import Schedule (
     Schedule (WeeklySchedule, DailySchedule, YearlySchedule, ExceptionalSchedule, RepeatingDaysSchedule, AmendedSchedule), PartialYearSchedule (PartialYear), BetweenSchedule (Between), ExceptionalSchedule (RegularExceptBetween), RepeatingDaysSchedule (Repeat), Amendment (Amend), AmendedSchedule (Amended))
 import Data.Time (Day, TimeOfDay (TimeOfDay), LocalTime (LocalTime), midday, midnight, DayOfWeek (Wednesday), )
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
-import Data.SortedList (toSortedList)
+-- import Data.SortedList (toSortedList)
+import Data.Serialize (Serialize, encode, decode)
 
 -- date and times
 monday =    fromOrdinalDate 2025 6 -- 1st complete week of 2025
@@ -217,6 +219,11 @@ procéWithStorm24 = TestCase (assertBool "3rd amendment - procé should be open 
 procéWithStorm25 = TestCase (assertBool "3rd amendment - procé should be open on a summer evening" (isOpen procéWithStorm (LocalTime midsummer eightPM)))
 procéWithStorm26 = TestCase (assertBool "3rd amendment - procé should be closed on a summer night" (isClosed procéWithStorm (LocalTime midsummer midnight)))
 
+-- serialization
+encoded = encode procéWithStorm
+decoded :: Schedule
+Right decoded = decode encoded
+serDe1 = TestCase (assertEqual "procé with storm after ser-de" procéWithStorm decoded)
 
 tests :: Test
 tests = TestList [
@@ -337,9 +344,23 @@ tests = TestList [
     TestLabel "procéWithStorm23" procéWithStorm23,
     TestLabel "procéWithStorm24" procéWithStorm24,
     TestLabel "procéWithStorm25" procéWithStorm25,
-    TestLabel "procéWithStorm26" procéWithStorm26]
+    TestLabel "procéWithStorm26" procéWithStorm26,
+
+    TestLabel "serDe1" serDe1]
+
+
 
 main :: IO ()
 main = do
+    -- let encoded = encode Open
+    -- putStrLn ("serializing daily schedule open: " ++ show encoded)
+    -- let encoded = encode Closed
+    -- putStrLn ("serializing schedule always closed: " ++ show encoded)
+    -- let encoded = encode nineToFiveOnWeekDays
+    -- putStrLn ("serializing weekly schedule: " ++ show encoded)
+    -- putStrLn ("procéWithStorm schedule: " ++ show procéWithStorm)
+    -- putStrLn ("encoded procéWithStorm schedule: " ++ show encoded)
+    -- putStrLn ("decoded procéWithStorm schedule: " ++ show decoded)
+
     result <- runTestTT tests
     if failures result > 0 then Exit.exitFailure else Exit.exitSuccess
