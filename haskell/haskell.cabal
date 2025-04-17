@@ -72,7 +72,7 @@ executable haskell
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17, containers > 0.6, time > 1, sorted-list > 0.3, schedule-lib, cereal > 0.5, aeson > 2
+    build-depends:    base ^>=4.17, containers > 0.6, time > 1, sorted-list > 0.3, schedule-lib, cereal > 0.5, aeson > 2, scotty >= 0.22, text > 2
 
     -- Directories containing source files.
     hs-source-dirs:   app

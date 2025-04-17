@@ -1,8 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Schedule (ioNow)
+import Web.Scotty (liftIO, ActionM, scotty, text, post, jsonData)
+import Schedule (Schedule, isOpenNow)
+import Data.Text.Lazy (pack)
 
 main :: IO ()
-main = do
-    now <- ioNow
-    putStrLn ("Hello, Haskell! it is now: " ++ show now)
+main = scotty 3000 $
+    post "/" $ do
+        schedule <- jsonData :: ActionM Schedule -- given a schedule as json body
+        open <- liftIO (isOpenNow schedule)
+        text (pack (show open)) -- answers if its open now
