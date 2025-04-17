@@ -26,5 +26,5 @@ jobs:
         with:
           tags: sandboxes-rust:latest
           context: "{{defaultContext}}:rust"
-          cache-from: type=inline
-          cache-to: type=inline
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
