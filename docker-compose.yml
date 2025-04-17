@@ -3,12 +3,9 @@ version: '3.9'
 services:
   postgres:
     image: postgis/postgis
-    # restart: always
+    restart: always
     ports:
       - 5432:5432
-    # set shared memory limit when using docker-compose
-    shm_size: 128mb
-    # or set shared memory limit when deploy via swarm stack
     volumes:
       - /tank/lulu/volumes/sandbox-db:/var/lib/postgresql/data
     environment:
@@ -18,6 +15,7 @@ services:
 
   rmq:
     image: rabbitmq:4-management
+    restart: always
     ports:
     - 5672:5672
     - 15672:15672
@@ -29,6 +27,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: always
     command: redis-server
     ports:
     - 6379:6379
@@ -37,6 +36,7 @@ services:
 
   mongo:
     image: mongo:latest
+    restart: always
     hostname: mongodb
     volumes:
       - /tank/lulu/volumes/sandbox-mongo/data/:/data/db/
@@ -72,14 +72,14 @@ services:
       - 8000:8000
     restart: always
     environment:
-      DATABASE_URL: "postgres://rust:rust@sandboxes-postgres-1:5432/rust-db"
-      AMQP_URL: "amqp://guest:guest@sandboxes-rmq-1:5672/%2f"
-      REDIS_URL: "redis://sandboxes-redis-1:6379"
+      DATABASE_URL: "postgres://rust:rust@postgres:5432/rust-db"
+      AMQP_URL: "amqp://guest:guest@rmq:5672/%2f"
+      REDIS_URL: "redis://redis:6379"
       SECRET: "shh its a secret"
       RMQ_EXCHANGE: rust
       RUST_BACKTRACE: 1
       ROCKET_ADDRESS: "0.0.0.0"
-      ROCKET_PORT: 8000
+      ROCKET_PORT: 8001
     depends_on:
       - postgres
       - rmq
