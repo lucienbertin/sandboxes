@@ -9,6 +9,12 @@ use rocket::serde::json::Json;
 use rocket::Response;
 use serde::Serialize;
 
+#[get("/health")]
+pub fn health() -> String {
+    "I'm awake !".to_string()
+}
+
+
 /// Catches all OPTION requests in order to get the CORS related Fairing triggered.
 #[options("/<_..>")]
 pub fn all_options() {
