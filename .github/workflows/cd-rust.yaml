@@ -14,7 +14,7 @@ name: CD Rust
 
 jobs:
   build:
-    name: docker build
+    name: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,4 +26,3 @@ jobs:
         with:
           tags: sandboxes-rust:latest
           context: "{{defaultContext}}:rust"
-          # file: rust/Dockerfile
