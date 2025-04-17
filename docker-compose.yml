@@ -1,15 +1,6 @@
 version: '3.9'
 
 services:
-
-  traefik:
-    image: traefik:2.3
-    ports:
-      - 80:80
-      - 8000:8000
-    networks:
-      - sandboxes
-
   postgres:
     image: postgis/postgis
     # restart: always
@@ -74,28 +65,11 @@ services:
     networks:
       - sandboxes
 
-  rust-nginx:
-    image: nginx:1.21.6
-    links:
-      - rust
-    volumes:
-      - ./rust/default.conf:/etc/nginx/conf.d/default.conf:rw,cached
-    labels:
-      - traefik.http.routers.rust.rule=Host(`rust.sandboxes.local`)
-      - traefik.http.routers.rust.middlewares=rust
-      - traefik.http.services.rust.loadbalancer.server.port=80
-      - traefik.http.middlewares.rust.headers.customresponseheaders.Access-Control-Allow-Methods=POST, GET, PUT, OPTIONS, DELETE
-      - traefik.http.middlewares.rust.headers.customresponseheaders.Access-Control-Allow-Origin=*
-      - traefik.http.middlewares.rust.headers.customresponseheaders.Access-Control-Allow-Headers=x-requested-with, Content-Type,Authorization
-      - traefik.port=80
-    networks:
-      - sandboxes
-
   rust:
     image: sandboxes-rust
     build: ./rust
     ports:
-      - 8001:8000
+      - 8000:8000
     restart: always
     environment:
       DATABASE_URL: "postgres://rust:rust@sandboxes-postgres-1:5432/rust-db"
@@ -118,4 +92,3 @@ networks:
   sandboxes:
     driver: bridge
     name: sandboxes
-    external: false
