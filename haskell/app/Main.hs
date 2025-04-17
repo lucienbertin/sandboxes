@@ -1,11 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Web.Scotty
-import Schedule (ioNow, Amendment (Amend), Schedule (AmendedSchedule, DailySchedule, YearlySchedule), AmendedSchedule (Amended), DailySchedule (Closed, FromTo), YearlySchedule (Year), toSortedList, PartialYearSchedule (PartialYear), isOpenNow)
-import Data.Time (LocalTime(LocalTime), TimeOfDay (TimeOfDay), midday)
-import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
--- import Data.Aeson (encode)
+import Web.Scotty (liftIO, ActionM, scotty, text, post, jsonData)
+import Schedule (Schedule, isOpenNow)
 import Data.Text.Lazy (pack)
 
 main :: IO ()
