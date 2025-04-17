@@ -33,7 +33,7 @@ async fn rocket() -> _ {
     let redis_pool = redis::init_pool().expect("couldnt init redis pool");
 
     rocket::build()
-        .mount("/", routes![api::health])
+        // .mount("/", routes![api::health])
         .mount("/api/", {
             use api::*;
             routes![
