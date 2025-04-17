@@ -20,13 +20,20 @@ pub struct ServerState {
 }
 #[launch]
 async fn rocket() -> _ {
+    use dotenvy::dotenv;
+    match dotenv() {
+        Ok(_) => println!("loaded local .env file"),
+        Err(_) => println!("no local .env file to load"),
+    };
+
+    let db_pool = db::init_pool().expect("couldnt init db pool");
     let rmq_sender = rmq::init()
         .await
         .expect("couldnt init rmq's consumer/publisher duo");
-    let db_pool = db::init_pool().expect("couldnt init db pool");
     let redis_pool = redis::init_pool().expect("couldnt init redis pool");
 
     rocket::build()
+        .mount("/", routes![api::health])
         .mount("/api/", {
             use api::*;
             routes![
