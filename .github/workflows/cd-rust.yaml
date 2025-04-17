@@ -25,4 +25,5 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           tags: sandboxes-rust:latest
-          file: rust/Dockerfile
+          context: "{{defaultContext}}:rust"
+          # file: rust/Dockerfile
