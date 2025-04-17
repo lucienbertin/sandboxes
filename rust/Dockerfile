@@ -34,5 +34,7 @@ WORKDIR /usr/src/app
 # Copy the built binary from the previous stage
 COPY --from=builder /usr/src/app/target/release/shell ./
 
+EXPOSE 8000
+
 # Command to run the application
 CMD ["./shell"]
