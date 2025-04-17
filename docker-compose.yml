@@ -72,14 +72,14 @@ services:
       - 8000:8000
     restart: always
     environment:
-      DATABASE_URL: "postgres://rust:rust@sandboxes-postgres-1:5432/rust-db"
-      AMQP_URL: "amqp://guest:guest@sandboxes-rmq-1:5672/%2f"
-      REDIS_URL: "redis://sandboxes-redis-1:6379"
+      DATABASE_URL: "postgres://rust:rust@postgres:5432/rust-db"
+      AMQP_URL: "amqp://guest:guest@rmq:5672/%2f"
+      REDIS_URL: "redis://redis:6379"
       SECRET: "shh its a secret"
       RMQ_EXCHANGE: rust
       RUST_BACKTRACE: 1
       ROCKET_ADDRESS: "0.0.0.0"
-      ROCKET_PORT: 8000
+      ROCKET_PORT: 8001
     depends_on:
       - postgres
       - rmq
