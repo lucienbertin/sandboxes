@@ -1,6 +1,5 @@
 use super::error::Error;
 
-use dotenvy::dotenv;
 use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
 use rocket::{
@@ -13,7 +12,6 @@ use std::collections::BTreeMap;
 use std::env;
 
 pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
-    dotenv()?;
     let secret = env::var("SECRET")?;
     let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
 

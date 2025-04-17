@@ -1,5 +1,4 @@
 use crate::error::Error;
-use dotenvy::dotenv;
 use redis::Commands;
 use std::env;
 
@@ -7,7 +6,6 @@ pub type RedisPool = r2d2::Pool<redis::Client>;
 pub type RedisConn = r2d2::PooledConnection<redis::Client>;
 
 pub fn init_pool() -> Result<RedisPool, Error> {
-    dotenv()?;
     let redis_url = env::var("REDIS_URL")?;
     let client = redis::Client::open(redis_url)?;
     let pool = r2d2::Pool::builder().build(client)?;

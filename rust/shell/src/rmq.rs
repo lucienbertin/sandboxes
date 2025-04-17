@@ -1,5 +1,4 @@
 use crate::error::Error;
-use dotenvy::dotenv;
 use futures_lite::StreamExt;
 use lapin::{
     options::{
@@ -49,7 +48,6 @@ async fn publish(
 
 pub type RmqMessage = (String, String);
 pub async fn init() -> Result<std::sync::mpsc::Sender<RmqMessage>, Error> {
-    dotenv()?;
     let amqp_url = env::var("AMQP_URL")?;
     let exchange_name = env::var("RMQ_EXCHANGE")?;
 
