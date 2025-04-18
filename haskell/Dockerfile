@@ -8,11 +8,12 @@ RUN cabal update
 
 # Copy the .cabal file
 COPY haskell.cabal ./
+# Create bogus source files
+RUN mkdir lib && echo "module Schedule () where" > lib/Schedule.hs
 RUN mkdir app && echo "main = putStrLn \"Hello World!\"" > app/Main.hs
 RUN mkdir tests && echo "main = putStrLn \"Hello World!\"" > tests/ScheduleTest.hs
 
-RUN cabal install schedule-lib --only-dependencies --only-download
-RUN cabal install haskell --only-dependencies --only-download
+RUN cabal install --only-dependencies
 
 # Now copy the source code
 COPY ./app ./app
