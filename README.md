@@ -10,13 +10,29 @@ here are the contents:
 
 you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis, a mongodb and its mongo-express.
 
-it also links to the projects i have bundled as docker images, for now just rust and nextjs, you will need to build them beforehand, do it with a `docker compose build`
+it also links to the projects i have bundled as docker images, you will need to build them beforehand
 
-run it with a 
+run everything with a
+
+```shell
+docker compose up
+# or
+docker compose up -d
+# or
+docker compose up -d --build
+```
+
+everything is behind a nginx proxy so you need to update your /etc/hosts to
 
 ```
-$ docker compose up
+127.0.0.1 rust.sandboxes.local
+127.0.0.1 haskell.sandboxes.local
+127.0.0.1 nextjs.sandboxes.local
+127.0.0.1 nestjs.sandboxes.local
+127.0.0.1 angular.sandboxes.local
 ```
+
+nginx will reroute calls to http://rust.sandboxes.local/health to the rust backend service, ...
 
 ## Rust
 
