@@ -152,6 +152,16 @@ services:
     networks:
       - sandboxes
 
+  angular:
+    image: sandboxes-angular
+    build: ./angular
+    env_file: ./angular/.env.dc
+    ports:
+      - 3004:3000
+    restart: always
+    networks:
+      - sandboxes
+
 
 networks:
   sandboxes:
