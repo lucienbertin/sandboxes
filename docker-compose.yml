@@ -68,21 +68,26 @@ services:
   rust:
     image: sandboxes-rust
     build: ./rust
+    env_file: ./rust/.env.dc
     ports:
       - 8001:8000
     restart: always
-    environment:
-      DATABASE_URL: "postgres://rust:rust@postgres:5432/rust-db"
-      AMQP_URL: "amqp://guest:guest@rmq:5672/%2f"
-      REDIS_URL: "redis://redis:6379"
-      SECRET: "shh its a secret"
-      RMQ_EXCHANGE: rust
-      RUST_BACKTRACE: 1
-      ROCKET_ADDRESS: "0.0.0.0"
     depends_on:
       - postgres
       - rmq
       - redis
+    networks:
+      - sandboxes
+
+  nextjs:
+    image: sandboxes-nextjs
+    build: ./nextjs
+    env_file: ./nextjs/.env.dc
+    ports:
+      - 3001:3000
+    restart: always
+    depends_on:
+      - postgres
     networks:
       - sandboxes
 

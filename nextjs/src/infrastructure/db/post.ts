@@ -5,8 +5,8 @@ import { Post, PostScope, User } from "@/domain";
 import {
   datasource,
   isInitialized,
-  Post as EPost,
-  User as EUser,
+  ORMPost as EPost,
+  ORMUser as EUser,
 } from "./datasource";
 
 function fromScope(

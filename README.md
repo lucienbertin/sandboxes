@@ -8,7 +8,11 @@ here are the contents:
 
 ## root
 
-you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis, a mongodb and its mongo-express. run it with a 
+you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis, a mongodb and its mongo-express.
+
+it also links to the projects i have bundled as docker images, for now just rust and nextjs, you will need to build them beforehand, do it with a `docker compose build`
+
+run it with a 
 
 ```
 $ docker compose up
