@@ -3,6 +3,7 @@ import Posts from "./posts";
 
 import { getPosts } from "@/actions";
 import { Post } from "@/domain";
+import { web } from "@/infrastructure";
 
 export default async function Page() {
   const posts$: Promise<Post[]> = getPosts();
