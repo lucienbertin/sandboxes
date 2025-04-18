@@ -95,8 +95,6 @@ services:
     image: sandboxes-rust
     build: ./rust
     env_file: ./rust/.env.dc
-    ports:
-      - 8001:8000
     restart: always
     depends_on:
       postgres:
@@ -115,8 +113,6 @@ services:
     image: sandboxes-nextjs
     build: ./nextjs
     env_file: ./nextjs/.env.dc
-    ports:
-      - 3001:3000
     restart: always
     depends_on:
       postgres:
@@ -129,8 +125,7 @@ services:
     image: sandboxes-nestjs
     build: ./nestjs
     env_file: ./nestjs/.env.dc
-    ports:
-      - 3002:3000
+
     restart: always
     depends_on:
       postgres:
@@ -146,8 +141,6 @@ services:
     image: sandboxes-haskell
     build: ./haskell
     # env_file: ./haskell/.env.dc
-    ports:
-      - 3003:3000
     restart: always
     networks:
       - sandboxes
@@ -156,12 +149,25 @@ services:
     image: sandboxes-angular
     build: ./angular
     env_file: ./angular/.env.dc
-    ports:
-      - 3004:3000
     restart: always
     networks:
       - sandboxes
 
+
+  nginx:
+    image: nginx:stable
+    ports:
+      - 80:80
+    networks:
+      - sandboxes
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - rust
+      - nextjs
+      - nestjs
+      - haskell
+      - angular
 
 networks:
   sandboxes:
