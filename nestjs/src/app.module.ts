@@ -14,7 +14,7 @@ import { typeOrmConfig } from './typeorm.options';
       useClass: GraphqlOptions,
     }),
     TypeOrmModule.forRoot(typeOrmConfig as TypeOrmModuleOptions),
-    MongooseModule.forRoot('mongodb://localhost/nestjs'),
+    MongooseModule.forRoot(process.env.MONGO_URL as string),
     PostModule,
   ],
 })
