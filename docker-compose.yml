@@ -125,6 +125,23 @@ services:
     networks:
       - sandboxes
 
+  nestjs:
+    image: sandboxes-nestjs
+    build: ./nestjs
+    env_file: ./nestjs/.env.dc
+    ports:
+      - 3002:3000
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      mongo:
+        condition: service_healthy
+        restart: true
+    networks:
+      - sandboxes
+
 
 networks:
   sandboxes:
