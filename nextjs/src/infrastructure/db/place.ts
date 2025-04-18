@@ -1,7 +1,7 @@
 "use server";
 
 import { Place } from "@/domain";
-import { datasource, isInitialized, Place as ORMPlace } from "./datasource";
+import { datasource, isInitialized, ORMPlace as ORMPlace } from "./datasource";
 import { Feature, FeatureCollection, Point } from "geojson";
 import { DeepPartial } from "typeorm";
 

@@ -1,6 +1,6 @@
 "use server";
 import { User } from "@/domain";
-import { datasource, isInitialized, User as ORMUser } from "./datasource";
+import { datasource, isInitialized, ORMUser as ORMUser } from "./datasource";
 
 export async function authenticateUser(email: string): Promise<User | null> {
   await isInitialized;
