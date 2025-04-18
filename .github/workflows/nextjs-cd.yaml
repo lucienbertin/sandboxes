@@ -24,7 +24,7 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v6
         with:
-          tags: sandboxes-rust:latest
+          tags: sandboxes-nextjs:latest
           context: "{{defaultContext}}:nextjs"
           cache-from: type=gha
           cache-to: type=gha,mode=max
