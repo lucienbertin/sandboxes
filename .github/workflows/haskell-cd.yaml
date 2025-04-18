@@ -1,0 +1,30 @@
+on:
+  pull_request:
+    paths:
+      - 'haskell/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'haskell/**'
+
+name: CD Haskell
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          tags: sandboxes-haskell:latest
+          context: "{{defaultContext}}:haskell"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
