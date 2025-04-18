@@ -1,0 +1,9 @@
+node_modules
+
+.env
+.env.dc
+
+dist
+*.log
+*.md
+.git

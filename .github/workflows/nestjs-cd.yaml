@@ -1,19 +1,19 @@
 on:
   pull_request:
     paths:
-      - 'nextjs/**'
+      - 'nestjs/**'
     branches:
       - main
   push:
     branches:
       - main
     paths:
-      - 'nextjs/**'
+      - 'nestjs/**'
 
-name: CD NextJs
+name: CD NestJs
 
 jobs:
-  build:
+  steps:
     name: build
     runs-on: ubuntu-latest
     steps:
@@ -24,7 +24,7 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v6
         with:
-          tags: sandboxes-nextjs:latest
-          context: "{{defaultContext}}:nextjs"
+          tags: sandboxes-nestjs:latest
+          context: "{{defaultContext}}:nestjs"
           cache-from: type=gha
           cache-to: type=gha,mode=max
