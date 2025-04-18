@@ -1,9 +1,4 @@
-import {
-  Place,
-  Post,
-  User,
-  UserRole,
-} from "@/domain";
+import { Place, Post, User, UserRole } from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
 import { DataSource } from "typeorm";
