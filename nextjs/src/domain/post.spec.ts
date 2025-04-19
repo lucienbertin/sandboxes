@@ -165,7 +165,7 @@ describe("getPosts", () => {
     const getPostsDelegate = postsDelegate;
 
     // act
-    const promise = getPosts(agentDelegate, getPostsDelegate);
+    const promise = getPosts(agentDelegate, getPostsDelegate)();
 
     // assert
     expect(promise).resolves.toEqual(postCollection);
@@ -177,7 +177,7 @@ describe("getPosts", () => {
     mockGetPostsDelegate.mockImplementation(postsDelegate);
 
     // act
-    await getPosts(agentDelegate, mockGetPostsDelegate);
+    await getPosts(agentDelegate, mockGetPostsDelegate)();
 
     // assert
     expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
@@ -190,7 +190,7 @@ describe("getPosts", () => {
     mockGetPostsDelegate.mockImplementation(postsDelegate);
 
     // act
-    await getPosts(agentDelegate, mockGetPostsDelegate);
+    await getPosts(agentDelegate, mockGetPostsDelegate)();
 
     // assert
     expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
@@ -203,7 +203,7 @@ describe("getPosts", () => {
     mockGetPostsDelegate.mockImplementation(postsDelegate);
 
     // act
-    await getPosts(agentDelegate, mockGetPostsDelegate);
+    await getPosts(agentDelegate, mockGetPostsDelegate)();
 
     // assert
     expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
@@ -219,7 +219,7 @@ describe("getPosts", () => {
     mockGetPostsDelegate.mockImplementation(postsDelegate);
 
     // act
-    await getPosts(agentDelegate, mockGetPostsDelegate);
+    await getPosts(agentDelegate, mockGetPostsDelegate)();
 
     // assert
     expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
@@ -235,7 +235,7 @@ describe("countPosts", () => {
     const agentDelegate = nullDelegate;
 
     // act
-    const promise = countPosts(agentDelegate, countDelegate);
+    const promise = countPosts(agentDelegate, countDelegate)();
 
     // assert
     expect(promise).resolves.toEqual(count);
@@ -247,7 +247,7 @@ describe("countPosts", () => {
     mockGetCountDelegate.mockImplementation(countDelegate);
 
     // act
-    await countPosts(agentDelegate, mockGetCountDelegate);
+    await countPosts(agentDelegate, mockGetCountDelegate)();
 
     // assert
     expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
@@ -260,7 +260,7 @@ describe("countPosts", () => {
     mockGetCountDelegate.mockImplementation(countDelegate);
 
     // act
-    await countPosts(agentDelegate, mockGetCountDelegate);
+    await countPosts(agentDelegate, mockGetCountDelegate)();
 
     // assert
     expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
@@ -273,7 +273,7 @@ describe("countPosts", () => {
     mockGetCountDelegate.mockImplementation(countDelegate);
 
     // act
-    await countPosts(agentDelegate, mockGetCountDelegate);
+    await countPosts(agentDelegate, mockGetCountDelegate)();
 
     // assert
     expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
@@ -289,7 +289,7 @@ describe("countPosts", () => {
     mockGetCountDelegate.mockImplementation(countDelegate);
 
     // act
-    await countPosts(agentDelegate, mockGetCountDelegate);
+    await countPosts(agentDelegate, mockGetCountDelegate)();
 
     // assert
     expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
