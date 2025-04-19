@@ -1,14 +1,12 @@
 import {
   getPost,
-  NotFoundError,
-  UnauthorizedError,
-  ForbiddenError,
-  UserRole,
   getPosts,
   PostScope,
   countPosts,
   createPost,
-} from "./";
+} from ".";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "./error";
+import { UserRole } from "./user";
 
 const reader = {
   id: 1,
@@ -73,7 +71,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).rejects.toBeInstanceOf(NotFoundError);
@@ -86,7 +84,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).resolves.toEqual(publishedPost);
@@ -99,7 +97,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).resolves.toEqual(unpublishedPost);
@@ -112,7 +110,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).rejects.toBeInstanceOf(ForbiddenError);
@@ -125,7 +123,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
@@ -138,7 +136,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).rejects.toBeInstanceOf(ForbiddenError);
@@ -151,7 +149,7 @@ describe("getPost", () => {
     const postId = 1;
 
     // act
-    const promise = getPost(postId, agentDelegate, getPostDelegate);
+    const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
     // assert
     expect(promise).resolves.toEqual(unpublishedPost);
@@ -310,7 +308,7 @@ describe("createPost", () => {
     const createPostDelegate = voidDelegate;
 
     // act
-    const promise = createPost(post, agentDelegate, createPostDelegate);
+    const promise = createPost(agentDelegate, createPostDelegate)(post);
 
     // assert
     expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
@@ -321,7 +319,7 @@ describe("createPost", () => {
     const createPostDelegate = voidDelegate;
 
     // act
-    const promise = createPost(post, agentDelegate, createPostDelegate);
+    const promise = createPost(agentDelegate, createPostDelegate)(post);
 
     // assert
     expect(promise).rejects.toBeInstanceOf(ForbiddenError);
@@ -332,7 +330,7 @@ describe("createPost", () => {
     const createPostDelegate = voidDelegate;
 
     // act
-    const promise = createPost(post, agentDelegate, createPostDelegate);
+    const promise = createPost(agentDelegate, createPostDelegate)(post);
 
     // assert
     expect(promise).resolves.toBe(undefined);
@@ -343,7 +341,7 @@ describe("createPost", () => {
     const createPostDelegate = voidDelegate;
 
     // act
-    const promise = createPost(post, agentDelegate, createPostDelegate);
+    const promise = createPost(agentDelegate, createPostDelegate)(post);
 
     // assert
     expect(promise).resolves.toBe(undefined);
@@ -354,7 +352,7 @@ describe("createPost", () => {
     const mockCreatePostDelegate = jest.fn();
     mockCreatePostDelegate.mockImplementation(voidDelegate);
     // act
-    await createPost(post, agentDelegate, mockCreatePostDelegate);
+    await createPost(agentDelegate, mockCreatePostDelegate)(post);
 
     // assert
     expect(mockCreatePostDelegate).toHaveBeenCalledTimes(1);
@@ -366,7 +364,7 @@ describe("createPost", () => {
     const mockCreatePostDelegate = jest.fn();
     mockCreatePostDelegate.mockImplementation(voidDelegate);
     // act
-    await createPost(post, agentDelegate, mockCreatePostDelegate);
+    await createPost(agentDelegate, mockCreatePostDelegate)(post);
 
     // assert
     expect(mockCreatePostDelegate).toHaveBeenCalledTimes(1);
