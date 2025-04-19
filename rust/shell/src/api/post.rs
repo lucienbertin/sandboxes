@@ -15,6 +15,7 @@ use rocket::{
 use super::EtagJson;
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     // pub id: i32,
     pub first_name: String,
@@ -22,6 +23,7 @@ pub struct User {
     pub email: String,
 }
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Post {
     pub id: i32,
     pub title: String,
