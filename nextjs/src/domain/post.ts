@@ -14,7 +14,7 @@ export function getPost(
   agentDelegate: AgentDelegate,
   getPostDelegate: GetPostDelegate,
 ): (postId: number) => Promise<Post> {
-  const call = async (postId: number) => {
+  const partial = async (postId: number) => {
     const agent = await agentDelegate(); // IO - injected
     const post = await getPostDelegate(postId); // IO - injected
 
@@ -32,10 +32,10 @@ export function getPost(
       return Promise.reject(new ForbiddenError());
     } else {
       return post;
-    };
-  }
+    }
+  };
 
-  return call;
+  return partial;
 }
 
 export enum PostScope {
@@ -52,7 +52,7 @@ export function getPosts(
   agentDelegate: AgentDelegate,
   getPostsDelegate: GetPostsDelegate,
 ): () => Promise<Post[]> {
-  const call = async () => {
+  const partial = async () => {
     const agent = await agentDelegate(); // IO - injected
 
     // Domain logic
@@ -68,7 +68,7 @@ export function getPosts(
     return posts;
   };
 
-  return call;
+  return partial;
 }
 
 type CountPostsDelegate = (
@@ -79,7 +79,7 @@ export function countPosts(
   agentDelegate: AgentDelegate,
   countPostsDelegate: CountPostsDelegate,
 ): () => Promise<number> {
-  const call = async () => {
+  const partial = async () => {
     const agent = await agentDelegate(); // IO - injected
 
     // Domain logic
@@ -95,7 +95,7 @@ export function countPosts(
     return cnt;
   };
 
-  return call;
+  return partial;
 }
 
 type CreatePostDelegate = (post: Partial<Post>, author: User) => Promise<void>;
@@ -103,8 +103,8 @@ export function createPost(
   agentDelegate: AgentDelegate,
   createPostDelegate: CreatePostDelegate,
 ): (post: Partial<Post>) => Promise<void> {
-  const call = async (post: Partial<Post>) => {
-      const agent = await agentDelegate(); // IO - injected
+  const partial = async (post: Partial<Post>) => {
+    const agent = await agentDelegate(); // IO - injected
 
     // Domain logic
     if (!agent) {
@@ -116,5 +116,5 @@ export function createPost(
     await createPostDelegate(post, agent); // IO - injected
   };
 
-  return call;
+  return partial;
 }

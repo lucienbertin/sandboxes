@@ -2,7 +2,6 @@ import { Feature, FeatureCollection, Point } from "geojson";
 import { ForbiddenError, UnauthorizedError } from "./error";
 import { AgentDelegate, UserRole } from "./user";
 
-
 export type Place = {
   id: number;
   name: string;

@@ -1,10 +1,4 @@
-import {
-  getPost,
-  getPosts,
-  PostScope,
-  countPosts,
-  createPost,
-} from ".";
+import { getPost, getPosts, PostScope, countPosts, createPost } from "./post";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "./error";
 import { UserRole } from "./user";
 
