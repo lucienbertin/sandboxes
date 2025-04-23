@@ -13,7 +13,7 @@ export default async function Page() {
                 <section>
                     <ol>
                         {deployments.map(d => (
-                            <li>
+                            <li key={d.name} >
                                 <span>name: {d.name} </span>
                                 <Link href={`/deployments/${d.name}`}>consult</Link>
                             </li>

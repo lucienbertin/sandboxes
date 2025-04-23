@@ -11,7 +11,7 @@ export default async function Page() {
                 <section>
                     <ol>
                         { pods.map(p => (
-                            <li>ip: {p.ip}, name: {p.name}, phase: {p.phase}</li>
+                            <li key={p.name}>ip: {p.ip}, name: {p.name}, phase: {p.phase}</li>
                         ))}
                     </ol>
                 </section>
