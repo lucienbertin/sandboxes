@@ -1,5 +1,5 @@
 "use server"
-import { deleteDeployment, getDeployment } from "@/actions";
+import { deleteDeployment, getDeployment } from "@/web";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 export default async function Page({

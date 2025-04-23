@@ -1,4 +1,4 @@
-import { getDeployments } from "@/actions";
+import { getDeployments } from "@/web";
 import Link from "next/link";
 
 export default async function Page() {

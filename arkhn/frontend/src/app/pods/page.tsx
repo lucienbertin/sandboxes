@@ -1,4 +1,4 @@
-import { getPods } from "@/actions"
+import { getPods } from "@/web"
 
 export default async function Page() {
     const pods = await getPods();
