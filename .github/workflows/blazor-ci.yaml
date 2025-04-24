@@ -23,4 +23,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
-      - run: dotnet build blazor/blazor.sln
+      - name: Build
+        run: dotnet build blazor/blazor.sln
+      - name: Test
+        run: dotnet test blazor/blazor.sln
