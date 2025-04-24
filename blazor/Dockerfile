@@ -6,7 +6,7 @@ COPY . ./
 # Restore as distinct layers
 RUN dotnet restore
 # Build and publish a release
-RUN dotnet publish -o out
+RUN dotnet publish ./app -o out
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runner
