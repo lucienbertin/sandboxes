@@ -21,7 +21,7 @@ public class UnitTest1
         using var ctx = new TestContext();
         var cut = ctx.RenderComponent<Counter>();
         var paraElm = cut.Find("p");
-                                            
+
         // Act
         cut.Find("button").Click();
         cut.Find("button").Click();
