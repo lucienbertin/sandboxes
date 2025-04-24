@@ -11,11 +11,11 @@
 <button class="btn btn-primary" @onclick="Increment">Click me</button>
 
 @code {
-    private int n = 1;
+    public int n = 1;
     private int fibNminus1 = 0;
     private int fibN = 1;
 
-    private void Increment()
+    public void Increment()
     {
         // compute next state
         int fibNplus1 = fibN + fibNminus1;

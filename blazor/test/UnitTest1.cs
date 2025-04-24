@@ -29,6 +29,19 @@ public class UnitTest1
 
         // Assert
         var paraElmText = paraElm.TextContent;
-        paraElmText.MarkupMatches("N: 2");
+        paraElmText.MarkupMatches("N: 4");
+    }
+
+    [Fact]
+    public void Counter()
+    {
+        // Arrange
+        Counter c = new Counter();
+
+        // Act
+        c.Increment();
+
+        // Assert
+        Assert.Equal(2, c.n);
     }
 }
