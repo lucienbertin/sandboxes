@@ -27,3 +27,5 @@ jobs:
         run: dotnet build blazor/blazor.sln
       - name: Test
         run: dotnet test blazor/blazor.sln
+      - name: Fmt
+        run: dotnet format style blazor/blazor.sln --verify-no-changes --severity info
