@@ -160,6 +160,16 @@ services:
     networks:
       - sandboxes
 
+  blazor:
+    image: sandboxes-blazor
+    build: ./blazor
+    # env_file: ./blazor/.env.dc
+    deploy:
+      replicas: 1
+    restart: always
+    networks:
+      - sandboxes
+
 
   nginx:
     image: nginx:stable

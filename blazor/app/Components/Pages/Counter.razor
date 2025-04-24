@@ -1,0 +1,27 @@
+﻿@* @page "/counter" *@
+@rendermode InteractiveServer
+
+<h1>Counter</h1>
+
+<p role="status">N: @n</p>
+<div>fibonacci(n): @fibN</div>
+
+<button class="btn btn-primary" @onclick="Increment">Click me</button>
+
+@code {
+    public int n = 1;
+    private int fibNminus1 = 0;
+    private int fibN = 1;
+
+    public void Increment()
+    {
+        // compute next state
+        int fibNplus1 = fibN + fibNminus1;
+
+        // advance to next state
+        n++;
+        fibNminus1 = fibN;
+        fibN = fibNplus1;
+
+    }
+}

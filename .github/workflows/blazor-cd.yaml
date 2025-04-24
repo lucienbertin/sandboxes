@@ -1,0 +1,30 @@
+on:
+  pull_request:
+    paths:
+      - 'blazor/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'blazor/**'
+
+name: CD Blazor
+
+jobs:
+  steps:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          tags: sandboxes-blazor:latest
+          context: "{{defaultContext}}:blazor"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
