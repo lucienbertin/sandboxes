@@ -8,21 +8,8 @@ apps_v1 = client.AppsV1Api()
 
 app = FastAPI()
 
-class Pod(BaseModel):
-    ip: str
-    name: str
-    phase: str
+NAMESPACE = "default"
 
-def to_pod(item):
-    return Pod(ip=item.status.pod_ip, name=item.metadata.name, phase=item.status.phase)
-
-@app.get("/pods")
-def get_pods() -> list[Pod]:
-    ret = core_v1.list_pod_for_all_namespaces(watch=False)
-    public_pods = filter(lambda p : p.metadata.namespace == "default", ret.items)
-    pods = map(to_pod, public_pods)
-    return pods
-    
 class Deployment(BaseModel):
     name: str
     image: str
@@ -35,14 +22,14 @@ def to_deployment(item):
 @app.get("/deployments")
 def list_deployments() -> list[Deployment]:
     ret = apps_v1.list_deployment_for_all_namespaces(watch=False)
-    public_deps = filter(lambda p : p.metadata.namespace == "default", ret.items)
+    public_deps = filter(lambda p : p.metadata.namespace == NAMESPACE, ret.items)
     deps = map(to_deployment, public_deps)
     return deps
 
 @app.get("/deployment/{name}")
 def get_deployment(name:str) -> Deployment | None:
     ret = apps_v1.list_deployment_for_all_namespaces(watch=False)
-    public_deps = filter(lambda p : p.metadata.namespace == "default", ret.items)
+    public_deps = filter(lambda p : p.metadata.namespace == NAMESPACE, ret.items)
     first_or_default = next((i for i in public_deps if i.metadata.name == name), None)
     if first_or_default == None:
         raise HTTPException(status_code=404)
@@ -53,7 +40,7 @@ def create_deployment(deployment: Deployment):
     body = create_deployment_object(deployment)
     try:
         apps_v1.create_namespaced_deployment(
-            body=body, namespace="default"
+            body=body, namespace=NAMESPACE
         )
     except:
         raise HTTPException(status_code=500)
@@ -63,7 +50,7 @@ def delete_deployment(name:str):
     try:
         apps_v1.delete_namespaced_deployment(
             name=name,
-            namespace="default",
+            namespace=NAMESPACE,
         )
     except:
         raise HTTPException(status_code=410)
