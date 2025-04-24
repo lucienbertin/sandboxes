@@ -27,6 +27,7 @@ jobs:
         run: dotnet build blazor/blazor.sln
       - name: Test
         run: dotnet test blazor/blazor.sln
-      - name: Fmt
+      - name: Lint
         run: dotnet format style blazor/blazor.sln --verify-no-changes --severity info
+      - name: Fmt
         run: dotnet format whitespace blazor/blazor.sln --verify-no-changes
