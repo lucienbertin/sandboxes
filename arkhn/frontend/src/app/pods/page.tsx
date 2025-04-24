@@ -1,4 +1,5 @@
 import { getPods } from "@/backend"
+import Link from "next/link";
 
 export default async function Page() {
     const pods = await getPods();
@@ -11,7 +12,10 @@ export default async function Page() {
                 <section>
                     <ol>
                         { pods.map(p => (
-                            <li key={p.name}>ip: {p.ip}, name: {p.name}, phase: {p.phase}</li>
+                            <li key={p.name}>
+                                <span>ip: {p.ip}, name: {p.name}, phase: {p.phase} </span>
+                                <Link href={`/pods/${p.name}`}>consult</Link>
+                            </li>
                         ))}
                     </ol>
                 </section>
