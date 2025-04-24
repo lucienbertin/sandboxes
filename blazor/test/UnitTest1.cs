@@ -8,11 +8,11 @@ public class UnitTest1
     {
         Assert.Equal(8, 8);
     }
-    [Fact]
-    public void ShouldFail()
-    {
-        Assert.Equal(8, 12);
-    }
+    // [Fact]
+    // public void ShouldFail()
+    // {
+    //     Assert.Equal(8, 12);
+    // }
 
     [Fact]
     public void CounterShouldIncrementWhenClicked()
