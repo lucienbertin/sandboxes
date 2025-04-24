@@ -30,13 +30,13 @@ export default function RootLayout({
       >
               <aside>
         <nav>
-          <Link href="/pods/">Pods</Link> | 
-          <Link href="/deployments/"> Deployments</Link>
+          <Link href="/deployments/">Deployments</Link>
+          <span> | </span>
+          <Link href="/pods/">Pods</Link>
         </nav>
       </aside>
         <main>
         {children}
-
         </main>
       </body>
     </html>
