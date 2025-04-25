@@ -1,4 +1,4 @@
-﻿namespace test;
+﻿namespace ShellTest;
 using Shell.Components.Pages;
 
 public class CounterTest
