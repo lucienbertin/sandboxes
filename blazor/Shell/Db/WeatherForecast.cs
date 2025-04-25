@@ -14,12 +14,14 @@ public class WeatherForecastRepository(ShellDbContext context)
 {
     private readonly ShellDbContext context = context;
 
-    public Forecast GetById(int id) {
+    public Forecast GetById(int id)
+    {
         var dbForecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == id).First();
         return ToForecast(dbForecast);
     }
 
-    private static Forecast ToForecast(WeatherForecast wf) {
+    private static Forecast ToForecast(WeatherForecast wf)
+    {
         Summary summary = Summary.NewCloudy(Cloudy.ABit);
         return new Forecast(
             wf.WeatherForecastId,
