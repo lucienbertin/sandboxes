@@ -1,4 +1,4 @@
-using app.Components;
+using Shell.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
