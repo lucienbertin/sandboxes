@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Shell;
+using Shell.Db;
 
 #nullable disable
 
 namespace Shell.Migrations
 {
-    [DbContext(typeof(BlazorDbContext))]
+    [DbContext(typeof(ShellDbContext))]
     [Migration("20250425140453_InitialCreate")]
     partial class InitialCreate
     {
