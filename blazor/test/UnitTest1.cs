@@ -1,5 +1,5 @@
 ﻿namespace test;
-using blazor.Components.Pages;
+using app.Components.Pages;
 
 public class UnitTest1
 {

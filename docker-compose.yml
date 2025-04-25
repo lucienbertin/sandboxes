@@ -95,7 +95,7 @@ services:
     env_file: ./rust/.env.dc
     restart: always
     deploy:
-      replicas: 2
+      replicas: 1
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,7 +115,7 @@ services:
     env_file: ./nextjs/.env.dc
     restart: always
     deploy:
-      replicas: 2
+      replicas: 1
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,7 +128,7 @@ services:
     build: ./nestjs
     env_file: ./nestjs/.env.dc
     deploy:
-      replicas: 2
+      replicas: 1
     restart: always
     depends_on:
       postgres:
@@ -145,7 +145,7 @@ services:
     build: ./haskell
     # env_file: ./haskell/.env.dc
     deploy:
-      replicas: 2
+      replicas: 1
     restart: always
     networks:
       - sandboxes
@@ -155,7 +155,7 @@ services:
     build: ./angular
     env_file: ./angular/.env.dc
     deploy:
-      replicas: 2
+      replicas: 1
     restart: always
     networks:
       - sandboxes

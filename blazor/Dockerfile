@@ -13,4 +13,4 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runner
 WORKDIR /App
 COPY --from=builder /App/out .
 
-ENTRYPOINT ["dotnet", "blazor.dll"]
+ENTRYPOINT ["dotnet", "app.dll"]

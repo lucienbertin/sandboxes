@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["typeorm"],
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        "nextjs.sandboxes.local",
+        "nextjs",
+      ]
+    }
+  },
   images: {
     remotePatterns: [
       {
