@@ -1,7 +1,7 @@
 ﻿@page "/weather"
 @using Microsoft.EntityFrameworkCore
-@using Shell.Models
-@inject IDbContextFactory<BlazorDbContext> DbFactory
+@using Shell.Db
+@inject IDbContextFactory<ShellDbContext> DbFactory
 
 @attribute [StreamRendering]
 
@@ -44,10 +44,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         var context = DbFactory.CreateDbContext(); // je me connecte a la db
+        var repo = new WeatherForecastRepository(context);
         forecasts = new();
         foreach (int index in Enumerable.Range(1, 5)) { 
             await Task.Delay(1000); // j'attends 1 sec
-            var forecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == index).First().toForecast(); // je charge un nouveau forecast de la db
+            var forecast = repo.getById(index); // je charge un nouveau forecast de la db
             forecasts.Add(forecast); // je l'ajoute
             StateHasChanged(); // je refresh la vue
         }
