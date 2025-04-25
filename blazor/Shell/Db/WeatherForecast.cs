@@ -1,5 +1,5 @@
 using Domain.Weather;
-using Microsoft.FSharp.Core;
+// using Microsoft.FSharp.Core;
 
 namespace Shell.Db;
 public class WeatherForecast
