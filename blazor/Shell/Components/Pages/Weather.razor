@@ -31,7 +31,7 @@ else
                 <tr>
                     <td>@forecast.Date.ToShortDateString()</td>
                     <td>@forecast.TemperatureC</td>
-                    <td>@forecast.Summary</td>
+                    <td>@forecast.Summary.Value</td>
                 </tr>
             }
         </tbody>
@@ -39,7 +39,7 @@ else
 }
 
 @code {
-    private List<WeatherForecast>? forecasts;
+    private List<Domain.Weather.Forecast>? forecasts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,7 +47,7 @@ else
         forecasts = new();
         foreach (int index in Enumerable.Range(1, 5)) { 
             await Task.Delay(1000); // j'attends 1 sec
-            var forecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == index).First(); // je charge un nouveau forecast de la db
+            var forecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == index).First().toForecast(); // je charge un nouveau forecast de la db
             forecasts.Add(forecast); // je l'ajoute
             StateHasChanged(); // je refresh la vue
         }
