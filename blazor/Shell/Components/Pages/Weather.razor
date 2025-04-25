@@ -48,7 +48,7 @@ else
         forecasts = new();
         foreach (int index in Enumerable.Range(1, 5)) { 
             await Task.Delay(1000); // j'attends 1 sec
-            var forecast = repo.getById(index); // je charge un nouveau forecast de la db
+            var forecast = repo.GetById(index); // je charge un nouveau forecast de la db
             forecasts.Add(forecast); // je l'ajoute
             StateHasChanged(); // je refresh la vue
         }

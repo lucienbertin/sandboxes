@@ -10,19 +10,16 @@ public class WeatherForecast
     public string? Summary { get; set; }
 }
 
-public class WeatherForecastRepository {
-    private ShellDbContext context;
+public class WeatherForecastRepository(ShellDbContext context)
+{
+    private readonly ShellDbContext context = context;
 
-    public WeatherForecastRepository(ShellDbContext context)
-    {
-        this.context = context;
-    }
-    public Forecast getById(int id) {
+    public Forecast GetById(int id) {
         var dbForecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == id).First();
-        return toForecast(dbForecast);
+        return ToForecast(dbForecast);
     }
 
-    private static Forecast toForecast(WeatherForecast wf) {
+    private static Forecast ToForecast(WeatherForecast wf) {
         Summary summary = Summary.NewCloudy(Cloudy.ABit);
         return new Forecast(
             wf.WeatherForecastId,
