@@ -58,4 +58,17 @@ public class UnitTest1
         // Assert
         Assert.Equal(5, p);
     }
+
+    [Fact]
+    public void fibonacci()
+    {
+        // Arrange
+        int n = 30;
+
+        // Act
+        int fib = Incr.fibonacci(n);
+
+        // Assert
+        Assert.Equal(832040, fib);
+    }
 }
