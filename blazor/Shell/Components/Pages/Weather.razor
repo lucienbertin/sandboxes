@@ -34,34 +34,22 @@ else
                     <td>@forecast.Summary</td>
                 </tr>
             }
-            @foreach (var forecast in otherForecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
         </tbody>
     </table>
 }
 
 @code {
-    @* private BlazorDbContext? Context { get; set; } *@
     private List<WeatherForecast>? forecasts;
-    private List<WeatherForecast> otherForecasts = new();
 
     protected override async Task OnInitializedAsync()
     {
         var context = DbFactory.CreateDbContext();
-
-        // Simulate asynchronous loading to demonstrate streaming rendering
-        await Task.Delay(1000);
-        forecasts = await context.WeatherForecasts.ToListAsync();
-
-        await Task.Delay(1500);
-        otherForecasts = await context.WeatherForecasts.ToListAsync();
-
+        forecasts = new();
+        foreach (int index in Enumerable.Range( 1, 7 )) {
+            await Task.Delay(1000);
+            forecasts.AddRange(await context.WeatherForecasts.ToListAsync());
+            StateHasChanged();
+        }
     }
 
 }
