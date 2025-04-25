@@ -1,17 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Shell.Models;
 
-namespace Shell;
+namespace Shell.Db;
 
-public partial class BlazorDbContext : DbContext
+public partial class ShellDbContext : DbContext
 {
     public DbSet<WeatherForecast> WeatherForecasts { get; set; }
-    public BlazorDbContext()
+    public ShellDbContext()
     {
     }
 
-    public BlazorDbContext(DbContextOptions<BlazorDbContext> options)
+    public ShellDbContext(DbContextOptions<ShellDbContext> options)
         : base(options)
     {
     }
