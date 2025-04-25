@@ -1,0 +1,56 @@
+﻿@page "/weather"
+@using Microsoft.EntityFrameworkCore
+@using Shell.Models
+@inject IDbContextFactory<BlazorDbContext> DbFactory
+
+@attribute [StreamRendering]
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates showing data.</p>
+
+@if (forecasts is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th aria-label="Temperature in Celsius">Temp. (C)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<WeatherForecast>? forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = DbFactory.CreateDbContext(); // je me connecte a la db
+        forecasts = new();
+        foreach (int index in Enumerable.Range(1, 5)) { 
+            await Task.Delay(1000); // j'attends 1 sec
+            var forecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == index).First(); // je charge un nouveau forecast de la db
+            forecasts.Add(forecast); // je l'ajoute
+            StateHasChanged(); // je refresh la vue
+        }
+    }
+
+}

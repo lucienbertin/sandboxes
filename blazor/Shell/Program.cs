@@ -1,6 +1,14 @@
-using app.Components;
+using Microsoft.EntityFrameworkCore;
+using Shell;
+using Shell.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var conString = builder.Configuration.GetConnectionString("PostgresConnection") ??
+     throw new InvalidOperationException("Connection string 'PostgresConnection' not found.");
+
+builder.Services.AddDbContextFactory<BlazorDbContext>(options =>
+    options.UseNpgsql(conString));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
