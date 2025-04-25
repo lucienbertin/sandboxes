@@ -4,14 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Shell;
+using Shell.Db;
 
 #nullable disable
 
 namespace Shell.Migrations
 {
-    [DbContext(typeof(BlazorDbContext))]
-    partial class BlazorDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(ShellDbContext))]
+    partial class ShellDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
