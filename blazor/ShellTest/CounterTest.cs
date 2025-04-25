@@ -1,19 +1,8 @@
 ﻿namespace test;
 using Shell.Components.Pages;
 
-public class UnitTest1
+public class CounterTest
 {
-    [Fact]
-    public void ShouldPass()
-    {
-        Assert.Equal(8, 8);
-    }
-    // [Fact]
-    // public void ShouldFail()
-    // {
-    //     Assert.Equal(8, 12);
-    // }
-
     [Fact]
     public void CounterShouldIncrementWhenClicked()
     {
