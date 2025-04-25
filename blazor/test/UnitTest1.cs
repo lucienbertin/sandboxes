@@ -47,7 +47,7 @@ public class UnitTest1
     }
 
     [Fact]
-    public void increment()
+    public void Increment()
     {
         // Arrange
         int n = 4;
@@ -60,7 +60,7 @@ public class UnitTest1
     }
 
     [Fact]
-    public void fibonacci()
+    public void Fibonacci()
     {
         // Arrange
         int n = 30;
