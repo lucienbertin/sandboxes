@@ -1,4 +1,4 @@
-using Domain;
+using Domain.Weather;
 using Microsoft.FSharp.Core;
 
 namespace Shell.Db;
@@ -17,16 +17,18 @@ public class WeatherForecastRepository {
     {
         this.context = context;
     }
-    public Weather.Forecast getById(int id) {
+    public Forecast getById(int id) {
         var dbForecast = context.WeatherForecasts.Where(f => f.WeatherForecastId == id).First();
         return toForecast(dbForecast);
     }
 
-    private static Weather.Forecast toForecast(WeatherForecast wf) {
-        return new Weather.Forecast(
+    private static Forecast toForecast(WeatherForecast wf) {
+        Summary summary = Summary.NewCloudy(Cloudy.ABit);
+        return new Forecast(
             wf.WeatherForecastId,
             wf.TemperatureC,
-            wf.Summary == null ? FSharpOption<string>.None : FSharpOption<string>.Some(wf.Summary),
+            // wf.Summary == null ? FSharpOption<string>.None : FSharpOption<string>.Some(wf.Summary),
+            summary,
             wf.Date
         );
     }
