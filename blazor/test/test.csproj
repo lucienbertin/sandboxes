@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\app\app.csproj" />
+    <ProjectReference Include="..\domain\domain.fsproj" />
   </ItemGroup>
 
 </Project>
