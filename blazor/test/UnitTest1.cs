@@ -1,5 +1,6 @@
 ﻿namespace test;
 using app.Components.Pages;
+using domain;
 
 public class UnitTest1
 {
@@ -43,5 +44,31 @@ public class UnitTest1
 
         // Assert
         Assert.Equal(2, c.n);
+    }
+
+    [Fact]
+    public void Increment()
+    {
+        // Arrange
+        int n = 4;
+
+        // Act
+        int p = Incr.incr(n);
+
+        // Assert
+        Assert.Equal(5, p);
+    }
+
+    [Fact]
+    public void Fibonacci()
+    {
+        // Arrange
+        int n = 30;
+
+        // Act
+        int fib = Incr.fibonacci(n);
+
+        // Assert
+        Assert.Equal(832040, fib);
     }
 }
