@@ -19,7 +19,7 @@
         int fibNplus1 = fibN + fibNminus1;
 
         // advance to next state
-        n++;
+        n = Incr.incr(n); // by calling f# library
         fibNminus1 = fibN;
         fibN = fibNplus1;
 
