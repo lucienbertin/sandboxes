@@ -4,22 +4,18 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 
 	"os"
 
 	"github.com/joho/godotenv"
+	amqp "github.com/rabbitmq/amqp091-go"
 	gomail "gopkg.in/mail.v2"
 )
 
-func main() {
-	log.Print("starting service")
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Print("couldnt load .env file")
-	}
-	host := os.Getenv("HOST")
-	port, err := strconv.ParseInt(os.Getenv("PORT"), 10, 32)
+func sendmail(wg *sync.WaitGroup) {
+	host := os.Getenv("SMTP_HOST")
+	port, err := strconv.ParseInt(os.Getenv("SMTP_PORT"), 10, 32)
 	if err != nil {
 		log.Fatal("port is not a valid int")
 	}
@@ -52,4 +48,33 @@ func main() {
 	} else {
 		log.Print("Email sent successfully!")
 	}
+	defer wg.Done()
+}
+
+func subToRmq(wg *sync.WaitGroup) {
+	url := os.Getenv("AMQP_URL")
+
+	log.Printf("connecting to rmq at url: %s", url)
+	conn, err := amqp.Dial(url)
+	if err != nil {
+		log.Panicf("Failed to connect to RabbitMQ %s", err)
+	}
+	log.Print("connection success")
+	defer conn.Close()
+
+	defer wg.Done()
+}
+
+func main() {
+	log.Print("starting service")
+	var wg sync.WaitGroup
+	err := godotenv.Load()
+	if err != nil {
+		log.Print("couldnt load .env file but will try to keep on anyway")
+	}
+
+	wg.Add(2)
+	go sendmail(&wg)
+	go subToRmq(&wg)
+	wg.Wait()
 }
