@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -13,12 +14,13 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
-func sendmail(wg *sync.WaitGroup) {
+func sendmail(to string, subject string, body string) {
 	host := os.Getenv("SMTP_HOST")
 	port, err := strconv.ParseInt(os.Getenv("SMTP_PORT"), 10, 32)
 	if err != nil {
 		log.Fatal("port is not a valid int")
 	}
+	from := os.Getenv("SENDER")
 
 	log.Print("env vars loaded succesfully")
 	log.Print("smtp host: " + host)
@@ -28,12 +30,12 @@ func sendmail(wg *sync.WaitGroup) {
 	message := gomail.NewMessage()
 
 	// Set email headers
-	message.SetHeader("From", "go@sandboxes.local")
-	message.SetHeader("To", "me@lucienbertin.com")
-	message.SetHeader("Subject", "Hello from the go micro service")
+	message.SetHeader("From", from)
+	message.SetHeader("To", to)
+	message.SetHeader("Subject", subject)
 
 	// Set email body
-	message.SetBody("text/plain", "This is the Test Body")
+	message.SetBody("text/plain", body)
 
 	log.Print("message initailised")
 
@@ -48,34 +50,36 @@ func sendmail(wg *sync.WaitGroup) {
 	} else {
 		log.Print("Email sent successfully!")
 	}
-	defer wg.Done()
 }
 
-func subToRmq(_wg *sync.WaitGroup) {
+func subToRmq(wg *sync.WaitGroup) {
 	url := os.Getenv("AMQP_URL")
 
 	log.Printf("connecting to rmq at url: %s", url)
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		log.Panicf("Failed to connect to RabbitMQ %s", err)
+		defer wg.Done()
 	}
 	log.Print("connection success")
 
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Panicf("Failed to open a channel %s", err)
+		defer wg.Done()
 	}
 
 	q, err := ch.QueueDeclare(
-		"hello", // name
-		false,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
+		"go-mailer", // name
+		false,       // durable
+		false,       // delete when unused
+		false,       // exclusive
+		false,       // no-wait
+		nil,         // arguments
 	)
 	if err != nil {
 		log.Panicf("Failed to declare a queue %s", err)
+		defer wg.Done()
 	}
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -88,10 +92,27 @@ func subToRmq(_wg *sync.WaitGroup) {
 	)
 	if err != nil {
 		log.Panicf("Failed to register a consumer %s", err)
+		defer wg.Done()
 	}
 	go func() {
 		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
+			log.Printf("message recieve with body: %s", d.Body)
+			var parsedMessage map[string]string
+			err := json.Unmarshal([]byte(d.Body), &parsedMessage)
+			if err != nil {
+				log.Panicf("Failed to parse message body %s as json - err: %s", d.Body, err)
+				d.Reject(false)
+			} else {
+
+				log.Printf("after parse, hopefully, recipient: %s", parsedMessage["to"])
+				to := parsedMessage["to"]
+				subject := parsedMessage["subject"]
+				body := parsedMessage["body"]
+				log.Printf("message recieve with contentType: %s", d.ContentType)
+
+				sendmail(to, subject, body)
+				d.Ack(false)
+			}
 		}
 	}()
 
@@ -107,8 +128,7 @@ func main() {
 		log.Print("couldnt load .env file but will try to keep on anyway")
 	}
 
-	wg.Add(2)
-	go sendmail(&wg)
+	wg.Add(1)
 	go subToRmq(&wg)
 	wg.Wait()
 }
