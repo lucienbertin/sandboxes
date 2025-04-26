@@ -51,7 +51,7 @@ func sendmail(wg *sync.WaitGroup) {
 	defer wg.Done()
 }
 
-func subToRmq(wg *sync.WaitGroup) {
+func subToRmq(_wg *sync.WaitGroup) {
 	url := os.Getenv("AMQP_URL")
 
 	log.Printf("connecting to rmq at url: %s", url)
@@ -60,9 +60,43 @@ func subToRmq(wg *sync.WaitGroup) {
 		log.Panicf("Failed to connect to RabbitMQ %s", err)
 	}
 	log.Print("connection success")
-	defer conn.Close()
 
-	defer wg.Done()
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Panicf("Failed to open a channel %s", err)
+	}
+
+	q, err := ch.QueueDeclare(
+		"hello", // name
+		false,   // durable
+		false,   // delete when unused
+		false,   // exclusive
+		false,   // no-wait
+		nil,     // arguments
+	)
+	if err != nil {
+		log.Panicf("Failed to declare a queue %s", err)
+	}
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	if err != nil {
+		log.Panicf("Failed to register a consumer %s", err)
+	}
+	go func() {
+		for d := range msgs {
+			log.Printf("Received a message: %s", d.Body)
+		}
+	}()
+
+	// defer ch.Close() // never close
+	// defer wg.Done() // never be done
 }
 
 func main() {
