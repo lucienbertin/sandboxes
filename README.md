@@ -8,7 +8,7 @@ here are the contents:
 
 ## root
 
-you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis, a mongodb and its mongo-express.
+you'll find a docker compose file to launch all the services i need for the infra, for now a postgres/postgis, a rabbitMQ, a redis, a mongodb and its mongo-express and finally a smtp server.
 
 it also links to the projects i have bundled as docker images, you will need to build them beforehand
 
@@ -96,6 +96,41 @@ Nest seems built with the _dependency injection_ pattern in mind so i'll use tha
 Also the modules definition pattern is very nice when you want to use the _vertical slice_ pattern so i'll try using that at some point
 
 once again `npm run` + scripts used by the nests community.
+
+## Blazor
+
+with this i wanted to poc a few things:
+
+1. Use stream rendering for updating a page with data that comes from the db. you can check the result under http://blazor.sandboxes.local/wearher. I wanted to have a webapp without web apis (REST/GraphQL) and a frontend//backend split, like with the nextjs project but seeing how blazor would handle it. It handles it quite differently. it is binding to the db using EFCore which i'm not sure yet i like but i'm already sure i wont love
+
+2. Have a blazor page call a f# function in a callback. You can see it in action on the http://blazor.sandboxes.local page and clicking the counter button, the incr of n and computing of fibonacci(n) is done in f#. The idea here was to have the _functional core // imperative shell_ pattern applied to the whole webapp, with all business logic and model definition in f# and all the adapters (driven and driving) and IO in c# with blazor for the view driving adapter. It is working but interop between f#-c# is really cumbersome, especially when constructing F# objects in C#. I have not yet tried to consume F# types in C# logic, i'm a bit afraid to do it tbh
+
+```fsharp
+// F# algebric type system is gorgeous
+type Cloudy = ABit | ALot | ReallyCloudy
+type Weather = Sunny | Cloudy of Cloudy | Raining of int option
+let s = Sunny
+let c = Cloudy ABit // automatically typed as Weather
+let r = Raining (Some 12) // automatically typed as Weather
+```
+
+```csharp
+// but not when used in C#
+var s = Weather.Sunny; // alright, a bit wordy but not too bad
+var c = Weather.NewCloudy(Cloudy.ABit); // this is going downhill pretty fast
+var r = Weather.NewRainy(FSharpOption<int>.Some(12)); // this makes me sad
+// at least it correctly casts as Weather after that
+```
+
+The dev env for this stack is by far the worst of all the sandboxes, just stay with `dotnet build` and `dotnet run --project ./Shell` and pray to god that it works 1st try. it might work in visual studio, as the blazor.sln exists and seem to be in order, but i wont download VS to test it.
+
+## Go
+
+Very basic micro service that listens to rmq and sends mails, allowing for macro services to just trigger an email by publishing the right message to RMQ. `go build`, `go run` and tutti quanti
+
+maybe i can leverage go's powerful routine feature to register several rmq subs at the same time
+
+the part binding it to rmq is not yet done
 
 ## Python
 

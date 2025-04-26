@@ -186,6 +186,9 @@ services:
       smtp:
         condition: service_started
         restart: true
+      rmq:
+        condition: service_healthy
+        restart: true
 
   nginx:
     image: nginx:stable
