@@ -100,8 +100,13 @@ func subToRmq(wg *sync.WaitGroup) {
 			var parsedMessage map[string]string
 			err := json.Unmarshal([]byte(d.Body), &parsedMessage)
 			if err != nil {
-				log.Panicf("Failed to parse message body %s as json - err: %s", d.Body, err)
-				d.Reject(false)
+				log.Printf("Failed to parse message body %s as json - err: %s", d.Body, err)
+				err := d.Reject(false)
+				if err != nil {
+					log.Printf("Failed to reject message: %s", err)
+				}
+				log.Print("Message rejected")
+
 			} else {
 
 				log.Printf("after parse, hopefully, recipient: %s", parsedMessage["to"])
@@ -111,7 +116,6 @@ func subToRmq(wg *sync.WaitGroup) {
 				log.Printf("message recieve with contentType: %s", d.ContentType)
 
 				sendmail(to, subject, body)
-				d.Ack(false)
 			}
 		}
 	}()
