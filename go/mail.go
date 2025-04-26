@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,7 +12,7 @@ func sendmail(to string, subject string, body string) error {
 	host := os.Getenv("SMTP_HOST")
 	port, err := strconv.ParseInt(os.Getenv("SMTP_PORT"), 10, 32)
 	if err != nil {
-		return errors.New("env smtp port is not a valid int")
+		return fmt.Errorf("env smtp port is not a valid int: %s", err)
 	}
 	from := os.Getenv("SENDER")
 
