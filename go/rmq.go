@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -39,7 +40,7 @@ func subToRmq(wg *sync.WaitGroup) {
 		log.Panicf("Failed to declare a queue %s", err)
 		defer wg.Done()
 	}
-	msgs, err := ch.Consume(
+	deliveries, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
 		true,   // auto-ack
@@ -53,31 +54,37 @@ func subToRmq(wg *sync.WaitGroup) {
 		defer wg.Done()
 	}
 	go func() {
-		for d := range msgs {
-			log.Printf("message recieve with body: %s", d.Body)
-			var parsedMessage map[string]string
-			err := json.Unmarshal([]byte(d.Body), &parsedMessage)
+		for d := range deliveries {
+			err := handleDelivery(d)
 			if err != nil {
-				log.Printf("Failed to parse message body %s as json - err: %s", d.Body, err)
 				err := d.Reject(false)
 				if err != nil {
 					log.Printf("Failed to reject message: %s", err)
-				}
+				} // pyramid of doom still
 				log.Print("Message rejected")
-
-			} else {
-
-				log.Printf("after parse, hopefully, recipient: %s", parsedMessage["to"])
-				to := parsedMessage["to"]
-				subject := parsedMessage["subject"]
-				body := parsedMessage["body"]
-				log.Printf("message recieve with contentType: %s", d.ContentType)
-
-				sendmail(to, subject, body)
 			}
 		}
 	}()
-
 	// defer ch.Close() // never close
 	// defer wg.Done() // never be done
+}
+
+func handleDelivery(d amqp.Delivery) error {
+	var err error
+	log.Printf("message recieve with body: %s", d.Body)
+	var parsedMessage map[string]string
+	err = json.Unmarshal([]byte(d.Body), &parsedMessage)
+	if err != nil {
+		return fmt.Errorf("cant parse message body: %s", err)
+	}
+
+	to := parsedMessage["to"]
+	subject := parsedMessage["subject"]
+	body := parsedMessage["body"]
+	err = sendmail(to, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send mail: %s", err)
+	}
+
+	return nil
 }
