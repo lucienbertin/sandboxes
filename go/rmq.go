@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -39,10 +40,10 @@ func subToRmq(wg *sync.WaitGroup) {
 		log.Panicf("Failed to declare a queue %s", err)
 		defer wg.Done()
 	}
-	msgs, err := ch.Consume(
+	deliveries, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -53,31 +54,39 @@ func subToRmq(wg *sync.WaitGroup) {
 		defer wg.Done()
 	}
 	go func() {
-		for d := range msgs {
+		for d := range deliveries {
 			log.Printf("message recieve with body: %s", d.Body)
-			var parsedMessage map[string]string
-			err := json.Unmarshal([]byte(d.Body), &parsedMessage)
+			err := handleDelivery(d)
 			if err != nil {
-				log.Printf("Failed to parse message body %s as json - err: %s", d.Body, err)
-				err := d.Reject(false)
-				if err != nil {
-					log.Printf("Failed to reject message: %s", err)
-				}
-				log.Print("Message rejected")
-
+				log.Printf("failed to handle message: %s", err)
+				d.Reject(false) // might throw but idc
+				log.Print("message rejected")
 			} else {
-
-				log.Printf("after parse, hopefully, recipient: %s", parsedMessage["to"])
-				to := parsedMessage["to"]
-				subject := parsedMessage["subject"]
-				body := parsedMessage["body"]
-				log.Printf("message recieve with contentType: %s", d.ContentType)
-
-				sendmail(to, subject, body)
+				d.Ack(false) // might throw but idc
+				log.Print("message acknowledged")
 			}
 		}
-	}()
 
+	}()
 	// defer ch.Close() // never close
 	// defer wg.Done() // never be done
+}
+
+func handleDelivery(d amqp.Delivery) error {
+	var err error
+	var parsedMessage map[string]string
+	err = json.Unmarshal([]byte(d.Body), &parsedMessage)
+	if err != nil {
+		return fmt.Errorf("cant parse message body: %s", err)
+	}
+
+	to := parsedMessage["to"]
+	subject := parsedMessage["subject"]
+	body := parsedMessage["body"]
+	err = sendmail(to, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send mail: %s", err)
+	}
+
+	return nil
 }
