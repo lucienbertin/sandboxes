@@ -80,14 +80,17 @@ services:
     networks:
       - sandboxes
 
-  mail:
+  smtp:
     image: bytemark/smtp
     restart: always
     ports:
-      - 25:25
-      - 465:465
-      - 587:587
+      - 26:25
+      - 466:465
+      - 588:587
     env_file: ./.env.dc
+    networks:
+      - sandboxes
+
 
   rust:
     image: sandboxes-rust
@@ -170,6 +173,19 @@ services:
     networks:
       - sandboxes
 
+  go:
+    image: sandboxes-go
+    build: ./go
+    env_file: ./go/.env.dc
+    deploy:
+      replicas: 1
+    # restart: always
+    networks:
+      - sandboxes
+    depends_on:
+      smtp:
+        condition: service_started
+        restart: true
 
   nginx:
     image: nginx:stable
