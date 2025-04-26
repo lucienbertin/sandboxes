@@ -43,7 +43,7 @@ func subToRmq(wg *sync.WaitGroup) {
 	deliveries, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -55,15 +55,18 @@ func subToRmq(wg *sync.WaitGroup) {
 	}
 	go func() {
 		for d := range deliveries {
+			log.Printf("message recieve with body: %s", d.Body)
 			err := handleDelivery(d)
 			if err != nil {
-				err := d.Reject(false)
-				if err != nil {
-					log.Printf("Failed to reject message: %s", err)
-				} // pyramid of doom still
-				log.Print("Message rejected")
+				log.Printf("failed to handle message: %s", err)
+				d.Reject(false) // might throw but idc
+				log.Print("message rejected")
+			} else {
+				d.Ack(false) // might throw but idc
+				log.Print("message acknowledged")
 			}
 		}
+
 	}()
 	// defer ch.Close() // never close
 	// defer wg.Done() // never be done
@@ -71,7 +74,6 @@ func subToRmq(wg *sync.WaitGroup) {
 
 func handleDelivery(d amqp.Delivery) error {
 	var err error
-	log.Printf("message recieve with body: %s", d.Body)
 	var parsedMessage map[string]string
 	err = json.Unmarshal([]byte(d.Body), &parsedMessage)
 	if err != nil {
