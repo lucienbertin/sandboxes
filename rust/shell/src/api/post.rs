@@ -194,16 +194,16 @@ pub async fn publish_post(
         let subject = find_user(conn, subject.email)?;
         let subject = subject.ok_or(Error::Unauthorized)?;
         let result = db::find_post(conn, id)?;
-        let result = result.ok_or(Error::NotFound)?;
+        let post = result.ok_or(Error::NotFound)?;
 
         use domain::usecases::{publish_post, PublishPostResult::*};
-        let result = publish_post(&subject, &result);
+        let result = publish_post(&subject, &post);
 
         match result {
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
             CantPublishAsReader => Err(Error::Forbidden),
             CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-            DoPublishAndNotify(post_id) => {
+            DoPublish(post_id) => {
                 db::publish_post(conn, post_id)?;
                 let _ = rmq_sender.send(("post.published".to_string(), format!("id: {}", post_id)));
 
@@ -214,7 +214,24 @@ pub async fn publish_post(
                 }
 
                 Ok(())
-            }
+            },
+            DoPublishAndNotifyAuthor(post_id, author) => {
+                db::publish_post(conn, post_id)?;
+                let _ = rmq_sender.send(("post.published".to_string(), format!("id: {}", post_id)));
+
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
+
+                // schedule email
+                let payload = format!("{{ \"to\":\"{}\", \"subject\":\"your post {} has been published\", \"body\":\"your post {} has been published by someone else\" }}", author.email, &post.title, &post.title);
+                let _ = rmq_sender.send(("job.sendmail".to_string(), payload));
+
+                Ok(())
+            },
+
         }
     })?;
 
@@ -249,7 +266,7 @@ pub fn post_post(
         let result = create_post(&subject, data.into_inner().into());
         match result {
             CantCreateAsReader => Err(Error::Forbidden),
-            DoCreateAndNotify(new_post) => {
+            DoCreate(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
                 let _ = rmq_sender.send(("post.created".to_string(), format!("id: {}", post_id)));
 
@@ -300,7 +317,7 @@ pub fn delete_post(
             CantDeleteAnotherOnesPost => Err(Error::Forbidden),
             CantDeletePublishedPost => Err(Error::Conflict),
             CantDeleteAsReader => Err(Error::Forbidden),
-            DoDeleteAndNotify(post_id) => {
+            DoDelete(post_id) => {
                 db::delete_post(conn, post_id)?;
                 let _ = rmq_sender.send(("post.deleted".to_string(), format!("id: {}", post_id)));
 
@@ -351,7 +368,7 @@ pub fn patch_post(
             CantEditPublishedPost => Err(Error::Conflict),
             CantEditAsReader => Err(Error::Forbidden),
             NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
-            DoUpdateAndNotify(post_id, post_edition) => {
+            DoUpdate(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;
                 let _ = rmq_sender.send(("post.updated".to_string(), format!("id: {}", post_id)));
 

@@ -2,7 +2,7 @@ use crate::models::{Post, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum DeletePostResult {
-    DoDeleteAndNotify(i32),
+    DoDelete(i32),
     CantDeleteAsReader,
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost,
@@ -12,8 +12,8 @@ pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
         Role::Reader => DeletePostResult::CantDeleteAsReader,
         Role::Writer if subject.id != post.author.id => DeletePostResult::CantDeleteAnotherOnesPost,
         Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
-        Role::Writer => DeletePostResult::DoDeleteAndNotify(post.id),
-        Role::Admin => DeletePostResult::DoDeleteAndNotify(post.id),
+        Role::Writer => DeletePostResult::DoDelete(post.id),
+        Role::Admin => DeletePostResult::DoDelete(post.id),
     }
 }
 
@@ -127,10 +127,7 @@ mod test {
         let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
 
         // assert
-        assert_eq!(
-            result_my_unpublished_post,
-            DeletePostResult::DoDeleteAndNotify(id)
-        );
+        assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
         assert_eq!(
             result_my_published_post,
             DeletePostResult::CantDeletePublishedPost
@@ -186,17 +183,8 @@ mod test {
         let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
 
         // assert
-        assert_eq!(
-            result_my_unpublished_post,
-            DeletePostResult::DoDeleteAndNotify(id)
-        );
-        assert_eq!(
-            result_my_published_post,
-            DeletePostResult::DoDeleteAndNotify(id)
-        );
-        assert_eq!(
-            result_someone_elses_post,
-            DeletePostResult::DoDeleteAndNotify(id)
-        );
+        assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
+        assert_eq!(result_my_published_post, DeletePostResult::DoDelete(id));
+        assert_eq!(result_someone_elses_post, DeletePostResult::DoDelete(id));
     }
 }
