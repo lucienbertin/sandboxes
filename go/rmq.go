@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"os"
 
@@ -28,7 +29,7 @@ func subToRmq(wg *sync.WaitGroup) {
 		defer wg.Done()
 	}
 
-	q, err := ch.QueueDeclare(
+	mails_queue, err := ch.QueueDeclare(
 		"go-mailer", // name
 		false,       // durable
 		false,       // delete when unused
@@ -37,26 +38,53 @@ func subToRmq(wg *sync.WaitGroup) {
 		nil,         // arguments
 	)
 	if err != nil {
-		log.Panicf("Failed to declare a queue %s", err)
+		log.Panicf("Failed to declare mailer queue %s", err)
 		defer wg.Done()
 	}
-	deliveries, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		false,  // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
+	ch.QueueBind(
+		mails_queue.Name, // queue name
+		"job.sendmail",   // routing key
+		"rust",           // exchange
+		false,            // no-wait
+		nil,              // arguments
+	)
+
+	logs_queue, err := ch.QueueDeclare(
+		"go-logger", // name
+		false,       // durable
+		false,       // delete when unused
+		false,       // exclusive
+		false,       // no-wait
+		nil,         // arguments
+	)
+	if err != nil {
+		log.Panicf("Failed to declare logger queue %s", err)
+		defer wg.Done()
+	}
+	ch.QueueBind(
+		logs_queue.Name, // queue name
+		"evt.#",         // routing key
+		"rust",          // exchange
+		false,           // no-wait
+		nil,             // arguments
+	)
+	mail_jobs, err := ch.Consume(
+		mails_queue.Name, // queue
+		"",               // consumer
+		false,            // auto-ack
+		false,            // exclusive
+		false,            // no-local
+		false,            // no-wait
+		nil,              // args
 	)
 	if err != nil {
 		log.Panicf("Failed to register a consumer %s", err)
 		defer wg.Done()
 	}
 	go func() {
-		for d := range deliveries {
+		for d := range mail_jobs {
 			log.Printf("message recieve with body: %s", d.Body)
-			err := handleDelivery(d)
+			err := handleMailJob(d)
 			if err != nil {
 				log.Printf("failed to handle message: %s", err)
 				d.Reject(false) // might throw but idc
@@ -68,11 +96,41 @@ func subToRmq(wg *sync.WaitGroup) {
 		}
 
 	}()
+
+	logs, err := ch.Consume(
+		logs_queue.Name, // queue
+		"",              // consumer
+		true,            // auto-ack
+		false,           // exclusive
+		false,           // no-local
+		false,           // no-wait
+		nil,             // args
+	)
+	if err != nil {
+		log.Panicf("Failed to register a consumer %s", err)
+		defer wg.Done()
+	}
+	go func() {
+		f, err := os.OpenFile("./logs/logfile.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			panic(err)
+		}
+
+		for d := range logs {
+			log.Printf("message recieve with key: %s - body: %s", d.RoutingKey, d.Body)
+			err := handleEventLog(d, f)
+			if err != nil {
+				log.Printf("couldnt write to file: %s", err)
+			}
+		}
+
+	}()
+
 	// defer ch.Close() // never close
 	// defer wg.Done() // never be done
 }
 
-func handleDelivery(d amqp.Delivery) error {
+func handleMailJob(d amqp.Delivery) error {
 	var err error
 	var parsedMessage map[string]string
 	err = json.Unmarshal([]byte(d.Body), &parsedMessage)
@@ -89,4 +147,12 @@ func handleDelivery(d amqp.Delivery) error {
 	}
 
 	return nil
+}
+
+func handleEventLog(d amqp.Delivery, f *os.File) error {
+	l := fmt.Sprintf("%s: %s - %s\n", time.Now(), d.RoutingKey, d.Body)
+
+	_, err := f.WriteString(l)
+
+	return err
 }
