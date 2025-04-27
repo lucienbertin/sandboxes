@@ -80,14 +80,20 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
 
 // #[test]
 // fn test_sign_token() {
-//     let subject = "john@d.oe";
+//     use dotenvy::dotenv;
+//     match dotenv() {
+//         Ok(_) => println!("loaded local .env file"),
+//         Err(_) => println!("no local .env file to load"),
+//     };
+//     let subject = "lucien@bert.in";
 //     let result = _sign_token(subject.into());
 
 //     match result {
 //         Ok(token) => println!("token: {}", token),
 //         Err(e) => println!("error {:?}", e)
 //     };
-// }#[test]
+// }
+// #[test]
 // fn test_verify_token() {
 //     let token_str = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsdWNpZW5AYmVydC5pbiJ9.MQ2AtPRuMhZuu84jFpjbnZF3tMREpSi51YEU6yq8KBI";
 //     let result = verify_token(token_str);
