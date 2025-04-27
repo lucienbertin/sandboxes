@@ -268,7 +268,8 @@ pub fn post_post(
             CantCreateAsReader => Err(Error::Forbidden),
             DoCreate(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
-                let _ = rmq_sender.send(("evt.post.created".to_string(), format!("id: {}", post_id)));
+                let _ =
+                    rmq_sender.send(("evt.post.created".to_string(), format!("id: {}", post_id)));
 
                 let cache_key = "posts".to_string();
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -319,7 +320,8 @@ pub fn delete_post(
             CantDeleteAsReader => Err(Error::Forbidden),
             DoDelete(post_id) => {
                 db::delete_post(conn, post_id)?;
-                let _ = rmq_sender.send(("evt.post.deleted".to_string(), format!("id: {}", post_id)));
+                let _ =
+                    rmq_sender.send(("evt.post.deleted".to_string(), format!("id: {}", post_id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {
@@ -370,7 +372,8 @@ pub fn patch_post(
             NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
             DoUpdate(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;
-                let _ = rmq_sender.send(("evt.post.updated".to_string(), format!("id: {}", post_id)));
+                let _ =
+                    rmq_sender.send(("evt.post.updated".to_string(), format!("id: {}", post_id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {
