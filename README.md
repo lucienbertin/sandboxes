@@ -126,11 +126,13 @@ The dev env for this stack is by far the worst of all the sandboxes, just stay w
 
 ## Go
 
-Very basic micro service that listens to rmq and sends mails, allowing for macro services to just trigger an email by publishing the right message to RMQ. `go build`, `go run` and tutti quanti
+Very basic micro service that listens to rmq and do stuff, allowing for macro services to just publish to RMQ and hope someone is listening.
 
-maybe i can leverage go's powerful routine feature to register several rmq subs at the same time
+stuff done as of now
+- binds exchange `rust` with key `job.send-mail` to queue `go-mailer` ; on message trigger an email send
+- binds exchange `rust` with key `evt.#l` to queue `go-logger` ; on message logs the event to a log file
 
-the part binding it to rmq is not yet done
+`go build`, `go run` and tutti quanti
 
 ## Python
 
