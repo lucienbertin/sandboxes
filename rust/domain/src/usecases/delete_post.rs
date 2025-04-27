@@ -127,10 +127,7 @@ mod test {
         let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
 
         // assert
-        assert_eq!(
-            result_my_unpublished_post,
-            DeletePostResult::DoDelete(id)
-        );
+        assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
         assert_eq!(
             result_my_published_post,
             DeletePostResult::CantDeletePublishedPost
@@ -186,17 +183,8 @@ mod test {
         let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
 
         // assert
-        assert_eq!(
-            result_my_unpublished_post,
-            DeletePostResult::DoDelete(id)
-        );
-        assert_eq!(
-            result_my_published_post,
-            DeletePostResult::DoDelete(id)
-        );
-        assert_eq!(
-            result_someone_elses_post,
-            DeletePostResult::DoDelete(id)
-        );
+        assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
+        assert_eq!(result_my_published_post, DeletePostResult::DoDelete(id));
+        assert_eq!(result_someone_elses_post, DeletePostResult::DoDelete(id));
     }
 }

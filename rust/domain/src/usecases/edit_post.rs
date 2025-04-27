@@ -252,8 +252,7 @@ mod test {
             result_diff_title_same_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
@@ -271,8 +270,7 @@ mod test {
             result_same_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
@@ -281,8 +279,7 @@ mod test {
             result_diff_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, Some(different_body.to_string()));
@@ -365,8 +362,7 @@ mod test {
             result_diff_title_same_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
@@ -384,8 +380,7 @@ mod test {
             result_same_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
@@ -394,8 +389,7 @@ mod test {
             result_diff_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, Some(different_body.to_string()));
