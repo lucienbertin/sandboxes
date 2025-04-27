@@ -2,7 +2,8 @@ use crate::models::{Post, Role::*, User};
 
 #[derive(PartialEq, Debug)]
 pub enum PublishPostResult {
-    DoPublishAndNotify(i32),
+    DoPublish(i32),
+    DoPublishAndNotifyAuthor(i32, User),
     CantPublishAnotherOnesPost,
     CantPublishAlreadyPublishedPost,
     CantPublishAsReader,
@@ -13,7 +14,8 @@ pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
         Reader => PublishPostResult::CantPublishAsReader,
         Writer if subject.id != post.author.id => PublishPostResult::CantPublishAnotherOnesPost,
         _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
-        _ => PublishPostResult::DoPublishAndNotify(post.id),
+        Admin if subject.id != post.author.id => PublishPostResult::DoPublishAndNotifyAuthor(post.id, post.author.clone()),
+        _ => PublishPostResult::DoPublish(post.id),
     }
 }
 
@@ -37,7 +39,7 @@ mod test {
             id: 2,
             first_name: "someone".to_string(),
             last_name: "else".to_string(),
-            email: "spmepne@el.se".to_string(),
+            email: "someone@el.se".to_string(),
             role: Role::Writer,
         };
         let post = Post {
@@ -135,7 +137,7 @@ mod test {
         let result = publish_post(&subject, &post);
 
         // assert
-        assert_eq!(result, PublishPostResult::DoPublishAndNotify(id));
+        assert_eq!(result, PublishPostResult::DoPublish(id));
     }
 
     #[test]
@@ -148,13 +150,20 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Admin,
         };
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
         let id = 1i32;
         let someone_elses_post = Post {
             id: id,
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: subject.clone(),
+            author: someoneelse.clone(),
         };
         let my_unpublished_post = Post {
             id: id,
@@ -179,11 +188,11 @@ mod test {
         // assert
         assert_eq!(
             result_someone_elses_post,
-            PublishPostResult::DoPublishAndNotify(id)
+            PublishPostResult::DoPublishAndNotifyAuthor(id, someoneelse)
         );
         assert_eq!(
             result_my_unpublished_post,
-            PublishPostResult::DoPublishAndNotify(id)
+            PublishPostResult::DoPublish(id)
         );
         assert_eq!(
             result_my_published_post,
