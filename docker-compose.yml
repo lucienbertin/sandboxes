@@ -180,6 +180,8 @@ services:
     deploy:
       replicas: 1
     # restart: always
+    volumes:
+      - /tank/lulu/volumes/sandbox-go/logs/:/app/logs
     networks:
       - sandboxes
     depends_on:
