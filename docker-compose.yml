@@ -179,7 +179,7 @@ services:
     env_file: ./go/.env.dc
     deploy:
       replicas: 1
-    # restart: always
+    restart: always
     volumes:
       - /tank/lulu/volumes/sandbox-go/logs/:/app/logs
     networks:
