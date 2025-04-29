@@ -1,4 +1,4 @@
-import client, { Channel, ConsumeMessage } from "amqplib";
+import client, { Channel } from "amqplib";
 const AMQP_URL = process.env.AMQP_URL as string;
 const EXCHANGE_NAME = process.env.RMQ_EXCHANGE as string;
 class RabbitMQPubConnection {
