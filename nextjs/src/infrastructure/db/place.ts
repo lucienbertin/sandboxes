@@ -32,4 +32,6 @@ export async function createPlace(
   place.geometry = newPlace.geometry;
 
   await repo.save(place);
+
+  return place.asGeoJSON();
 }

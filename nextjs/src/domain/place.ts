@@ -8,34 +8,45 @@ export type Place = {
 };
 
 type GetPlacesGeoJSONDelegate = () => Promise<FeatureCollection<Point, Place>>;
-export async function getPlacesAsGeoJSON(
-  // agentDelegate: AgentDelegate,
+export function getPlacesAsGeoJSON(
+  agentDelegate: AgentDelegate,
   getPlacesDelegate: GetPlacesGeoJSONDelegate,
-): Promise<FeatureCollection<Point, Place>> {
-  // const agent = await agentDelegate(); // IO - injected
+): () => Promise<FeatureCollection<Point, Place>> {
+  const partial = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const agent = await agentDelegate(); // IO - injected
 
-  const places = await getPlacesDelegate(); // IO - injected
-  // should the transformation to geojson happen here or in another layer ?
+    const places = await getPlacesDelegate(); // IO - injected
+    // should the transformation to geojson happen here or in another layer ?
 
-  return places;
+    return places;
+  };
+
+  return partial;
 }
 
 type CreatePlaceDelegate = (
   place: Feature<Point, Partial<Place>>,
-) => Promise<void>;
-export async function createPlace(
-  place: Feature<Point, Partial<Place>>,
+) => Promise<Feature<Point, Place>>;
+type PublishDelegate = (routingKey: string, message: unknown) => Promise<void>;
+export function createPlace(
   agentDelegate: AgentDelegate,
   createPlaceDelegate: CreatePlaceDelegate,
-) {
-  const agent = await agentDelegate(); // IO - injected
+  publishDelegate: PublishDelegate,
+): (place: Feature<Point, Partial<Place>>) => Promise<void> {
+  const partial = async (place: Feature<Point, Partial<Place>>) => {
+    const agent = await agentDelegate(); // IO - injected
 
-  // Domain logic
-  if (!agent) {
-    return Promise.reject(new UnauthorizedError());
-  } else if (agent.role == UserRole.Reader) {
-    return Promise.reject(new ForbiddenError());
-  }
+    // Domain logic
+    if (!agent) {
+      return Promise.reject(new UnauthorizedError());
+    } else if (agent.role == UserRole.Reader) {
+      return Promise.reject(new ForbiddenError());
+    }
 
-  await createPlaceDelegate(place); // IO - injected
+    const createdPlace = await createPlaceDelegate(place); // IO - injected
+    publishDelegate("evt.place.created", createdPlace);
+  };
+
+  return partial;
 }
