@@ -30,7 +30,9 @@ class RabbitMQPubConnection {
 }
 
 const mqPubConnection = new RabbitMQPubConnection();
-const isPubInitialized = mqPubConnection.initialize().then((conn) => conn.connected);
+const isPubInitialized = mqPubConnection
+  .initialize()
+  .then((conn) => conn.connected);
 
 export async function publish(
   routingKey: string,
