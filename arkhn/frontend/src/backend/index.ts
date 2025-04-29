@@ -23,7 +23,6 @@ export async function getPods() {
 
 export async function getPodLogs(podName) {
     const res = await k8sApi.readNamespacedPodLog({name: podName, namespace: NAMESPACE});
-    console.log(res);
 
     return res;
 }

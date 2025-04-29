@@ -1,10 +1,4 @@
 "use server"
-export async function getPods() {
-    const response = await fetch("http://127.0.0.1:8000/pods");
-    const data = await response.json();
-    return data;
-}
-
 export async function createDeployment(formData) {
     const name = formData.get('name');
     const image = formData.get('image');

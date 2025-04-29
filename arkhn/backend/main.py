@@ -2,22 +2,17 @@ from kubernetes import client, config
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+NAMESPACE = "default"
 config.load_kube_config()
 core_v1 = client.CoreV1Api()
 apps_v1 = client.AppsV1Api()
 
 app = FastAPI()
 
-NAMESPACE = "default"
-
 class Deployment(BaseModel):
     name: str
     image: str
     replicas: int = 1
-def to_deployment(item):
-    containers = item.spec.template.spec.containers
-    image = containers[0].image
-    return Deployment(name=item.metadata.name, image=image, replicas=item.spec.replicas)
 
 @app.get("/deployments")
 def list_deployments() -> list[Deployment]:
@@ -54,6 +49,12 @@ def delete_deployment(name:str):
         )
     except:
         raise HTTPException(status_code=410)
+
+
+def to_deployment(item):
+    containers = item.spec.template.spec.containers
+    image = containers[0].image
+    return Deployment(name=item.metadata.name, image=image, replicas=item.spec.replicas)
 
 def create_deployment_object(dep):
     # Configureate Pod template container
