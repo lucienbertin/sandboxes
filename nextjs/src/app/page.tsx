@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import SignIn from "./signin";
+import Link from "next/link";
 export default async function Home() {
   const session = await getServerSession();
 
@@ -8,7 +9,14 @@ export default async function Home() {
     return (
       // <SessionProvider session={session}>
       <>
-        Server session: Signed in as {session.user?.email} <br />
+        <aside>
+          <nav>
+            <Link href="/posts">Posts</Link>
+            <span> | </span>
+            <Link href="/places">Places</Link>
+          </nav>
+        </aside>
+        {/* Server session: Signed in as {session.user?.email} <br /> */}
         <SignIn />
       </>
       // </ SessionProvider>
@@ -16,7 +24,7 @@ export default async function Home() {
   }
   return (
     <>
-      Server session: Not signed in <br />
+      {/* Server session: Not signed in <br /> */}
       <SignIn />
     </>
   );

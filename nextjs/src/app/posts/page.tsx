@@ -3,6 +3,7 @@ import Posts from "./posts";
 
 import { getPosts } from "@/actions";
 import { Post } from "@/domain";
+import Link from "next/link";
 
 export default async function Page() {
   const posts$: Promise<Post[]> = getPosts();
@@ -15,6 +16,7 @@ export default async function Page() {
       <Suspense fallback={<div>Loading...</div>}>
         <Posts posts$={posts$} />
       </Suspense>
+      <Link href="/posts/new">Create</Link>
     </div>
   );
 }
