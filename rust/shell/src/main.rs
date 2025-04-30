@@ -1,7 +1,7 @@
 use api::Cors;
 use db::DbPool;
 use redis::RedisPool;
-use rmq::RmqMessage;
+use rmq::RmQPublisher;
 
 #[macro_use]
 extern crate rocket;
@@ -16,7 +16,7 @@ mod rmq;
 pub struct ServerState {
     pub db_pool: DbPool,
     pub redis_pool: RedisPool,
-    pub rmq_sender: std::sync::mpsc::Sender<RmqMessage>,
+    pub rmq_publisher: RmQPublisher,
 }
 #[launch]
 async fn rocket() -> _ {
@@ -27,7 +27,7 @@ async fn rocket() -> _ {
     };
 
     let db_pool = db::init_pool().expect("couldnt init db pool");
-    let rmq_sender = rmq::init()
+    let rmq_publisher = rmq::init()
         .await
         .expect("couldnt init rmq's consumer/publisher duo");
     let redis_pool = redis::init_pool().expect("couldnt init redis pool");
@@ -49,7 +49,7 @@ async fn rocket() -> _ {
         .attach(Cors)
         .manage(ServerState {
             db_pool: db_pool,
-            rmq_sender: rmq_sender,
+            rmq_publisher: rmq_publisher,
             redis_pool: redis_pool,
         })
 }
