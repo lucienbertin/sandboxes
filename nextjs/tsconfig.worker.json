@@ -1,20 +1,13 @@
 {
-  "ts-node": {
-    // Do not forget to `npm i -D tsconfig-paths`
-    "require": ["tsconfig-paths/register"]
-  },
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "NodeNext",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "outDir": "dist",
-    "moduleResolution": "nodenext",
-    "lib": ["ESNext"],
-    "target": "ESNext",
+    "lib": ["es2019"],
+    "target": "es2019",
     "isolatedModules": false,
-    "noEmit": false,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "noEmit": false
   },
-  "include": ["./worker.ts", "src/**/*.ts"]
+  "include": ["worker.ts"]
 }
