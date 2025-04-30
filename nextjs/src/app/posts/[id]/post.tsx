@@ -14,7 +14,7 @@ export default function PostComponent({
       <h1 className="text-4xl font-bold mb-8 font-[family-name:var(--font-geist-sans)]">
         {post?.title}
         <span className="text-sm ml-2">
-          by {post?.author.firstName} {post?.author.lastName}
+          by {post?.author}
         </span>
       </h1>
       <p>{post?.body}</p>

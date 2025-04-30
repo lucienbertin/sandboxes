@@ -45,7 +45,7 @@ export function createPlace(
     }
 
     const createdPlace = await createPlaceDelegate(place); // IO - injected
-    publishDelegate("evt.place.created", createdPlace);
+    publishDelegate("evt.place.created", createdPlace); // IO - injected
   };
 
   return partial;
