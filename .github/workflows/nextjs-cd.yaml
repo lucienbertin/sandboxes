@@ -33,6 +33,6 @@ jobs:
         with:
           tags: sandboxes-nextjs-worker:latest
           context: "{{defaultContext}}:nextjs"
-          dockerfile: Worker.Dockerfile
+          file: Worker.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
