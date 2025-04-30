@@ -1,3 +1,9 @@
+mod post;
+mod job;
+
+pub use post::*;
+pub use job::*;
+
 use crate::error::Error;
 use futures_lite::StreamExt;
 use lapin::{
@@ -46,8 +52,23 @@ async fn publish(
     Ok(())
 }
 
+pub struct RmQPublisher {
+    sender: std::sync::mpsc::Sender<RmqMessage>,
+}
+impl RmQPublisher {
+    fn new(sender: std::sync::mpsc::Sender<RmqMessage>) -> Self {
+        Self { sender: sender }
+    }
+
+    pub fn publish(&self, routing_key: String, message: String) -> Result<(), Error> {
+        self.sender.send((routing_key, message))?;
+
+        Ok(())
+    }
+}
+
 pub type RmqMessage = (String, String);
-pub async fn init() -> Result<std::sync::mpsc::Sender<RmqMessage>, Error> {
+pub async fn init() -> Result<RmQPublisher, Error> {
     let amqp_url = env::var("AMQP_URL")?;
     let exchange_name = env::var("RMQ_EXCHANGE")?;
 
@@ -94,7 +115,7 @@ pub async fn init() -> Result<std::sync::mpsc::Sender<RmqMessage>, Error> {
     })
     .detach();
 
-    Ok(tx)
+    Ok(RmQPublisher::new(tx))
 }
 
 #[cfg(test)]

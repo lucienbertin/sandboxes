@@ -8,6 +8,8 @@ pub enum Error {
     LapinError(lapin::Error),
     R2D2Error(r2d2::Error),
     RedisError(redis::RedisError),
+    SendError(std::sync::mpsc::SendError<(String, String)>),
+    SerializeError(serde_json::Error),
     StdEnvVarError(std::env::VarError),
 
     AuthError(AuthError),
@@ -69,6 +71,16 @@ impl From<r2d2::Error> for Error {
 impl From<redis::RedisError> for Error {
     fn from(value: redis::RedisError) -> Self {
         Error::RedisError(value)
+    }
+}
+impl From<std::sync::mpsc::SendError<(String, String)>> for Error {
+    fn from(value: std::sync::mpsc::SendError<(String, String)>) -> Self {
+        Error::SendError(value)
+    }
+}
+impl From<serde_json::Error> for Error {
+    fn from(value: serde_json::Error) -> Self {
+        Error::SerializeError(value)
     }
 }
 impl From<std::env::VarError> for Error {
@@ -143,6 +155,15 @@ impl From<Error> for ResponseError {
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
             Error::LapinError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+             // map every adapters error to 500
+             Error::SendError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+             Error::SerializeError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
