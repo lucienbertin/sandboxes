@@ -74,12 +74,12 @@ function logger(chann: Channel): (msg: ConsumeMessage | null) => void {
         body: "asd",
         published: true,
         author: {
-          id:3,
+          id: 3,
           firstName: "lol",
           lastName: "mdr",
           email: "lol@m.dr",
           role: UserRole.Reader,
-        }
+        },
       } as Post;
       console.log(msg.fields.routingKey);
       console.log(msg.content.toString());
