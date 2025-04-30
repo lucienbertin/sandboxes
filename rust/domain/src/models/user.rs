@@ -13,3 +13,9 @@ pub enum Role {
     Writer,
     Reader,
 }
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum Agent {
+    User(User),
+    Worker
+}
