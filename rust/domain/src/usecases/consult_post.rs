@@ -8,13 +8,14 @@ pub enum ConsultPostResult {
 }
 pub fn consult_post(agent: &Agent, post: &Post) -> ConsultPostResult {
     use self::ConsultPostResult::*;
+    use Role::*;
     match (agent, post) {
-        (_, Post { published: true, .. })                                => DoConsultPost(post.clone()),
-        (Agent::Worker, _)                                               => DoConsultPost(post.clone()),
-        (Agent::User(User { role: Role::Admin, .. }), _)                 => DoConsultPost(post.clone()),
-        (Agent::User(u), Post { author: a, .. }) if u == a => DoConsultPost(post.clone()),
-        (Agent::User(User { role: Role::Reader, .. }), _)                => CantConsultUnpublishedPostAsReader,
-        _                                                                => CantConsultUnpublishedPostFromSomeoneElse,
+        (_, Post { published: true, .. })                                  => DoConsultPost(post.clone()),
+        (Agent::Worker, _)                                                 => DoConsultPost(post.clone()),
+        (Agent::User(User { role: Admin, .. }), _)                         => DoConsultPost(post.clone()),
+        (Agent::User(u), Post { author, .. }) if u == author => DoConsultPost(post.clone()),
+        (Agent::User(User { role: Reader, .. }), _)                        => CantConsultUnpublishedPostAsReader,
+        _                                                                  => CantConsultUnpublishedPostFromSomeoneElse,
     }
 }
 

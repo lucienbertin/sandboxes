@@ -8,10 +8,11 @@ pub enum ConsultPostsResult {
 }
 pub fn consult_posts(agent: &Agent) -> ConsultPostsResult {
     use ConsultPostsResult::*;
+    use Role::*;
     match agent {
         Agent::Worker => ConsultAllPosts,
-        Agent::User(User { role: Role::Admin, .. }) => ConsultAllPosts,
-        Agent::User(writer) if writer.role == Role::Writer => ConsultPublishedPostsAndAuthoredBy(writer.clone()),
+        Agent::User(User { role: Admin, .. }) => ConsultAllPosts,
+        Agent::User(writer) if writer.role == Writer => ConsultPublishedPostsAndAuthoredBy(writer.clone()),
         _ => ConsultPostsResult::ConsultPublishedPosts,
     }
 }
