@@ -5,7 +5,7 @@
   },
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "NodeNext",
     "outDir": "dist",
     "moduleResolution": "nodenext",
     "lib": ["ESNext"],
