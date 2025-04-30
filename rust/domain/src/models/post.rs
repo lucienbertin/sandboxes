@@ -1,6 +1,6 @@
 use super::User;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Post {
     pub id: i32,
     pub title: String,

@@ -2,8 +2,8 @@ use crate::models::{Post, Role::*, User};
 
 #[derive(PartialEq, Debug)]
 pub enum PublishPostResult {
-    DoPublish(i32),
-    DoPublishAndNotifyAuthor(i32, User),
+    DoPublishAndNotify(i32, Post),
+    DoPublishNotifyAndSendMailToAuthor(i32, Post, User),
     CantPublishAnotherOnesPost,
     CantPublishAlreadyPublishedPost,
     CantPublishAsReader,
@@ -15,9 +15,9 @@ pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
         Writer if subject.id != post.author.id => PublishPostResult::CantPublishAnotherOnesPost,
         _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
         Admin if subject.id != post.author.id => {
-            PublishPostResult::DoPublishAndNotifyAuthor(post.id, post.author.clone())
+            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(post.id, post.clone(), post.author.clone())
         }
-        _ => PublishPostResult::DoPublish(post.id),
+        _ => PublishPostResult::DoPublishAndNotify(post.id, post.clone()),
     }
 }
 
@@ -139,7 +139,7 @@ mod test {
         let result = publish_post(&subject, &post);
 
         // assert
-        assert_eq!(result, PublishPostResult::DoPublish(id));
+        assert_eq!(result, PublishPostResult::DoPublishAndNotify(id));
     }
 
     #[test]
@@ -190,9 +190,9 @@ mod test {
         // assert
         assert_eq!(
             result_someone_elses_post,
-            PublishPostResult::DoPublishAndNotifyAuthor(id, someoneelse)
+            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(id, someoneelse)
         );
-        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublish(id));
+        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublishAndNotify(id));
         assert_eq!(
             result_my_published_post,
             PublishPostResult::CantPublishAlreadyPublishedPost

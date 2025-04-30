@@ -3,6 +3,7 @@ use crate::models::{Post, Role, User};
 #[derive(PartialEq, Debug)]
 pub enum DeletePostResult {
     DoDelete(i32),
+    DoDeleteAndNotify(i32, Post),
     CantDeleteAsReader,
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost,
@@ -13,6 +14,7 @@ pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
         Role::Writer if subject.id != post.author.id => DeletePostResult::CantDeleteAnotherOnesPost,
         Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
         Role::Writer => DeletePostResult::DoDelete(post.id),
+        Role::Admin if post.published => DeletePostResult::DoDeleteAndNotify(post.id, post.clone()),
         Role::Admin => DeletePostResult::DoDelete(post.id),
     }
 }

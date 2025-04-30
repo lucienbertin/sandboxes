@@ -3,6 +3,7 @@ use crate::models::{Post, PostEdition, Role, User};
 #[derive(PartialEq, Debug)]
 pub enum EditPostResult {
     DoUpdate(i32, PostEdition),
+    DoUpdateAndNotify(i32, PostEdition),
     NothingToUpdate,
     CantEditAnotherOnesPost,
     CantEditPublishedPost,
@@ -31,9 +32,14 @@ pub fn edit_post(subject: &User, post: &Post, request: PostEdition) -> EditPostR
         _ => None,
     };
 
+    let do_update = match post.published {
+        true => Some(EditPostResult::DoUpdateAndNotify(post.id, edits)),
+        false => Some(EditPostResult::DoUpdate(post.id, edits)),
+    };
+
     let result = check_subject
         .or(check_edits)
-        .or(Some(EditPostResult::DoUpdate(post.id, edits)))
+        .or(do_update)
         .unwrap();
 
     result
