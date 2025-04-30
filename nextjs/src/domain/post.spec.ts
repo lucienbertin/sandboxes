@@ -1,367 +1,354 @@
-import { getPost, getPosts, PostScope, countPosts, createPost } from "./post";
+import { getPost, getPosts, countPosts, deletePost, upsertPost } from "./post";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "./error";
-import { UserRole } from "./user";
+import { AgentType, User, UserRole, Worker } from "./user";
 
-const reader = {
+const user = {
+  _type: AgentType.User,
   id: 1,
   firstName: "john",
   lastName: "doe",
   email: "john@d.oe",
   role: UserRole.Reader,
-};
-const writer = {
-  id: 2,
-  firstName: "kurt",
-  lastName: "vonnegut",
-  email: "kurt@vonneg.ut",
-  role: UserRole.Writer,
-};
-const otherWriter = {
-  id: 3,
-  firstName: "enki",
-  lastName: "billal",
-  email: "enki@bill.al",
-  role: UserRole.Writer,
-};
+} as User;
 const admin = {
-  id: 4,
-  firstName: "lucien",
-  lastName: "bertin",
-  email: "lucien@bert.in",
+  _type: AgentType.User,
+  id: 2,
+  firstName: "al",
+  lastName: "mighty",
+  email: "al@migh.ty",
   role: UserRole.Admin,
-};
+} as User;
+const worker = { _type: AgentType.Worker } as Worker;
 
-const publishedPost = {
+const post = {
   id: 1,
   title: "breakfast of champions",
   body: "The expression 'breakfast of champions' is a registered trademark of General Mills, Inc., for use on a breakfast cereal product",
-  published: true,
-  author: writer,
-};
-const unpublishedPost = {
-  id: 1,
-  title: "draft",
-  body: "work in progress",
-  published: false,
-  author: writer,
+  author: "john doe",
 };
 
 const nullDelegate = () => Promise.resolve(null);
 const voidDelegate = () => Promise.resolve();
 
-const readerDelegate = () => Promise.resolve(reader);
-const writerDelegate = () => Promise.resolve(writer);
-const otherWriterDelegate = () => Promise.resolve(otherWriter);
-const adminDelegate = () => Promise.resolve(admin);
+const userDelegate = () => Promise.resolve(user);
+const adminDelegate = () => Promise.resolve(user);
+const workerDelegate = () => Promise.resolve(worker);
 
-const publishedPostDelegate = () => Promise.resolve(publishedPost);
-const unpublishedPostDelegate = () => Promise.resolve(unpublishedPost);
+const postDelegate = () => Promise.resolve(post);
 
 describe("getPost", () => {
-  test("rejects with 'not found' when post delegate returns nothing", () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const getPostDelegate = nullDelegate;
-    const postId = 1;
+  describe("as anonymous agent", () => {
+    test("rejects with 'not found' when post delegate returns nothing", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
+      const getPostDelegate = nullDelegate;
+      const postId = 1;
 
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
+      // act
+      const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
-    // assert
-    expect(promise).rejects.toBeInstanceOf(NotFoundError);
+      // assert
+      expect(promise).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    test("resolves with post when post delegate returns a published post", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
+      const getPostDelegate = postDelegate;
+      const postId = 1;
+
+      // act
+      const promise = getPost(agentDelegate, getPostDelegate)(postId);
+
+      // assert
+      expect(promise).resolves.toEqual(post);
+    });
   });
 
-  test("resolves with post when post delegate returns a published post", () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const getPostDelegate = publishedPostDelegate;
-    const postId = 1;
+  describe("as user agent", () => {
+    test("rejects with 'not found' when post delegate returns nothing", () => {
+      // arrange
+      const agentDelegate = userDelegate;
+      const getPostDelegate = nullDelegate;
+      const postId = 1;
 
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
+      // act
+      const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
-    // assert
-    expect(promise).resolves.toEqual(publishedPost);
+      // assert
+      expect(promise).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    test("resolves with post when post delegate returns a published post", () => {
+      // arrange
+      const agentDelegate = userDelegate;
+      const getPostDelegate = postDelegate;
+      const postId = 1;
+
+      // act
+      const promise = getPost(agentDelegate, getPostDelegate)(postId);
+
+      // assert
+      expect(promise).resolves.toEqual(post);
+    });
   });
+  describe("as worker agent", () => {
+    test("rejects with 'not found' when post delegate returns nothing", () => {
+      // arrange
+      const agentDelegate = workerDelegate;
+      const getPostDelegate = nullDelegate;
+      const postId = 1;
 
-  test("resolves with post when post delegate returns an unpublished post and agent delegate returns its author", () => {
-    // arrange
-    const agentDelegate = writerDelegate;
-    const getPostDelegate = unpublishedPostDelegate;
-    const postId = 1;
+      // act
+      const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
+      // assert
+      expect(promise).rejects.toBeInstanceOf(NotFoundError);
+    });
 
-    // assert
-    expect(promise).resolves.toEqual(unpublishedPost);
-  });
+    test("resolves with post when post delegate returns a published post", () => {
+      // arrange
+      const agentDelegate = workerDelegate;
+      const getPostDelegate = postDelegate;
+      const postId = 1;
 
-  test("rejects with 'forbidden' when post delegate returns an unpublished post and agent delegate returns another writer", () => {
-    // arrange
-    const agentDelegate = otherWriterDelegate;
-    const getPostDelegate = unpublishedPostDelegate;
-    const postId = 1;
+      // act
+      const promise = getPost(agentDelegate, getPostDelegate)(postId);
 
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
-
-    // assert
-    expect(promise).rejects.toBeInstanceOf(ForbiddenError);
-  });
-
-  test("rejects with 'unauthorized' when post delegate returns an unpublished post and agent delegate returns nothing", () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const getPostDelegate = unpublishedPostDelegate;
-    const postId = 1;
-
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
-
-    // assert
-    expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
-  });
-
-  test("rejects with 'forbidden' when post delegate returns an unpublished post and agent delegate returns someone else than its author", () => {
-    // arrange
-    const agentDelegate = readerDelegate;
-    const getPostDelegate = unpublishedPostDelegate;
-    const postId = 1;
-
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
-
-    // assert
-    expect(promise).rejects.toBeInstanceOf(ForbiddenError);
-  });
-
-  test("resolves with post when post delegate returns an unpublished post and agent delegate returns an admin", () => {
-    // arrange
-    const agentDelegate = adminDelegate;
-    const getPostDelegate = unpublishedPostDelegate;
-    const postId = 1;
-
-    // act
-    const promise = getPost(agentDelegate, getPostDelegate)(postId);
-
-    // assert
-    expect(promise).resolves.toEqual(unpublishedPost);
+      // assert
+      expect(promise).resolves.toEqual(post);
+    });
   });
 });
 
 describe("getPosts", () => {
-  const postCollection = [publishedPost, unpublishedPost];
+  const postCollection = [post];
   const postsDelegate = () => Promise.resolve(postCollection);
-  test("resolves with what getPostsDelegate returns", () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const getPostsDelegate = postsDelegate;
+  
+  describe("as anonymous agent", () => {
+    test("resolves with what getPostsDelegate returns", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
+      const getPostsDelegate = postsDelegate;
 
-    // act
-    const promise = getPosts(agentDelegate, getPostsDelegate)();
+      // act
+      const promise = getPosts(agentDelegate, getPostsDelegate)();
 
-    // assert
-    expect(promise).resolves.toEqual(postCollection);
+      // assert
+      expect(promise).resolves.toEqual(postCollection);
+    });
   });
-  test("for anonymous agent, scope should be only published posts", async () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const mockGetPostsDelegate = jest.fn();
-    mockGetPostsDelegate.mockImplementation(postsDelegate);
+  
+  describe("as user agent", () => {
+    test("resolves with what getPostsDelegate returns", () => {
+      // arrange
+      const agentDelegate = userDelegate;
+      const getPostsDelegate = postsDelegate;
 
-    // act
-    await getPosts(agentDelegate, mockGetPostsDelegate)();
+      // act
+      const promise = getPosts(agentDelegate, getPostsDelegate)();
 
-    // assert
-    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.Public, null);
+      // assert
+      expect(promise).resolves.toEqual(postCollection);
+    });
   });
-  test("for reader agent, scope should be only published posts", async () => {
-    // arrange
-    const agentDelegate = readerDelegate;
-    const mockGetPostsDelegate = jest.fn();
-    mockGetPostsDelegate.mockImplementation(postsDelegate);
+  
+  describe("as worker agent", () => {
+    test("resolves with what getPostsDelegate returns", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
+      const getPostsDelegate = postsDelegate;
 
-    // act
-    await getPosts(agentDelegate, mockGetPostsDelegate)();
+      // act
+      const promise = getPosts(agentDelegate, getPostsDelegate)();
 
-    // assert
-    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.Public, reader);
-  });
-  test("for writer agent, scope should be published posts and their posts", async () => {
-    // arrange
-    const agentDelegate = writerDelegate;
-    const mockGetPostsDelegate = jest.fn();
-    mockGetPostsDelegate.mockImplementation(postsDelegate);
-
-    // act
-    await getPosts(agentDelegate, mockGetPostsDelegate)();
-
-    // assert
-    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetPostsDelegate).toHaveBeenCalledWith(
-      PostScope.PublicAndFromAuthor,
-      writer,
-    );
-  });
-  test("for admin agent, scope should be all posts", async () => {
-    // arrange
-    const agentDelegate = adminDelegate;
-    const mockGetPostsDelegate = jest.fn();
-    mockGetPostsDelegate.mockImplementation(postsDelegate);
-
-    // act
-    await getPosts(agentDelegate, mockGetPostsDelegate)();
-
-    // assert
-    expect(mockGetPostsDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetPostsDelegate).toHaveBeenCalledWith(PostScope.All, admin);
+      // assert
+      expect(promise).resolves.toEqual(postCollection);
+    });
   });
 });
 
 describe("countPosts", () => {
   const count = 2;
   const countDelegate = () => Promise.resolve(count);
-  test("resolves with what countDelegate returns", () => {
-    // arrange
-    const agentDelegate = nullDelegate;
+  describe("as anonymous agent", () => {
+    test("resolves with what countDelegate returns", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
 
-    // act
-    const promise = countPosts(agentDelegate, countDelegate)();
+      // act
+      const promise = countPosts(agentDelegate, countDelegate)();
 
-    // assert
-    expect(promise).resolves.toEqual(count);
+      // assert
+      expect(promise).resolves.toEqual(count);
+    });
   });
-  test("for anonymous agent, scope should be only published posts", async () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const mockGetCountDelegate = jest.fn();
-    mockGetCountDelegate.mockImplementation(countDelegate);
+  describe("as user agent", () => {
+    test("resolves with what countDelegate returns", () => {
+      // arrange
+      const agentDelegate = userDelegate;
 
-    // act
-    await countPosts(agentDelegate, mockGetCountDelegate)();
+      // act
+      const promise = countPosts(agentDelegate, countDelegate)();
 
-    // assert
-    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.Public, null);
+      // assert
+      expect(promise).resolves.toEqual(count);
+    });
   });
-  test("for reader agent, scope should be only published posts", async () => {
-    // arrange
-    const agentDelegate = readerDelegate;
-    const mockGetCountDelegate = jest.fn();
-    mockGetCountDelegate.mockImplementation(countDelegate);
+  describe("as worker agent", () => {
+    test("resolves with what countDelegate returns", () => {
+      // arrange
+      const agentDelegate = workerDelegate;
 
-    // act
-    await countPosts(agentDelegate, mockGetCountDelegate)();
+      // act
+      const promise = countPosts(agentDelegate, countDelegate)();
 
-    // assert
-    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.Public, reader);
-  });
-  test("for writer agent, scope should be published posts and their posts", async () => {
-    // arrange
-    const agentDelegate = writerDelegate;
-    const mockGetCountDelegate = jest.fn();
-    mockGetCountDelegate.mockImplementation(countDelegate);
-
-    // act
-    await countPosts(agentDelegate, mockGetCountDelegate)();
-
-    // assert
-    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetCountDelegate).toHaveBeenCalledWith(
-      PostScope.PublicAndFromAuthor,
-      writer,
-    );
-  });
-  test("for admin agent, scope should be all posts", async () => {
-    // arrange
-    const agentDelegate = adminDelegate;
-    const mockGetCountDelegate = jest.fn();
-    mockGetCountDelegate.mockImplementation(countDelegate);
-
-    // act
-    await countPosts(agentDelegate, mockGetCountDelegate)();
-
-    // assert
-    expect(mockGetCountDelegate).toHaveBeenCalledTimes(1);
-    expect(mockGetCountDelegate).toHaveBeenCalledWith(PostScope.All, admin);
+      // assert
+      expect(promise).resolves.toEqual(count);
+    });
   });
 });
 
-describe("createPost", () => {
+describe("upsertPost", () => {
   const post = {
+    id: 12,
     title: "ma vie mon oeuvre",
     body: "je suis né un mardi matin a 8h52",
+    author: "jean michel imbu de soi meme"
   };
-  test("should reject with Unauthorized when agentDelegate return null", () => {
-    // arrange
-    const agentDelegate = nullDelegate;
-    const createPostDelegate = voidDelegate;
-
-    // act
-    const promise = createPost(agentDelegate, createPostDelegate)(post);
-
-    // assert
-    expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
+  describe("as anonymous agent", () => {
+    test("should reject with Unauthorized error", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
+      const upserPostDelegate = voidDelegate;
+  
+      // act
+      const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
+  
+      // assert
+      expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
+    });
   });
-  test("should reject with Forbidden when agentDelegate return a reader", () => {
-    // arrange
-    const agentDelegate = readerDelegate;
-    const createPostDelegate = voidDelegate;
-
-    // act
-    const promise = createPost(agentDelegate, createPostDelegate)(post);
-
-    // assert
-    expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+  describe("as user agent", () => {
+    test("should reject with Forbidden error", () => {
+      // arrange
+      const agentDelegate = userDelegate;
+      const upserPostDelegate = voidDelegate;
+  
+      // act
+      const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
+  
+      // assert
+      expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+    });
+    test("should reject with Forbidden error even for an admin", () => {
+      // arrange
+      const agentDelegate = adminDelegate;
+      const upserPostDelegate = voidDelegate;
+  
+      // act
+      const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
+  
+      // assert
+      expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+    });
   });
-  test("should resolve when agentDelegate returns a writer", () => {
-    // arrange
-    const agentDelegate = writerDelegate;
-    const createPostDelegate = voidDelegate;
+  describe("as worker agent", () => {
+    test("should resolve when agentDelegate returns a writer", () => {
+      // arrange
+      const agentDelegate = workerDelegate;
+      const upserPostDelegate = voidDelegate;
+  
+      // act
+      const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
+  
+      // assert
+      expect(promise).resolves.toBe(undefined);
+    });
+    test("should call upsert post delegate with post", async () => {
+      // arrange
+      const agentDelegate = workerDelegate;
+      const upserPostDelegate = jest.fn();
+      upserPostDelegate.mockImplementation(voidDelegate);
 
-    // act
-    const promise = createPost(agentDelegate, createPostDelegate)(post);
-
-    // assert
-    expect(promise).resolves.toBe(undefined);
+      // act
+      await upsertPost(agentDelegate, upserPostDelegate)(post);
+  
+      // assert
+      expect(upserPostDelegate).toHaveBeenCalledTimes(1);
+      expect(upserPostDelegate).toHaveBeenCalledWith(post);
+    });
   });
-  test("should resolve when agentDelegate returns an admin", () => {
-    // arrange
-    const agentDelegate = adminDelegate;
-    const createPostDelegate = voidDelegate;
+});
 
-    // act
-    const promise = createPost(agentDelegate, createPostDelegate)(post);
-
-    // assert
-    expect(promise).resolves.toBe(undefined);
+describe("deletePost", () => {
+  const post = {
+    id: 12,
+    title: "ma vie mon oeuvre",
+    body: "je suis né un mardi matin a 8h52",
+    author: "jean michel imbu de soi meme"
+  };
+  describe("as anonymous agent", () => {
+    test("should reject with Unauthorized error", () => {
+      // arrange
+      const agentDelegate = nullDelegate;
+      const deletePostDelegate = voidDelegate;
+  
+      // act
+      const promise = deletePost(agentDelegate, deletePostDelegate)(post);
+  
+      // assert
+      expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
+    });
   });
-  test("should call createPost with agent as author - writer", async () => {
-    // arrange
-    const agentDelegate = writerDelegate;
-    const mockCreatePostDelegate = jest.fn();
-    mockCreatePostDelegate.mockImplementation(voidDelegate);
-    // act
-    await createPost(agentDelegate, mockCreatePostDelegate)(post);
-
-    // assert
-    expect(mockCreatePostDelegate).toHaveBeenCalledTimes(1);
-    expect(mockCreatePostDelegate).toHaveBeenCalledWith(post, writer);
+  describe("as user agent", () => {
+    test("should reject with Forbidden error", () => {
+      // arrange
+      const agentDelegate = userDelegate;
+      const deletePostDelegate = voidDelegate;
+  
+      // act
+      const promise = deletePost(agentDelegate, deletePostDelegate)(post);
+  
+      // assert
+      expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+    });
+    test("should reject with Forbidden error even for an admin", () => {
+      // arrange
+      const agentDelegate = adminDelegate;
+      const deletePostDelegate = voidDelegate;
+  
+      // act
+      const promise = deletePost(agentDelegate, deletePostDelegate)(post);
+  
+      // assert
+      expect(promise).rejects.toBeInstanceOf(ForbiddenError);
+    });
   });
-  test("should call createPost with agent as author - admin", async () => {
-    // arrange
-    const agentDelegate = adminDelegate;
-    const mockCreatePostDelegate = jest.fn();
-    mockCreatePostDelegate.mockImplementation(voidDelegate);
-    // act
-    await createPost(agentDelegate, mockCreatePostDelegate)(post);
+  describe("as worker agent", () => {
+    test("should resolve when agentDelegate returns a writer", () => {
+      // arrange
+      const agentDelegate = workerDelegate;
+      const deletePostDelegate = voidDelegate;
+  
+      // act
+      const promise = deletePost(agentDelegate, deletePostDelegate)(post);
+  
+      // assert
+      expect(promise).resolves.toBe(undefined);
+    });
+    test("should call upsert post delegate with post", async () => {
+      // arrange
+      const agentDelegate = workerDelegate;
+      const deletePostDelegate = jest.fn();
+      deletePostDelegate.mockImplementation(voidDelegate);
 
-    // assert
-    expect(mockCreatePostDelegate).toHaveBeenCalledTimes(1);
-    expect(mockCreatePostDelegate).toHaveBeenCalledWith(post, admin);
+      // act
+      await deletePost(agentDelegate, deletePostDelegate)(post);
+  
+      // assert
+      expect(deletePostDelegate).toHaveBeenCalledTimes(1);
+      expect(deletePostDelegate).toHaveBeenCalledWith(post);
+    });
   });
 });
