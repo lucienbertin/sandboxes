@@ -1,4 +1,5 @@
 import client, { Channel, ConsumeMessage } from "amqplib";
+import { Post, UserRole } from "@/domain";
 
 const AMQP_URL = process.env.AMQP_URL as string;
 
@@ -67,8 +68,22 @@ export async function registerConsumer(consumer: RmqConsumer) {
 function logger(chann: Channel): (msg: ConsumeMessage | null) => void {
   const partial = (msg: ConsumeMessage | null) => {
     if (msg !== null) {
+      const post = {
+        id: 12,
+        title: "asd",
+        body: "asd",
+        published: true,
+        author: {
+          id:3,
+          firstName: "lol",
+          lastName: "mdr",
+          email: "lol@m.dr",
+          role: UserRole.Reader,
+        }
+      } as Post;
       console.log(msg.fields.routingKey);
       console.log(msg.content.toString());
+      console.log(post);
 
       chann.ack(msg);
     }
