@@ -3,7 +3,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "outDir": "dist",
+    "outDir": "temp",
     "lib": ["es2019"],
     "target": "es2019",
     "isolatedModules": false,
