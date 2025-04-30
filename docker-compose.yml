@@ -123,6 +123,27 @@ services:
       postgres:
         condition: service_healthy
         restart: true
+      rmq:
+        condition: service_healthy
+        restart: true
+    networks:
+      - sandboxes
+  nextjs-worker:
+    image: sandboxes-nextjs-worker
+    build: 
+      context: nextjs
+      dockerfile: Worker.Dockerfile
+    env_file: ./nextjs/.env.dc
+    restart: always
+    deploy:
+      replicas: 1
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      rmq:
+        condition: service_healthy
+        restart: true
     networks:
       - sandboxes
 

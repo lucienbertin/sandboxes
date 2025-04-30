@@ -1,8 +1,7 @@
 import client, { Channel } from "amqplib";
 const AMQP_URL = process.env.AMQP_URL as string;
 const EXCHANGE_NAME = process.env.RMQ_EXCHANGE as string;
-class RabbitMQConnection {
-  // connection!: ChannelModel;
+class RabbitMQPubConnection {
   channel!: Channel;
   connected: boolean = false;
 
@@ -11,12 +10,11 @@ class RabbitMQConnection {
 
     try {
       console.log(`⌛️ Connecting to Rabbit-MQ Server`);
-      const connection = await client.connect(AMQP_URL);
 
+      const connection = await client.connect(AMQP_URL);
       console.log(`✅ Rabbit MQ Connection is ready`);
 
       this.channel = await connection.createChannel();
-
       console.log(`🛸 Created RabbitMQ Channel successfully`);
 
       this.channel.assertExchange(EXCHANGE_NAME, "topic");
@@ -31,16 +29,18 @@ class RabbitMQConnection {
   }
 }
 
-const mqConnection = new RabbitMQConnection();
-const isInitialized = mqConnection.initialize().then((conn) => conn.connected);
+const mqPubConnection = new RabbitMQPubConnection();
+const isPubInitialized = mqPubConnection
+  .initialize()
+  .then((conn) => conn.connected);
 
 export async function publish(
   routingKey: string,
   message: unknown,
 ): Promise<void> {
-  await isInitialized;
+  await isPubInitialized;
 
-  await mqConnection.channel.publish(
+  await mqPubConnection.channel.publish(
     EXCHANGE_NAME,
     routingKey,
     Buffer.from(JSON.stringify(message)),

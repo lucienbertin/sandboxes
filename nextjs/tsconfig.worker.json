@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "temp",
+    "lib": ["es2019"],
+    "target": "es2019",
+    "isolatedModules": false,
+    "noEmit": false
+  },
+  "include": ["worker.ts"]
+}

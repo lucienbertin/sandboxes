@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "npm run build:server && npm run build:worker",
+    "build:server": "next build --experimental-build-mode compile",
+    "build:worker": "tsc --project ./tsconfig.worker.json && tsc-alias --project ./tsconfig.worker.json && webpack",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.tsx\"",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "worker": "ts-node --project ./tsconfig.worker.json ./worker.ts"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.0",
@@ -53,6 +56,10 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.2"
+    "tsc-alias": "^1.8.15",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.2",
+    "webpack": "^5.99.7",
+    "webpack-cli": "^6.0.1"
   }
 }
