@@ -139,7 +139,7 @@ mod test {
         let result = publish_post(&subject, &post);
 
         // assert
-        assert_eq!(result, PublishPostResult::DoPublishAndNotify(id));
+        assert_eq!(result, PublishPostResult::DoPublishAndNotify(id, post));
     }
 
     #[test]
@@ -190,9 +190,9 @@ mod test {
         // assert
         assert_eq!(
             result_someone_elses_post,
-            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(id, someoneelse)
+            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(id, someone_elses_post,  someoneelse)
         );
-        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublishAndNotify(id));
+        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublishAndNotify(id, my_unpublished_post));
         assert_eq!(
             result_my_published_post,
             PublishPostResult::CantPublishAlreadyPublishedPost

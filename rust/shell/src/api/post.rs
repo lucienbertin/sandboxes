@@ -392,11 +392,11 @@ pub fn patch_post(
                 }
                 Ok(())
             }
-            DoUpdateAndNotify(post_id, post_edition) => {
+            DoUpdateAndNotify(post_id, post_edition, post) => {
                 db::update_post(conn, post_id, post_edition)?;
 
                 // TODO
-                let _=rmq_sender.send(("evt.post.updated".to_string(),format!("id: {}",post_id)));
+                let _=rmq_sender.send(("evt.post.updated".to_string(),format!("id: {}",post.id)));
 
                 let cache_keys=["posts".to_string(),format!("posts.{}",id).to_string()];
                 for cache_key in cache_keys{
