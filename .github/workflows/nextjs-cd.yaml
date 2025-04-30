@@ -21,10 +21,18 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build
+      - name: Build Server
         uses: docker/build-push-action@v6
         with:
           tags: sandboxes-nextjs:latest
           context: "{{defaultContext}}:nextjs"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build Worker
+        uses: docker/build-push-action@v6
+        with:
+          tags: sandboxes-nextjs-worker:latest
+          context: "{{defaultContext}}:nextjs"
+          dockerfile: Worker.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
