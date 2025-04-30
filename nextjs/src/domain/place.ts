@@ -1,6 +1,6 @@
 import { Feature, FeatureCollection, Point } from "geojson";
 import { ForbiddenError, UnauthorizedError } from "./error";
-import { AgentDelegate, UserRole } from "./user";
+import { AgentDelegate, isUser } from "./user";
 
 export type Place = {
   id: number;
@@ -40,7 +40,7 @@ export function createPlace(
     // Domain logic
     if (!agent) {
       return Promise.reject(new UnauthorizedError());
-    } else if (agent.role == UserRole.Reader) {
+    } else if (!isUser(agent)) {
       return Promise.reject(new ForbiddenError());
     }
 
