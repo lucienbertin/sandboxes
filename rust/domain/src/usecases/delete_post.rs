@@ -1,27 +1,74 @@
-use crate::models::{Post, Role, User};
+use crate::models::{Agent, Post, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum DeletePostResult {
     DoDelete(i32),
     DoDeleteAndNotify(i32, Post),
     CantDeleteAsReader,
+    CantDeleteAsWorker,
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost,
 }
-pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
-    match subject.role {
-        Role::Reader => DeletePostResult::CantDeleteAsReader,
-        Role::Writer if subject.id != post.author.id => DeletePostResult::CantDeleteAnotherOnesPost,
-        Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
-        Role::Writer => DeletePostResult::DoDelete(post.id),
-        Role::Admin if post.published => DeletePostResult::DoDeleteAndNotify(post.id, post.clone()),
-        Role::Admin => DeletePostResult::DoDelete(post.id),
+pub fn delete_post(agent: &Agent, post: &Post) -> DeletePostResult {
+    use DeletePostResult::*;
+    use Role::*;
+
+    match (agent, post) {
+        (Agent::Worker, _) => CantDeleteAsWorker,
+        (Agent::User(User { role: Reader, .. }), _) => CantDeleteAsReader,
+        (Agent::User(User { role: Admin, .. }), p) if p.published => DoDeleteAndNotify(p.id, p.clone()),
+        (Agent::User(User { role: Admin, .. }), p) => DoDelete(p.id),
+        (Agent::User(writer), Post { author, .. }) if author != writer => CantDeleteAnotherOnesPost,
+        (_, Post { published: true, .. }) => CantDeletePublishedPost,
+        (_, p) => DoDelete(p.id),
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn as_worker() {
+
+        let agent = Agent::Worker;
+        let someoneelse = User {
+            id: 1,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "spmepne@el.se".to_string(),
+            role: Role::Writer,
+        };
+        let id = 1i32;
+        let someone_elses_published_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: true,
+            author: someoneelse.clone(),
+        };
+        let someone_elses_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: someoneelse.clone(),
+        };
+
+        // act
+        let result_someone_elses_published_post = delete_post(&agent, &someone_elses_published_post);
+        let result_someone_elses_post = delete_post(&agent, &someone_elses_post);
+
+        // assert
+        assert_eq!(
+            result_someone_elses_published_post,
+            DeletePostResult::CantDeleteAsWorker
+        );
+        assert_eq!(
+            result_someone_elses_post,
+            DeletePostResult::CantDeleteAsWorker
+        );
+    }
 
     #[test]
     fn as_reader() {
@@ -33,6 +80,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Reader,
         };
+        let agent = Agent::User(subject.clone());
         let someoneelse = User {
             id: 1,
             first_name: "someone".to_string(),
@@ -64,9 +112,9 @@ mod test {
         };
 
         // act
-        let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
-        let result_my_published_post = delete_post(&subject, &my_published_post);
-        let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
+        let result_my_unpublished_post = delete_post(&agent, &my_unpublished_post);
+        let result_my_published_post = delete_post(&agent, &my_published_post);
+        let result_someone_elses_post = delete_post(&agent, &someone_elses_post);
 
         // assert
         assert_eq!(
@@ -93,6 +141,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let agent = Agent::User(subject.clone());
         let someoneelse = User {
             id: 2,
             first_name: "someone".to_string(),
@@ -124,9 +173,9 @@ mod test {
         };
 
         // act
-        let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
-        let result_my_published_post = delete_post(&subject, &my_published_post);
-        let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
+        let result_my_unpublished_post = delete_post(&agent, &my_unpublished_post);
+        let result_my_published_post = delete_post(&agent, &my_published_post);
+        let result_someone_elses_post = delete_post(&agent, &someone_elses_post);
 
         // assert
         assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
@@ -149,6 +198,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Admin,
         };
+        let agent = Agent::User(subject.clone());
         let someoneelse = User {
             id: 2,
             first_name: "someone".to_string(),
@@ -187,11 +237,11 @@ mod test {
         };
 
         // act
-        let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
-        let result_my_published_post = delete_post(&subject, &my_published_post);
-        let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
+        let result_my_unpublished_post = delete_post(&agent, &my_unpublished_post);
+        let result_my_published_post = delete_post(&agent, &my_published_post);
+        let result_someone_elses_post = delete_post(&agent, &someone_elses_post);
         let result_someone_elses_published_post =
-            delete_post(&subject, &someone_elses_published_post);
+            delete_post(&agent, &someone_elses_published_post);
 
         // assert
         assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
