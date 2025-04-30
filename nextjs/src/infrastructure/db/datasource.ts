@@ -1,4 +1,4 @@
-import { Place, Post, User, UserRole } from "@/domain";
+import { AgentType, Place, Post, User, UserRole } from "@/domain";
 import * as typeorm from "typeorm";
 import "reflect-metadata";
 import { DataSource } from "typeorm";
@@ -29,11 +29,9 @@ export class ORMUser implements IRecord<User> {
   })
   role!: UserRole;
 
-  @typeorm.OneToMany(() => ORMPost, (post) => post.author)
-  posts!: ORMPost[];
-
   asRecord(): User {
     return {
+      _type: AgentType.User,
       id: this.id,
       firstName: this.firstName,
       lastName: this.lastName,
@@ -45,7 +43,7 @@ export class ORMUser implements IRecord<User> {
 
 @typeorm.Entity("post")
 export class ORMPost implements IRecord<Post> {
-  @typeorm.PrimaryGeneratedColumn()
+  @typeorm.PrimaryColumn({type: "int" })
   id!: number;
 
   @typeorm.Column({ type: "text" })
@@ -54,19 +52,15 @@ export class ORMPost implements IRecord<Post> {
   @typeorm.Column({ type: "text" })
   body!: string;
 
-  @typeorm.Column({ type: "boolean" })
-  published!: boolean;
-
-  @typeorm.ManyToOne(() => ORMUser)
-  author!: ORMUser;
+  @typeorm.Column({ type: "text" })
+  author!: string;
 
   asRecord(): Post {
     return {
       id: this.id,
       title: this.title,
       body: this.body,
-      published: this.published,
-      author: this.author.asRecord(),
+      author: this.author,
     } as Post;
   }
 }
