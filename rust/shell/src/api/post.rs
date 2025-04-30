@@ -203,9 +203,11 @@ pub async fn publish_post(
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
             CantPublishAsReader => Err(Error::Forbidden),
             CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-            DoPublish(post_id) => {
+            DoPublishAndNotify(post_id, post) => {
                 db::publish_post(conn, post_id)?;
-                let _ = rmq_sender.send(("evt.post.published".to_string(), format!("id: {}", post_id)));
+
+                // TODO
+                let _ = rmq_sender.send(("evt.post.published".to_string(), format!("id: {}", post.id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -215,9 +217,9 @@ pub async fn publish_post(
 
                 Ok(())
             },
-            DoPublishAndNotifyAuthor(post_id, author) => {
+            DoPublishNotifyAndSendMailToAuthor(post_id, post, author) => {
                 db::publish_post(conn, post_id)?;
-                let _ = rmq_sender.send(("evt.post.published".to_string(), format!("id: {}", post_id)));
+                let _ = rmq_sender.send(("evt.post.published".to_string(), format!("id: {}", &post.id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -225,7 +227,7 @@ pub async fn publish_post(
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
 
-                // schedule email
+                // schedule email - TODO better
                 let payload = format!("{{ \"to\":\"{}\", \"subject\":\"your post {} has been published\", \"body\":\"your post {} has been published by someone else\" }}", author.email, &post.title, &post.title);
                 let _ = rmq_sender.send(("job.sendmail".to_string(), payload));
 
@@ -320,8 +322,6 @@ pub fn delete_post(
             CantDeleteAsReader => Err(Error::Forbidden),
             DoDelete(post_id) => {
                 db::delete_post(conn, post_id)?;
-                let _ =
-                    rmq_sender.send(("evt.post.deleted".to_string(), format!("id: {}", post_id)));
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {
@@ -329,7 +329,21 @@ pub fn delete_post(
                 }
 
                 Ok(())
-            }
+            },
+            DoDeleteAndNotify(post_id, post) => {
+                db::delete_post(conn, post_id)?;
+
+                // TODO
+                let _ =
+                    rmq_sender.send(("evt.post.deleted".to_string(), format!("id: {}", post.id)));
+
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
+
+                Ok(())
+            },
         }
     })?;
 
@@ -366,23 +380,32 @@ pub fn patch_post(
 
         use domain::usecases::EditPostResult::*;
         match result {
-            CantEditAnotherOnesPost => Err(Error::Forbidden),
-            CantEditPublishedPost => Err(Error::Conflict),
-            CantEditAsReader => Err(Error::Forbidden),
-            NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
-            DoUpdate(post_id, post_edition) => {
-                db::update_post(conn, post_id, post_edition)?;
-                let _ =
-                    rmq_sender.send(("evt.post.updated".to_string(), format!("id: {}", post_id)));
-
-                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-                for cache_key in cache_keys {
+            CantEditAnotherOnesPost=>Err(Error::Forbidden),
+            CantEditPublishedPost=>Err(Error::Conflict),
+            CantEditAsReader=>Err(Error::Forbidden),
+            NothingToUpdate=>Ok(()),
+            DoUpdate(post_id,post_edition)=>{
+                db::update_post(conn,post_id,post_edition)?;
+                let cache_keys=["posts".to_string(),format!("posts.{}",id).to_string()];
+                for cache_key in cache_keys{
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
-
                 Ok(())
             }
+            DoUpdateAndNotify(post_id, post_edition) => {
+                db::update_post(conn, post_id, post_edition)?;
+
+                // TODO
+                let _=rmq_sender.send(("evt.post.updated".to_string(),format!("id: {}",post_id)));
+
+                let cache_keys=["posts".to_string(),format!("posts.{}",id).to_string()];
+                for cache_key in cache_keys{
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
+                Ok(())
+            },
         }
+        
     })?;
 
     Ok(NoContent)
