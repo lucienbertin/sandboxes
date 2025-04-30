@@ -1,4 +1,4 @@
-use crate::models::{Post, Role::*, User};
+use crate::models::{Agent, Post, User};
 
 #[derive(PartialEq, Debug)]
 pub enum PublishPostResult {
@@ -7,21 +7,21 @@ pub enum PublishPostResult {
     CantPublishAnotherOnesPost,
     CantPublishAlreadyPublishedPost,
     CantPublishAsReader,
+    CantPublishAsWorker,
 }
 
-pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
-    match subject.role {
-        Reader => PublishPostResult::CantPublishAsReader,
-        Writer if subject.id != post.author.id => PublishPostResult::CantPublishAnotherOnesPost,
-        _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
-        Admin if subject.id != post.author.id => {
-            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(
-                post.id,
-                post.clone(),
-                post.author.clone(),
-            )
-        }
-        _ => PublishPostResult::DoPublishAndNotify(post.id, post.clone()),
+pub fn publish_post(agent: &Agent, post: &Post) -> PublishPostResult {
+    use PublishPostResult::*;
+    use crate::models::Role::*;
+    match (agent, post) {
+        (Agent::Worker, _) => CantPublishAsWorker,
+        (Agent::User(User { role: Reader, .. }), _) => CantPublishAsReader,
+        (Agent::User(User { role: Admin, .. }), Post { published: true, .. }) => CantPublishAlreadyPublishedPost,
+        (Agent::User(User { role: Admin, id: admin_id, .. }), p) if p.author.id != *admin_id => DoPublishNotifyAndSendMailToAuthor(p.id, p.clone(), p.author.clone()),
+        (Agent::User(User { role: Admin, .. }), p)  => DoPublishAndNotify(p.id, p.clone()),
+        (Agent::User(writer), Post { author, .. }) if author != writer => CantPublishAnotherOnesPost,
+        (_, Post { published: true, .. }) => CantPublishAlreadyPublishedPost,
+        (_, p) => DoPublishAndNotify(p.id, p.clone()),
     }
 }
 
@@ -32,15 +32,9 @@ mod test {
     use super::*;
 
     #[test]
-    fn as_reader() {
+    fn as_worker() {
         // arrange
-        let subject = User {
-            id: 1,
-            first_name: "test".to_string(),
-            last_name: "test".to_string(),
-            email: "test@te.st".to_string(),
-            role: Role::Reader,
-        };
+        let agent = Agent::Worker;
         let someoneelse = User {
             id: 2,
             first_name: "someone".to_string(),
@@ -57,7 +51,39 @@ mod test {
         };
 
         // act
-        let result = publish_post(&subject, &post);
+        let result = publish_post(&agent, &post);
+
+        // assert
+        assert_eq!(result, PublishPostResult::CantPublishAsWorker);
+    }
+    #[test]
+    fn as_reader() {
+        // arrange
+        let subject = User {
+            id: 1,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test@te.st".to_string(),
+            role: Role::Reader,
+        };
+        let agent = Agent::User(subject.clone());
+        let someoneelse = User {
+            id: 2,
+            first_name: "someone".to_string(),
+            last_name: "else".to_string(),
+            email: "someone@el.se".to_string(),
+            role: Role::Writer,
+        };
+        let post = Post {
+            id: 1,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: false,
+            author: someoneelse.clone(),
+        };
+
+        // act
+        let result = publish_post(&agent, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::CantPublishAsReader);
@@ -73,6 +99,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let agent = Agent::User(subject.clone());
         let someoneelse = User {
             id: 2,
             first_name: "someone".to_string(),
@@ -89,7 +116,7 @@ mod test {
         };
 
         // act
-        let result = publish_post(&subject, &post);
+        let result = publish_post(&agent, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::CantPublishAnotherOnesPost);
@@ -105,6 +132,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let agent = Agent::User(subject.clone());
         let post = Post {
             id: 1,
             title: "test".to_string(),
@@ -114,7 +142,7 @@ mod test {
         };
 
         // act
-        let result = publish_post(&subject, &post);
+        let result = publish_post(&agent, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::CantPublishAlreadyPublishedPost);
@@ -130,6 +158,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Writer,
         };
+        let agent = Agent::User(subject.clone());
         let id = 1i32;
         let post = Post {
             id: id,
@@ -140,7 +169,7 @@ mod test {
         };
 
         // act
-        let result = publish_post(&subject, &post);
+        let result = publish_post(&agent, &post);
 
         // assert
         assert_eq!(result, PublishPostResult::DoPublishAndNotify(id, post));
@@ -156,6 +185,7 @@ mod test {
             email: "test@te.st".to_string(),
             role: Role::Admin,
         };
+        let agent = Agent::User(subject.clone());
         let someoneelse = User {
             id: 2,
             first_name: "someone".to_string(),
@@ -187,9 +217,9 @@ mod test {
         };
 
         // act
-        let result_someone_elses_post = publish_post(&subject, &someone_elses_post);
-        let result_my_unpublished_post = publish_post(&subject, &my_unpublished_post);
-        let result_my_published_post = publish_post(&subject, &my_published_post);
+        let result_someone_elses_post = publish_post(&agent, &someone_elses_post);
+        let result_my_unpublished_post = publish_post(&agent, &my_unpublished_post);
+        let result_my_published_post = publish_post(&agent, &my_published_post);
 
         // assert
         assert_eq!(
