@@ -31,7 +31,7 @@ const nullDelegate = () => Promise.resolve(null);
 const voidDelegate = () => Promise.resolve();
 
 const userDelegate = () => Promise.resolve(user);
-const adminDelegate = () => Promise.resolve(user);
+const adminDelegate = () => Promise.resolve(admin);
 const workerDelegate = () => Promise.resolve(worker);
 
 const postDelegate = () => Promise.resolve(post);

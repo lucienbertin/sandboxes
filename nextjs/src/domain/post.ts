@@ -1,5 +1,5 @@
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "./error";
-import { AgentDelegate, AgentType, isUser, isWorker } from "./user";
+import { AgentDelegate, AgentType, isWorker } from "./user";
 
 export type Post = {
   id: number;

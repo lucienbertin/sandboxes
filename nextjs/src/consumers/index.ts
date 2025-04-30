@@ -67,27 +67,27 @@ export async function registerConsumer(consumer: RmqConsumer) {
   console.log(`consumer is registered`);
 }
 
-function logger(chann: Channel): (msg: ConsumeMessage | null) => void {
-  const partial = (msg: ConsumeMessage | null) => {
-    if (msg !== null) {
-      const payload = JSON.parse(msg.content.toString());
-      const post = {
-        id: payload.id,
-        title: payload.title,
-        body: payload.body,
-        author: `${payload.author.first_name} ${payload.author.last_name}`,
-      } as Post;
+// function logger(chann: Channel): (msg: ConsumeMessage | null) => void {
+//   const partial = (msg: ConsumeMessage | null) => {
+//     if (msg !== null) {
+//       const payload = JSON.parse(msg.content.toString());
+//       const post = {
+//         id: payload.id,
+//         title: payload.title,
+//         body: payload.body,
+//         author: `${payload.author.first_name} ${payload.author.last_name}`,
+//       } as Post;
       
-      console.log(msg.fields.routingKey);
-      console.log(payload);
-      console.log(post);
+//       console.log(msg.fields.routingKey);
+//       console.log(payload);
+//       console.log(post);
 
-      chann.ack(msg);
-    }
-  };
+//       chann.ack(msg);
+//     }
+//   };
 
-  return partial;
-}
+//   return partial;
+// }
 
 function updater(chann: Channel): (msg: ConsumeMessage | null) => void {
   const partial = async (msg: ConsumeMessage | null) => {
