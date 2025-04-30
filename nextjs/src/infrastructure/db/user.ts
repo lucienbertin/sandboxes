@@ -8,7 +8,7 @@ export async function authenticateUser(email: string): Promise<User | null> {
   const repo = datasource.getRepository(ORMUser);
   const user = await repo.findOneBy({ email: email });
 
-  return user;
+  return user?.asRecord() as User | null;
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
@@ -17,5 +17,5 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   const repo = datasource.getRepository(ORMUser);
   const user = await repo.findOneBy({ email: email });
 
-  return user;
+  return user?.asRecord() as User | null;
 }

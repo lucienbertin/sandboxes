@@ -3,6 +3,7 @@ use crate::models::{Post, Role, User};
 #[derive(PartialEq, Debug)]
 pub enum DeletePostResult {
     DoDelete(i32),
+    DoDeleteAndNotify(i32, Post),
     CantDeleteAsReader,
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost,
@@ -13,6 +14,7 @@ pub fn delete_post(subject: &User, post: &Post) -> DeletePostResult {
         Role::Writer if subject.id != post.author.id => DeletePostResult::CantDeleteAnotherOnesPost,
         Role::Writer if post.published => DeletePostResult::CantDeletePublishedPost,
         Role::Writer => DeletePostResult::DoDelete(post.id),
+        Role::Admin if post.published => DeletePostResult::DoDeleteAndNotify(post.id, post.clone()),
         Role::Admin => DeletePostResult::DoDelete(post.id),
     }
 }
@@ -174,17 +176,33 @@ mod test {
             title: "test".to_string(),
             body: "test".to_string(),
             published: false,
-            author: someoneelse,
+            author: someoneelse.clone(),
+        };
+        let someone_elses_published_post = Post {
+            id: id,
+            title: "test".to_string(),
+            body: "test".to_string(),
+            published: true,
+            author: someoneelse.clone(),
         };
 
         // act
         let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
         let result_my_published_post = delete_post(&subject, &my_published_post);
         let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
+        let result_someone_elses_published_post =
+            delete_post(&subject, &someone_elses_published_post);
 
         // assert
         assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
-        assert_eq!(result_my_published_post, DeletePostResult::DoDelete(id));
+        assert_eq!(
+            result_my_published_post,
+            DeletePostResult::DoDeleteAndNotify(id, my_published_post)
+        );
         assert_eq!(result_someone_elses_post, DeletePostResult::DoDelete(id));
+        assert_eq!(
+            result_someone_elses_published_post,
+            DeletePostResult::DoDeleteAndNotify(id, someone_elses_published_post)
+        );
     }
 }

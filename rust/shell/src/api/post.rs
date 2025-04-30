@@ -2,6 +2,7 @@ use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
 use crate::error::{Error, ResponseError};
 use crate::redis::{self, match_etag, IfMatchHeader, IfNoneMatchHeader};
+use crate::rmq::{self};
 use crate::ServerState;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
@@ -188,7 +189,7 @@ pub async fn publish_post(
     }?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let rmq_sender = &server_state.rmq_sender;
+    let rmq_publisher = &server_state.rmq_publisher;
 
     conn.build_transaction().run(move |conn| {
         let subject = find_user(conn, subject.email)?;
@@ -203,9 +204,10 @@ pub async fn publish_post(
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
             CantPublishAsReader => Err(Error::Forbidden),
             CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-            DoPublish(post_id) => {
+            DoPublishAndNotify(post_id, post) => {
                 db::publish_post(conn, post_id)?;
-                let _ = rmq_sender.send(("evt.post.published".to_string(), format!("id: {}", post_id)));
+
+                let _ = rmq::notify_post_published(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -214,10 +216,10 @@ pub async fn publish_post(
                 }
 
                 Ok(())
-            },
-            DoPublishAndNotifyAuthor(post_id, author) => {
+            }
+            DoPublishNotifyAndSendMailToAuthor(post_id, post, author) => {
                 db::publish_post(conn, post_id)?;
-                let _ = rmq_sender.send(("evt.post.published".to_string(), format!("id: {}", post_id)));
+                let _ = rmq::notify_post_published(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -225,13 +227,10 @@ pub async fn publish_post(
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
 
-                // schedule email
-                let payload = format!("{{ \"to\":\"{}\", \"subject\":\"your post {} has been published\", \"body\":\"your post {} has been published by someone else\" }}", author.email, &post.title, &post.title);
-                let _ = rmq_sender.send(("job.sendmail".to_string(), payload));
+                let _ = rmq::trigger_mail_post_published(&rmq_publisher, &post, &author);
 
                 Ok(())
-            },
-
+            }
         }
     })?;
 
@@ -255,7 +254,6 @@ pub fn post_post(
     }?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let rmq_sender = &server_state.rmq_sender;
 
     let result = conn.build_transaction().run(|conn| {
         use domain::usecases::{create_post, CreatePostResult::*};
@@ -268,8 +266,6 @@ pub fn post_post(
             CantCreateAsReader => Err(Error::Forbidden),
             DoCreate(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
-                let _ =
-                    rmq_sender.send(("evt.post.created".to_string(), format!("id: {}", post_id)));
 
                 let cache_key = "posts".to_string();
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -302,7 +298,7 @@ pub fn delete_post(
     }?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let rmq_sender = &server_state.rmq_sender;
+    let rmq_publisher = &server_state.rmq_publisher;
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
@@ -320,8 +316,18 @@ pub fn delete_post(
             CantDeleteAsReader => Err(Error::Forbidden),
             DoDelete(post_id) => {
                 db::delete_post(conn, post_id)?;
-                let _ =
-                    rmq_sender.send(("evt.post.deleted".to_string(), format!("id: {}", post_id)));
+
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
+
+                Ok(())
+            }
+            DoDeleteAndNotify(post_id, post) => {
+                db::delete_post(conn, post_id)?;
+
+                let _ = rmq::notify_post_deleted(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {
@@ -354,7 +360,7 @@ pub fn patch_post(
     }?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
-    let rmq_sender = &server_state.rmq_sender;
+    let rmq_publisher = &server_state.rmq_publisher;
 
     conn.build_transaction().run(|conn| {
         let subject = find_user(conn, subject.email)?;
@@ -369,17 +375,24 @@ pub fn patch_post(
             CantEditAnotherOnesPost => Err(Error::Forbidden),
             CantEditPublishedPost => Err(Error::Conflict),
             CantEditAsReader => Err(Error::Forbidden),
-            NothingToUpdate => Ok(()), // treat it as Ok for idempotency purpose
+            NothingToUpdate => Ok(()),
             DoUpdate(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;
-                let _ =
-                    rmq_sender.send(("evt.post.updated".to_string(), format!("id: {}", post_id)));
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                for cache_key in cache_keys {
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                }
+                Ok(())
+            }
+            DoUpdateAndNotify(post_id, post_edition, post) => {
+                db::update_post(conn, post_id, post_edition)?;
+
+                let _ = rmq::notify_post_updated(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
-
                 Ok(())
             }
         }
