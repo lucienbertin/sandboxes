@@ -1,8 +1,8 @@
-mod post;
 mod job;
+mod post;
 
-pub use post::*;
 pub use job::*;
+pub use post::*;
 
 use crate::error::Error;
 use futures_lite::StreamExt;

@@ -190,12 +190,19 @@ mod test {
         let result_my_unpublished_post = delete_post(&subject, &my_unpublished_post);
         let result_my_published_post = delete_post(&subject, &my_published_post);
         let result_someone_elses_post = delete_post(&subject, &someone_elses_post);
-        let result_someone_elses_published_post = delete_post(&subject, &someone_elses_published_post);
+        let result_someone_elses_published_post =
+            delete_post(&subject, &someone_elses_published_post);
 
         // assert
         assert_eq!(result_my_unpublished_post, DeletePostResult::DoDelete(id));
-        assert_eq!(result_my_published_post, DeletePostResult::DoDeleteAndNotify(id, my_published_post));
+        assert_eq!(
+            result_my_published_post,
+            DeletePostResult::DoDeleteAndNotify(id, my_published_post)
+        );
         assert_eq!(result_someone_elses_post, DeletePostResult::DoDelete(id));
-        assert_eq!(result_someone_elses_published_post, DeletePostResult::DoDeleteAndNotify(id, someone_elses_published_post));
+        assert_eq!(
+            result_someone_elses_published_post,
+            DeletePostResult::DoDeleteAndNotify(id, someone_elses_published_post)
+        );
     }
 }

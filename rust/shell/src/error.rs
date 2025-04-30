@@ -158,12 +158,12 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
-             // map every adapters error to 500
-             Error::SendError(e) => rocket::response::status::Custom(
+            // map every adapters error to 500
+            Error::SendError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
-             Error::SerializeError(e) => rocket::response::status::Custom(
+            Error::SerializeError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500

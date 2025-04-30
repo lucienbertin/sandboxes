@@ -15,7 +15,11 @@ pub fn publish_post(subject: &User, post: &Post) -> PublishPostResult {
         Writer if subject.id != post.author.id => PublishPostResult::CantPublishAnotherOnesPost,
         _ if post.published => PublishPostResult::CantPublishAlreadyPublishedPost,
         Admin if subject.id != post.author.id => {
-            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(post.id, post.clone(), post.author.clone())
+            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(
+                post.id,
+                post.clone(),
+                post.author.clone(),
+            )
         }
         _ => PublishPostResult::DoPublishAndNotify(post.id, post.clone()),
     }
@@ -190,9 +194,16 @@ mod test {
         // assert
         assert_eq!(
             result_someone_elses_post,
-            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(id, someone_elses_post,  someoneelse)
+            PublishPostResult::DoPublishNotifyAndSendMailToAuthor(
+                id,
+                someone_elses_post,
+                someoneelse
+            )
         );
-        assert_eq!(result_my_unpublished_post, PublishPostResult::DoPublishAndNotify(id, my_unpublished_post));
+        assert_eq!(
+            result_my_unpublished_post,
+            PublishPostResult::DoPublishAndNotify(id, my_unpublished_post)
+        );
         assert_eq!(
             result_my_published_post,
             PublishPostResult::CantPublishAlreadyPublishedPost

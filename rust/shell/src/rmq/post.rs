@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use crate::error::Error;
 use super::RmQPublisher;
+use crate::error::Error;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -38,7 +38,10 @@ impl From<&domain::models::Post> for Post {
     }
 }
 
-pub fn notify_post_published(publisher: &RmQPublisher, post: &domain::models::Post) -> Result<(), Error> {
+pub fn notify_post_published(
+    publisher: &RmQPublisher,
+    post: &domain::models::Post,
+) -> Result<(), Error> {
     let p = Post::from(post);
     let message = serde_json::to_string(&p)?;
     publisher.publish("evt.post.pulished".to_string(), message)?;
@@ -46,7 +49,10 @@ pub fn notify_post_published(publisher: &RmQPublisher, post: &domain::models::Po
     Ok(())
 }
 
-pub fn notify_post_deleted(publisher: &RmQPublisher, post: &domain::models::Post) -> Result<(), Error> {
+pub fn notify_post_deleted(
+    publisher: &RmQPublisher,
+    post: &domain::models::Post,
+) -> Result<(), Error> {
     let p = Post::from(post);
     let message = serde_json::to_string(&p)?;
     publisher.publish("evt.post.deleted".to_string(), message)?;
@@ -54,7 +60,10 @@ pub fn notify_post_deleted(publisher: &RmQPublisher, post: &domain::models::Post
     Ok(())
 }
 
-pub fn notify_post_updated(publisher: &RmQPublisher, post: &domain::models::Post) -> Result<(), Error> {
+pub fn notify_post_updated(
+    publisher: &RmQPublisher,
+    post: &domain::models::Post,
+) -> Result<(), Error> {
     let p = Post::from(post);
     let message = serde_json::to_string(&p)?;
     publisher.publish("evt.post.updated".to_string(), message)?;
