@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --experimental-build-mode compile",
+    "build": "npm run build:server && npm run build:worker",
+    "build:server": "next build --experimental-build-mode compile",
     "build:worker": "tsc --project ./tsconfig.worker.json && tsc-alias --project ./tsconfig.worker.json && webpack",
     "start": "next start",
     "lint": "next lint",
