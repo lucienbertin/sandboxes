@@ -8,7 +8,3 @@ export const getPostsCount = domain.countPosts(
   infra.resolveAgent,
   infra.countPosts,
 );
-export const createPost = domain.createPost(
-  infra.resolveAgent,
-  infra.createPost,
-);
