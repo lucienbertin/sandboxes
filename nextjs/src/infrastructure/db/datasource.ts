@@ -43,7 +43,7 @@ export class ORMUser implements IRecord<User> {
 
 @typeorm.Entity("post")
 export class ORMPost implements IRecord<Post> {
-  @typeorm.PrimaryColumn({type: "int" })
+  @typeorm.PrimaryColumn({ type: "int" })
   id!: number;
 
   @typeorm.Column({ type: "text" })

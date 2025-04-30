@@ -124,7 +124,7 @@ describe("getPost", () => {
 describe("getPosts", () => {
   const postCollection = [post];
   const postsDelegate = () => Promise.resolve(postCollection);
-  
+
   describe("as anonymous agent", () => {
     test("resolves with what getPostsDelegate returns", () => {
       // arrange
@@ -138,7 +138,7 @@ describe("getPosts", () => {
       expect(promise).resolves.toEqual(postCollection);
     });
   });
-  
+
   describe("as user agent", () => {
     test("resolves with what getPostsDelegate returns", () => {
       // arrange
@@ -152,7 +152,7 @@ describe("getPosts", () => {
       expect(promise).resolves.toEqual(postCollection);
     });
   });
-  
+
   describe("as worker agent", () => {
     test("resolves with what getPostsDelegate returns", () => {
       // arrange
@@ -214,17 +214,17 @@ describe("upsertPost", () => {
     id: 12,
     title: "ma vie mon oeuvre",
     body: "je suis né un mardi matin a 8h52",
-    author: "jean michel imbu de soi meme"
+    author: "jean michel imbu de soi meme",
   };
   describe("as anonymous agent", () => {
     test("should reject with Unauthorized error", () => {
       // arrange
       const agentDelegate = nullDelegate;
       const upserPostDelegate = voidDelegate;
-  
+
       // act
       const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
-  
+
       // assert
       expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
     });
@@ -234,10 +234,10 @@ describe("upsertPost", () => {
       // arrange
       const agentDelegate = userDelegate;
       const upserPostDelegate = voidDelegate;
-  
+
       // act
       const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
-  
+
       // assert
       expect(promise).rejects.toBeInstanceOf(ForbiddenError);
     });
@@ -245,10 +245,10 @@ describe("upsertPost", () => {
       // arrange
       const agentDelegate = adminDelegate;
       const upserPostDelegate = voidDelegate;
-  
+
       // act
       const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
-  
+
       // assert
       expect(promise).rejects.toBeInstanceOf(ForbiddenError);
     });
@@ -258,10 +258,10 @@ describe("upsertPost", () => {
       // arrange
       const agentDelegate = workerDelegate;
       const upserPostDelegate = voidDelegate;
-  
+
       // act
       const promise = upsertPost(agentDelegate, upserPostDelegate)(post);
-  
+
       // assert
       expect(promise).resolves.toBe(undefined);
     });
@@ -273,7 +273,7 @@ describe("upsertPost", () => {
 
       // act
       await upsertPost(agentDelegate, upserPostDelegate)(post);
-  
+
       // assert
       expect(upserPostDelegate).toHaveBeenCalledTimes(1);
       expect(upserPostDelegate).toHaveBeenCalledWith(post);
@@ -286,17 +286,17 @@ describe("deletePost", () => {
     id: 12,
     title: "ma vie mon oeuvre",
     body: "je suis né un mardi matin a 8h52",
-    author: "jean michel imbu de soi meme"
+    author: "jean michel imbu de soi meme",
   };
   describe("as anonymous agent", () => {
     test("should reject with Unauthorized error", () => {
       // arrange
       const agentDelegate = nullDelegate;
       const deletePostDelegate = voidDelegate;
-  
+
       // act
       const promise = deletePost(agentDelegate, deletePostDelegate)(post);
-  
+
       // assert
       expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
     });
@@ -306,10 +306,10 @@ describe("deletePost", () => {
       // arrange
       const agentDelegate = userDelegate;
       const deletePostDelegate = voidDelegate;
-  
+
       // act
       const promise = deletePost(agentDelegate, deletePostDelegate)(post);
-  
+
       // assert
       expect(promise).rejects.toBeInstanceOf(ForbiddenError);
     });
@@ -317,10 +317,10 @@ describe("deletePost", () => {
       // arrange
       const agentDelegate = adminDelegate;
       const deletePostDelegate = voidDelegate;
-  
+
       // act
       const promise = deletePost(agentDelegate, deletePostDelegate)(post);
-  
+
       // assert
       expect(promise).rejects.toBeInstanceOf(ForbiddenError);
     });
@@ -330,10 +330,10 @@ describe("deletePost", () => {
       // arrange
       const agentDelegate = workerDelegate;
       const deletePostDelegate = voidDelegate;
-  
+
       // act
       const promise = deletePost(agentDelegate, deletePostDelegate)(post);
-  
+
       // assert
       expect(promise).resolves.toBe(undefined);
     });
@@ -345,7 +345,7 @@ describe("deletePost", () => {
 
       // act
       await deletePost(agentDelegate, deletePostDelegate)(post);
-  
+
       // assert
       expect(deletePostDelegate).toHaveBeenCalledTimes(1);
       expect(deletePostDelegate).toHaveBeenCalledWith(post);

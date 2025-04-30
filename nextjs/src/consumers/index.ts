@@ -77,7 +77,7 @@ export async function registerConsumer(consumer: RmqConsumer) {
 //         body: payload.body,
 //         author: `${payload.author.first_name} ${payload.author.last_name}`,
 //       } as Post;
-      
+
 //       console.log(msg.fields.routingKey);
 //       console.log(payload);
 //       console.log(post);
@@ -102,11 +102,11 @@ function updater(chann: Channel): (msg: ConsumeMessage | null) => void {
       console.log(`recieved ${msg.fields.routingKey} with post id ${post.id}`);
 
       switch (msg.fields.routingKey) {
-        case 'evt.post.deleted':
+        case "evt.post.deleted":
           await domain.deletePost(iAmWorker, db.deletePost)(post);
           break;
-        case 'evt.post.updated':
-        case 'evt.post.published':
+        case "evt.post.updated":
+        case "evt.post.published":
         default:
           await domain.upsertPost(iAmWorker, db.upsertPost)(post);
           break;
@@ -125,4 +125,5 @@ export const rustPostConsumer = {
   handler: updater,
 } as RmqConsumer;
 
-const iAmWorker: AgentDelegate = async () => ({ _type: AgentType.Worker } as Worker);
+const iAmWorker: AgentDelegate = async () =>
+  ({ _type: AgentType.Worker }) as Worker;

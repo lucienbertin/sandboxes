@@ -1,21 +1,15 @@
 "use server";
 import "reflect-metadata";
 import { Post } from "@/domain";
-import {
-  datasource,
-  isInitialized,
-  ORMPost as EPost,
-} from "./datasource";
+import { datasource, isInitialized, ORMPost as EPost } from "./datasource";
 
-export async function getPosts(
-): Promise<Post[]> {
+export async function getPosts(): Promise<Post[]> {
   await isInitialized;
   const posts = await datasource.getRepository(EPost).find();
   return posts.map((p) => p.asRecord());
 }
 
-export async function countPosts(
-): Promise<number> {
+export async function countPosts(): Promise<number> {
   await isInitialized;
   const cnt = await datasource.getRepository(EPost).count();
   return cnt;

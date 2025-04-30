@@ -1,6 +1,6 @@
 export const dynamic = "force-static";
 
-import { getPosts} from "@/actions";
+import { getPosts } from "@/actions";
 
 export async function GET() {
   const posts = await getPosts();

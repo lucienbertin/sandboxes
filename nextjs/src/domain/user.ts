@@ -1,6 +1,6 @@
 export enum AgentType {
   User = "user",
-  Worker = "worker"
+  Worker = "worker",
 }
 export enum UserRole {
   Reader = "reader",
@@ -8,7 +8,7 @@ export enum UserRole {
   Admin = "admin",
 }
 export type User = {
-  _type: AgentType.User,
+  _type: AgentType.User;
   id: number;
   firstName: string;
   lastName: string;
@@ -17,8 +17,8 @@ export type User = {
 };
 
 export type Worker = {
-  _type: AgentType.Worker
-}
+  _type: AgentType.Worker;
+};
 
 export type AgentDelegate = () => Promise<User | Worker | null>;
 
