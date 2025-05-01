@@ -2,11 +2,10 @@ use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
 use crate::error::{Error, ResponseError};
 use crate::redis::{self, match_etag, IfNoneMatchHeader};
-use crate::rmq;
 use crate::ServerState;
 use domain::models::Agent;
 use rocket::serde::json::Json;
-use rocket::serde::{Deserialize, Serialize};
+use rocket::serde::Serialize;
 use rocket::State;
 
 use super::EtagJson;
