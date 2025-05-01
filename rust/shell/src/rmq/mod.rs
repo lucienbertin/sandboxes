@@ -9,9 +9,13 @@ pub use post::*;
 use crate::error::Error;
 use futures_lite::StreamExt;
 use lapin::{
-    message::Delivery, options::{
-        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions
-    }, types::FieldTable, BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind
+    message::Delivery,
+    options::{
+        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions,
+        ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
+    },
+    types::FieldTable,
+    BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
 
 use std::{env, sync::mpsc};
@@ -134,13 +138,17 @@ async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error>
     };
 
     match result {
-        Ok(()) =>  delivery.ack(BasicAckOptions::default()).await,
-        Err(_) => delivery.reject(BasicRejectOptions { requeue: false }).await
-    }.map_err(|e| Error::from(e))
+        Ok(()) => delivery.ack(BasicAckOptions::default()).await,
+        Err(_) => delivery.reject(BasicRejectOptions { requeue: false }).await,
+    }
+    .map_err(|e| Error::from(e))
 }
 
 fn log_delivery(delivery: &Delivery) -> Result<(), Error> {
-    println!("Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked", delivery.routing_key.as_str());
+    println!(
+        "Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked",
+        delivery.routing_key.as_str()
+    );
     println!("msg body: {:?}", String::from_utf8(delivery.data.clone()));
 
     Ok(())
