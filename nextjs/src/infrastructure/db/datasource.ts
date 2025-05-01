@@ -81,7 +81,10 @@ export class ORMPlace implements IRecord<Place> {
   geometry!: typeorm.Point;
 
   asRecord(): Place {
-    return { ...this } as Place;
+    return { 
+      id: this.id,
+      name: this.name,
+    } as Place;
   }
   asGeoJSON(): Feature<Point, Place> {
     return {
