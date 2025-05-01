@@ -31,7 +31,7 @@ mod test {
         let place = Place {
             id: 1,
             name: "test".to_string(),
-            geom: vec![0f64, 0f64],
+            point: vec![0f64, 0f64],
         };
         let agent = Agent::User(admin);
 
@@ -44,7 +44,7 @@ mod test {
         let place = Place {
             id: 1,
             name: "test".to_string(),
-            geom: vec![0f64, 0f64],
+            point: vec![0f64, 0f64],
         };
         let agent = Agent::Worker;
 

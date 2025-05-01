@@ -4,5 +4,5 @@ use geojson::PointType;
 pub struct Place {
     pub id: i32,
     pub name: String,
-    pub geom: PointType,
+    pub point: PointType,
 }
