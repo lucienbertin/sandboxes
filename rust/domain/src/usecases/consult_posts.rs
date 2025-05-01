@@ -12,7 +12,9 @@ pub fn consult_posts(agent: &Agent) -> ConsultPostsResult {
     match agent {
         Agent::Worker => ConsultAllPosts,
         Agent::User(User { role: Admin, .. }) => ConsultAllPosts,
-        Agent::User(writer) if writer.role == Writer => ConsultPublishedPostsAndAuthoredBy(writer.clone()),
+        Agent::User(writer) if writer.role == Writer => {
+            ConsultPublishedPostsAndAuthoredBy(writer.clone())
+        }
         _ => ConsultPostsResult::ConsultPublishedPosts,
     }
 }

@@ -17,5 +17,5 @@ pub enum Role {
 #[derive(PartialEq, Debug, Clone)]
 pub enum Agent {
     User(User),
-    Worker
+    Worker,
 }

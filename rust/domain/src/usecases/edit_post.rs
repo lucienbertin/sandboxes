@@ -22,18 +22,39 @@ pub fn edit_post(agent: &Agent, post: &Post, request: PostEdition) -> EditPostRe
 
     match (agent, post, edits) {
         // check if you have the right to edit
-        (Agent::Worker, _, _)                                                                                                   => CantEditAsWorker,
-        (Agent::User(User { role: Reader, .. }), _, _)                                                                          => CantEditAsReader,
-        (Agent::User(User { role: Writer, .. }), Post { published: true, .. }, _)                                               => CantEditPublishedPost,
-        (Agent::User(User { role: Writer, id: writer_id, .. }), Post { author, .. }, _) if author.id != *writer_id => CantEditAnotherOnesPost,
+        (Agent::Worker, _, _) => CantEditAsWorker,
+        (Agent::User(User { role: Reader, .. }), _, _) => CantEditAsReader,
+        (
+            Agent::User(User { role: Writer, .. }),
+            Post {
+                published: true, ..
+            },
+            _,
+        ) => CantEditPublishedPost,
+        (
+            Agent::User(User {
+                role: Writer,
+                id: writer_id,
+                ..
+            }),
+            Post { author, .. },
+            _,
+        ) if author.id != *writer_id => CantEditAnotherOnesPost,
 
         // check if there is something to do
-        (_, _, PostEdition { title: None, body: None })                        => NothingToUpdate,
+        (
+            _,
+            _,
+            PostEdition {
+                title: None,
+                body: None,
+            },
+        ) => NothingToUpdate,
 
         (Agent::User(User { role: Writer, .. }), p, edits) => DoUpdate(p.id, edits),
-        (_, p, edits) if !p.published                      => DoUpdate(p.id, edits),
+        (_, p, edits) if !p.published => DoUpdate(p.id, edits),
 
-        (_, p, edits)  => {
+        (_, p, edits) => {
             let e = edits.clone();
             let after_update = Post {
                 id: p.clone().id,
@@ -44,7 +65,7 @@ pub fn edit_post(agent: &Agent, post: &Post, request: PostEdition) -> EditPostRe
             };
 
             DoUpdateAndNotify(p.id, edits, after_update)
-        },
+        }
     }
 }
 
@@ -516,8 +537,7 @@ mod test {
             result_diff_title_no_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_no_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_no_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
@@ -526,9 +546,7 @@ mod test {
             result_diff_title_same_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) =
-            result_diff_title_same_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_same_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, None);
@@ -537,8 +555,7 @@ mod test {
             result_no_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_no_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_no_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
@@ -547,9 +564,7 @@ mod test {
             result_same_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) =
-            result_same_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_same_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, None);
             assert_eq!(edition.body, Some(different_body.to_string()));
@@ -558,9 +573,7 @@ mod test {
             result_diff_title_diff_body,
             EditPostResult::DoUpdate(_, _)
         ));
-        if let EditPostResult::DoUpdate(id_to_edit, edition) =
-            result_diff_title_diff_body
-        {
+        if let EditPostResult::DoUpdate(id_to_edit, edition) = result_diff_title_diff_body {
             assert_eq!(id_to_edit, id);
             assert_eq!(edition.title, Some(different_title.to_string()));
             assert_eq!(edition.body, Some(different_body.to_string()));

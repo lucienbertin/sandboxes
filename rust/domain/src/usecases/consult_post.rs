@@ -1,4 +1,4 @@
-use crate::models::{Post, Role, User, Agent};
+use crate::models::{Agent, Post, Role, User};
 
 #[derive(PartialEq, Debug)]
 pub enum ConsultPostResult {
@@ -10,12 +10,17 @@ pub fn consult_post(agent: &Agent, post: &Post) -> ConsultPostResult {
     use self::ConsultPostResult::*;
     use Role::*;
     match (agent, post) {
-        (_, Post { published: true, .. })                                  => DoConsultPost(post.clone()),
-        (Agent::Worker, _)                                                 => DoConsultPost(post.clone()),
-        (Agent::User(User { role: Admin, .. }), _)                         => DoConsultPost(post.clone()),
+        (
+            _,
+            Post {
+                published: true, ..
+            },
+        ) => DoConsultPost(post.clone()),
+        (Agent::Worker, _) => DoConsultPost(post.clone()),
+        (Agent::User(User { role: Admin, .. }), _) => DoConsultPost(post.clone()),
         (Agent::User(u), Post { author, .. }) if u == author => DoConsultPost(post.clone()),
-        (Agent::User(User { role: Reader, .. }), _)                        => CantConsultUnpublishedPostAsReader,
-        _                                                                  => CantConsultUnpublishedPostFromSomeoneElse,
+        (Agent::User(User { role: Reader, .. }), _) => CantConsultUnpublishedPostAsReader,
+        _ => CantConsultUnpublishedPostFromSomeoneElse,
     }
 }
 
@@ -64,7 +69,10 @@ mod test {
             result_unpublished,
             ConsultPostResult::CantConsultUnpublishedPostAsReader
         ));
-        assert!(matches!(result_published, ConsultPostResult::DoConsultPost(_)));
+        assert!(matches!(
+            result_published,
+            ConsultPostResult::DoConsultPost(_)
+        ));
     }
 
     #[test]
@@ -123,7 +131,10 @@ mod test {
             result_someone_elses_unpublished_post,
             ConsultPostResult::CantConsultUnpublishedPostFromSomeoneElse
         ));
-        assert!(matches!(result_published, ConsultPostResult::DoConsultPost(_)));
+        assert!(matches!(
+            result_published,
+            ConsultPostResult::DoConsultPost(_)
+        ));
     }
 
     #[test]
@@ -182,7 +193,10 @@ mod test {
             result_someone_elses_unpublished_post,
             ConsultPostResult::DoConsultPost(_)
         ));
-        assert!(matches!(result_published, ConsultPostResult::DoConsultPost(_)));
+        assert!(matches!(
+            result_published,
+            ConsultPostResult::DoConsultPost(_)
+        ));
     }
     #[test]
     fn as_worker() {
@@ -240,6 +254,9 @@ mod test {
             result_someone_elses_unpublished_post,
             ConsultPostResult::DoConsultPost(_)
         ));
-        assert!(matches!(result_published, ConsultPostResult::DoConsultPost(_)));
+        assert!(matches!(
+            result_published,
+            ConsultPostResult::DoConsultPost(_)
+        ));
     }
 }

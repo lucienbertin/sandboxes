@@ -11,16 +11,37 @@ pub enum PublishPostResult {
 }
 
 pub fn publish_post(agent: &Agent, post: &Post) -> PublishPostResult {
-    use PublishPostResult::*;
     use crate::models::Role::*;
+    use PublishPostResult::*;
     match (agent, post) {
         (Agent::Worker, _) => CantPublishAsWorker,
         (Agent::User(User { role: Reader, .. }), _) => CantPublishAsReader,
-        (Agent::User(User { role: Admin, .. }), Post { published: true, .. }) => CantPublishAlreadyPublishedPost,
-        (Agent::User(User { role: Admin, id: admin_id, .. }), p) if p.author.id != *admin_id => DoPublishNotifyAndSendMailToAuthor(p.id, p.clone(), p.author.clone()),
-        (Agent::User(User { role: Admin, .. }), p)  => DoPublishAndNotify(p.id, p.clone()),
-        (Agent::User(writer), Post { author, .. }) if author != writer => CantPublishAnotherOnesPost,
-        (_, Post { published: true, .. }) => CantPublishAlreadyPublishedPost,
+        (
+            Agent::User(User { role: Admin, .. }),
+            Post {
+                published: true, ..
+            },
+        ) => CantPublishAlreadyPublishedPost,
+        (
+            Agent::User(User {
+                role: Admin,
+                id: admin_id,
+                ..
+            }),
+            p,
+        ) if p.author.id != *admin_id => {
+            DoPublishNotifyAndSendMailToAuthor(p.id, p.clone(), p.author.clone())
+        }
+        (Agent::User(User { role: Admin, .. }), p) => DoPublishAndNotify(p.id, p.clone()),
+        (Agent::User(writer), Post { author, .. }) if author != writer => {
+            CantPublishAnotherOnesPost
+        }
+        (
+            _,
+            Post {
+                published: true, ..
+            },
+        ) => CantPublishAlreadyPublishedPost,
         (_, p) => DoPublishAndNotify(p.id, p.clone()),
     }
 }

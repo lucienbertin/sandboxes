@@ -20,7 +20,7 @@ pub fn create_post(agent: &Agent, create_post_request: NewPostRequest) -> Create
                 author: u.clone(),
             };
             CreatePostResult::DoCreate(new_post)
-        },
+        }
     }
 }
 

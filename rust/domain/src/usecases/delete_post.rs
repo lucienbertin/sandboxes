@@ -16,10 +16,17 @@ pub fn delete_post(agent: &Agent, post: &Post) -> DeletePostResult {
     match (agent, post) {
         (Agent::Worker, _) => CantDeleteAsWorker,
         (Agent::User(User { role: Reader, .. }), _) => CantDeleteAsReader,
-        (Agent::User(User { role: Admin, .. }), p) if p.published => DoDeleteAndNotify(p.id, p.clone()),
+        (Agent::User(User { role: Admin, .. }), p) if p.published => {
+            DoDeleteAndNotify(p.id, p.clone())
+        }
         (Agent::User(User { role: Admin, .. }), p) => DoDelete(p.id),
         (Agent::User(writer), Post { author, .. }) if author != writer => CantDeleteAnotherOnesPost,
-        (_, Post { published: true, .. }) => CantDeletePublishedPost,
+        (
+            _,
+            Post {
+                published: true, ..
+            },
+        ) => CantDeletePublishedPost,
         (_, p) => DoDelete(p.id),
     }
 }
@@ -30,7 +37,6 @@ mod test {
 
     #[test]
     fn as_worker() {
-
         let agent = Agent::Worker;
         let someoneelse = User {
             id: 1,
@@ -56,7 +62,8 @@ mod test {
         };
 
         // act
-        let result_someone_elses_published_post = delete_post(&agent, &someone_elses_published_post);
+        let result_someone_elses_published_post =
+            delete_post(&agent, &someone_elses_published_post);
         let result_someone_elses_post = delete_post(&agent, &someone_elses_post);
 
         // assert

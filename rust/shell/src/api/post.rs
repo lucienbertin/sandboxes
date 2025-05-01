@@ -208,7 +208,7 @@ pub async fn publish_post(
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
             CantPublishAsReader => Err(Error::Forbidden),
             CantPublishAsWorker => Err(Error::Forbidden), // should never happen
-            CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+            CantPublishAlreadyPublishedPost => Ok(()),    // treat it as Ok for idempotency purpose
             DoPublishAndNotify(post_id, post) => {
                 db::publish_post(conn, post_id)?;
 
@@ -277,7 +277,7 @@ pub fn post_post(
                 redis::refresh_etag(&mut redis_conn, &cache_key)?;
 
                 Ok(post_id)
-            },
+            }
             CantCreateAsReader | CantCreateAsWorker => Err(Error::Forbidden),
         }
     })?;

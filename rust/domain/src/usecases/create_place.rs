@@ -29,7 +29,9 @@ mod test {
             role: Role::Admin,
         };
         let place = Place {
-            id:1, name: "test".to_string(), geom: vec![0f64,0f64]
+            id: 1,
+            name: "test".to_string(),
+            geom: vec![0f64, 0f64],
         };
         let agent = Agent::User(admin);
 
@@ -40,7 +42,9 @@ mod test {
     #[test]
     fn worker_can_create_place() {
         let place = Place {
-            id:1, name: "test".to_string(), geom: vec![0f64,0f64]
+            id: 1,
+            name: "test".to_string(),
+            geom: vec![0f64, 0f64],
         };
         let agent = Agent::Worker;
 
@@ -52,5 +56,4 @@ mod test {
             assert_eq!(p, place);
         }
     }
-    
 }
