@@ -5,6 +5,7 @@ mod delete_post;
 mod edit_post;
 mod publish_post;
 
+mod consult_places;
 mod create_place;
 
 // flat re-export
@@ -15,4 +16,5 @@ pub use delete_post::*;
 pub use edit_post::*;
 pub use publish_post::*;
 
+pub use consult_places::*;
 pub use create_place::*;
