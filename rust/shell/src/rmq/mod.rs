@@ -133,7 +133,7 @@ async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error>
     let delivery = r.map_err(|e| Error::from(e))?;
 
     let result = match delivery.routing_key.as_str() {
-        "evt.place.create" => handle_create_place(&delivery),
+        "evt.place.created" => handle_create_place(&delivery),
         _ => log_delivery(&delivery), // just log and go to ack
     };
 
