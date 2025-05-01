@@ -1,7 +1,7 @@
+mod place;
 mod post;
 mod schema;
 mod user;
-mod place;
 
 use diesel::Connection;
 pub use place::*;

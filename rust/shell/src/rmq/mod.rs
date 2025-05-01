@@ -1,6 +1,6 @@
 mod job;
-mod post;
 mod place;
+mod post;
 
 use domain::{models::Agent, usecases::CreatePlaceResult};
 use geojson::{Feature, GeoJson};
@@ -12,7 +12,8 @@ use crate::{db, error::Error};
 use futures_lite::StreamExt;
 use lapin::{
     options::{
-        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions
+        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions,
+        QueueBindOptions, QueueDeclareOptions,
     },
     types::FieldTable,
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
@@ -92,13 +93,15 @@ pub async fn init() -> Result<RmQPublisher, Error> {
         )
         .await?;
     //bind queue
-    channel.queue_bind(
-        place_events_queue.name().as_str(),
-        "nextjs",
-        "evt.place.#",
-        QueueBindOptions::default(),
-        FieldTable::default()
-    ).await?;
+    channel
+        .queue_bind(
+            place_events_queue.name().as_str(),
+            "nextjs",
+            "evt.place.#",
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
 
     let mut consumer = channel
         .basic_consume(
@@ -118,9 +121,13 @@ pub async fn init() -> Result<RmQPublisher, Error> {
                 delivery.properties.headers(),
                 String::from_utf8(delivery.data.clone())
             );
-            let data_str = String::from_utf8(delivery.data.clone()).expect("error parsing message body to string");
-            let geojson: GeoJson = data_str.parse::<GeoJson>().expect("error parsing message body as geojson");
-            let feature: Feature = Feature::try_from(geojson).expect("error transforming geojson into feature");
+            let data_str = String::from_utf8(delivery.data.clone())
+                .expect("error parsing message body to string");
+            let geojson: GeoJson = data_str
+                .parse::<GeoJson>()
+                .expect("error parsing message body as geojson");
+            let feature: Feature =
+                Feature::try_from(geojson).expect("error transforming geojson into feature");
             // println!("feature: {:?}", feature);
 
             let place = Place::try_from(feature).expect("error transforming feature to place");
@@ -141,7 +148,8 @@ pub async fn init() -> Result<RmQPublisher, Error> {
 
                     Ok(())
                 }
-            }.expect("idk what to write here");
+            }
+            .expect("idk what to write here");
 
             delivery.ack(BasicAckOptions::default()).await.expect("ack");
         }

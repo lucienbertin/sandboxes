@@ -1,7 +1,6 @@
 // use serde::Deserialize;
 // use geojson::{Feature, PointType};
 
-
 // #[derive(Debug, Deserialize)]
 // struct Place {
 //     id: i32,
@@ -46,8 +45,12 @@ impl Place {
         }?;
 
         use serde_json::value::Value;
-        let v_id = properties.get("id").ok_or(MissingProperty("id".to_string()))?;
-        let v_name = properties.get("name").ok_or(MissingProperty("name".to_string()))?;
+        let v_id = properties
+            .get("id")
+            .ok_or(MissingProperty("id".to_string()))?;
+        let v_name = properties
+            .get("name")
+            .ok_or(MissingProperty("name".to_string()))?;
 
         let n_id = match v_id {
             Value::Number(n) => Ok(n),
@@ -58,7 +61,6 @@ impl Place {
             Value::String(s) => Ok(s.clone()),
             _ => Err(InvalidPropertyType("name".to_string())),
         }?;
-        
 
         let place = Self {
             id: id as i32,

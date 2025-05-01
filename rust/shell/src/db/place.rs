@@ -1,6 +1,6 @@
+use crate::error::Error;
 use diesel::prelude::*;
 use postgis_diesel::types::Point;
-use crate::error::Error;
 
 // Bindings
 use crate::db::schema::places;
@@ -14,13 +14,12 @@ struct Place {
     pub geometry: Point,
 }
 
-
 impl From<domain::models::Place> for Place {
     fn from(value: domain::models::Place) -> Self {
         let geometry = Point {
             x: value.point[0],
             y: value.point[1],
-            srid: None
+            srid: None,
         };
         Self {
             id: value.id,
