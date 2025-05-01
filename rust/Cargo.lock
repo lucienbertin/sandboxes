@@ -2550,6 +2550,7 @@ dependencies = [
  "domain",
  "dotenvy",
  "futures-lite 2.6.0",
+ "geojson",
  "hmac",
  "jwt",
  "lapin",
