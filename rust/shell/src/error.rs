@@ -14,6 +14,7 @@ pub enum Error {
 
     AuthError(AuthError),
     HttpError(HttpError),
+    GeoJSONSerdeError(GeoJSONSerdeError),
 
     NotFound,
     Forbidden,
@@ -31,6 +32,11 @@ impl From<AuthError> for Error {
 impl From<HttpError> for Error {
     fn from(value: HttpError) -> Self {
         Error::HttpError(value)
+    }
+}
+impl From<GeoJSONSerdeError> for Error {
+    fn from(value: GeoJSONSerdeError) -> Self {
+        Error::GeoJSONSerdeError(value)
     }
 }
 impl From<diesel::result::ConnectionError> for Error {
@@ -108,7 +114,14 @@ pub enum HttpError {
     NoIfMatchHeader,
     NoIfNoneMatchHeader,
 }
-
+#[derive(Debug)]
+pub enum GeoJSONSerdeError {
+    NoProperties,
+    NoGeometry,
+    InvalidGeometryType,
+    MissingProperty(String),
+    InvalidPropertyType(String),
+}
 pub type ResponseError = rocket::response::status::Custom<String>;
 
 impl From<Error> for ResponseError {
@@ -119,6 +132,10 @@ impl From<Error> for ResponseError {
                 format!("error: {:?}", e).to_string(),
             ),
             Error::HttpError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ),
+            Error::GeoJSONSerdeError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ),

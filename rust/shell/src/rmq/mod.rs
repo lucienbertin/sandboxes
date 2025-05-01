@@ -1,15 +1,17 @@
 mod job;
 mod post;
+mod place;
 
+use geojson::{Feature, GeoJson};
 pub use job::*;
+use place::Place;
 pub use post::*;
 
 use crate::error::Error;
 use futures_lite::StreamExt;
 use lapin::{
     options::{
-        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions,
-        QueueDeclareOptions,
+        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions
     },
     types::FieldTable,
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
@@ -76,18 +78,30 @@ pub async fn init() -> Result<RmQPublisher, Error> {
     let channel_clone = channel.clone();
     let (tx, rx) = mpsc::channel::<RmqMessage>();
 
-    // consumer thread init
-    let queue = channel
+    // consumer init
+    // declare queue;
+    let place_events_queue = channel
         .queue_declare(
-            "test",
-            QueueDeclareOptions::default(),
+            "rust-evt.place.#",
+            QueueDeclareOptions {
+                durable: true,
+                ..Default::default()
+            },
             FieldTable::default(),
         )
         .await?;
+    //bind queue
+    channel.queue_bind(
+        place_events_queue.name().as_str(),
+        "nextjs",
+        "evt.place.#",
+        QueueBindOptions::default(),
+        FieldTable::default()
+    ).await?;
 
     let mut consumer = channel
         .basic_consume(
-            queue.name().as_str(),
+            place_events_queue.name().as_str(),
             "test_consumer",
             BasicConsumeOptions::default(),
             FieldTable::default(),
@@ -98,10 +112,22 @@ pub async fn init() -> Result<RmQPublisher, Error> {
         while let Some(delivery) = consumer.next().await {
             let delivery = delivery.expect("error in consumer");
             println!(
-                "delivery key: {:?} | msg: {:?}",
+                "delivery key: {:?} | headers: {:?} | msg: {:?}",
                 delivery.routing_key.as_str(),
+                delivery.properties.headers(),
                 String::from_utf8(delivery.data.clone())
             );
+            let data_str = String::from_utf8(delivery.data.clone()).expect("error parsing message body to string");
+            let geojson: GeoJson = data_str.parse::<GeoJson>().expect("error parsing message body as geojson");
+            let feature: Feature = Feature::try_from(geojson).expect("error transforming geojson into feature");
+            // println!("feature: {:?}", feature);
+
+            let place = Place::try_from(feature).expect("error transforming feature to place");
+            println!("shell place  : {:?}", place);
+
+            let d_place: domain::models::Place = place.into();
+            println!("domain place : {:?}", d_place);
+
             delivery.ack(BasicAckOptions::default()).await.expect("ack");
         }
     })
