@@ -23,9 +23,7 @@ pub fn establish_connection() -> Result<RedisConn, Error> {
     // im just initiating a pool of one conn and getting it, it is not very optimized
     let redis_url = env::var("REDIS_URL")?;
     let client = redis::Client::open(redis_url)?;
-    let pool = r2d2::Pool::builder()
-        .max_size(1)
-        .build(client)?;
+    let pool = r2d2::Pool::builder().max_size(1).build(client)?;
     let conn: RedisConn = pool.get()?;
 
     Ok(conn)

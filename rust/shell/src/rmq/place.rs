@@ -1,7 +1,7 @@
+use crate::redis;
 use domain::{models::Agent, usecases::CreatePlaceResult};
 use geojson::{Feature, GeoJson, PointType};
 use lapin::message::Delivery;
-use crate::redis;
 
 use crate::error::{Error, GeoJSONSerdeError};
 
