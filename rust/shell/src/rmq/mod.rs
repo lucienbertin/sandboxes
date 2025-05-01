@@ -2,12 +2,13 @@ mod job;
 mod post;
 mod place;
 
+use domain::{models::Agent, usecases::CreatePlaceResult};
 use geojson::{Feature, GeoJson};
 pub use job::*;
 use place::Place;
 pub use post::*;
 
-use crate::error::Error;
+use crate::{db, error::Error};
 use futures_lite::StreamExt;
 use lapin::{
     options::{
@@ -123,10 +124,24 @@ pub async fn init() -> Result<RmQPublisher, Error> {
             // println!("feature: {:?}", feature);
 
             let place = Place::try_from(feature).expect("error transforming feature to place");
-            println!("shell place  : {:?}", place);
+            let place: domain::models::Place = place.into();
 
-            let d_place: domain::models::Place = place.into();
-            println!("domain place : {:?}", d_place);
+            let worker = Agent::Worker;
+
+            let result = domain::usecases::create_place(&worker, &place);
+            match result {
+                CreatePlaceResult::CantCreateAsUser => Err(Error::Error),
+                CreatePlaceResult::DoCreate(p) => {
+                    // write db code here
+                    print!("inserting place in db | ");
+                    let mut conn = db::establish_connection().expect("error couldnt connect to db");
+
+                    db::insert_place(&mut conn, p).expect("error while inserting place");
+                    println!("ok");
+
+                    Ok(())
+                }
+            }.expect("idk what to write here");
 
             delivery.ack(BasicAckOptions::default()).await.expect("ack");
         }

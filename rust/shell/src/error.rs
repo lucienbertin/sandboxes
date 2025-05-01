@@ -23,6 +23,8 @@ pub enum Error {
     Gone,
     NotModified,
     PreconditionFailed,
+
+    Error, // Generic error
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
@@ -210,6 +212,10 @@ impl From<Error> for ResponseError {
             Error::PreconditionFailed => rocket::response::status::Custom(
                 rocket::http::Status::PreconditionFailed,
                 "precondition failed".to_string(),
+            ),
+            Error::Error => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                "error".to_string(),
             ),
         }
     }
