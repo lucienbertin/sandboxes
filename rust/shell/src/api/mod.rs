@@ -1,8 +1,8 @@
-mod post;
 mod place;
+mod post;
 
-pub use post::*;
 pub use place::*;
+pub use post::*;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};
 use rocket::request::Request;

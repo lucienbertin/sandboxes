@@ -38,14 +38,12 @@ async fn rocket() -> _ {
             use api::*;
             routes![
                 all_options,
-
                 get_posts,
                 get_post,
                 post_post,
                 delete_post,
                 publish_post,
                 patch_post,
-
                 get_places,
             ]
         })

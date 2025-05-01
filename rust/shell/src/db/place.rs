@@ -31,10 +31,7 @@ impl From<domain::models::Place> for Place {
 }
 impl Into<domain::models::Place> for Place {
     fn into(self) -> domain::models::Place {
-        let point: geojson::PointType = vec![
-            self.geometry.x,
-            self.geometry.y,
-        ];
+        let point: geojson::PointType = vec![self.geometry.x, self.geometry.y];
 
         domain::models::Place {
             id: self.id,
@@ -44,16 +41,10 @@ impl Into<domain::models::Place> for Place {
     }
 }
 
-pub fn select_places(
-    connection: &mut PgConnection,
-)-> Result<Vec<domain::models::Place>, Error> {
-    let results: Vec<Place> = places::table
-        .select(Place::as_select())
-        .load(connection)?;
+pub fn select_places(connection: &mut PgConnection) -> Result<Vec<domain::models::Place>, Error> {
+    let results: Vec<Place> = places::table.select(Place::as_select()).load(connection)?;
 
-    let results = results.into_iter()
-        .map(|p| p.into())
-        .collect();
+    let results = results.into_iter().map(|p| p.into()).collect();
 
     Ok(results)
 }
