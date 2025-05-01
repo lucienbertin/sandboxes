@@ -2,21 +2,16 @@ mod job;
 mod place;
 mod post;
 
-use domain::{models::Agent, usecases::CreatePlaceResult};
-use geojson::{Feature, GeoJson};
 pub use job::*;
-use place::Place;
+use place::handle_create_place;
 pub use post::*;
 
-use crate::{db, error::Error};
+use crate::error::Error;
 use futures_lite::StreamExt;
 use lapin::{
-    options::{
-        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions,
-        QueueBindOptions, QueueDeclareOptions,
-    },
-    types::FieldTable,
-    BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
+    message::Delivery, options::{
+        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions
+    }, types::FieldTable, BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind
 };
 
 use std::{env, sync::mpsc};
@@ -113,45 +108,8 @@ pub async fn init() -> Result<RmQPublisher, Error> {
         .await?;
 
     async_global_executor::spawn(async move {
-        while let Some(delivery) = consumer.next().await {
-            let delivery = delivery.expect("error in consumer");
-            println!(
-                "delivery key: {:?} | headers: {:?} | msg: {:?}",
-                delivery.routing_key.as_str(),
-                delivery.properties.headers(),
-                String::from_utf8(delivery.data.clone())
-            );
-            let data_str = String::from_utf8(delivery.data.clone())
-                .expect("error parsing message body to string");
-            let geojson: GeoJson = data_str
-                .parse::<GeoJson>()
-                .expect("error parsing message body as geojson");
-            let feature: Feature =
-                Feature::try_from(geojson).expect("error transforming geojson into feature");
-            // println!("feature: {:?}", feature);
-
-            let place = Place::try_from(feature).expect("error transforming feature to place");
-            let place: domain::models::Place = place.into();
-
-            let worker = Agent::Worker;
-
-            let result = domain::usecases::create_place(&worker, &place);
-            match result {
-                CreatePlaceResult::CantCreateAsUser => Err(Error::Error),
-                CreatePlaceResult::DoCreate(p) => {
-                    // write db code here
-                    print!("inserting place in db | ");
-                    let mut conn = db::establish_connection().expect("error couldnt connect to db");
-
-                    db::insert_place(&mut conn, p).expect("error while inserting place");
-                    println!("ok");
-
-                    Ok(())
-                }
-            }
-            .expect("idk what to write here");
-
-            delivery.ack(BasicAckOptions::default()).await.expect("ack");
+        while let Some(rd) = consumer.next().await {
+            let _ = handle_delivery(rd).await; // fire n forget result
         }
     })
     .detach();
@@ -165,6 +123,27 @@ pub async fn init() -> Result<RmQPublisher, Error> {
     .detach();
 
     Ok(RmQPublisher::new(tx))
+}
+
+async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
+    let delivery = r.map_err(|e| Error::from(e))?;
+
+    let result = match delivery.routing_key.as_str() {
+        "evt.place.create" => handle_create_place(&delivery),
+        _ => log_delivery(&delivery), // just log and go to ack
+    };
+
+    match result {
+        Ok(()) =>  delivery.ack(BasicAckOptions::default()).await,
+        Err(_) => delivery.reject(BasicRejectOptions { requeue: false }).await
+    }.map_err(|e| Error::from(e))
+}
+
+fn log_delivery(delivery: &Delivery) -> Result<(), Error> {
+    println!("Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked", delivery.routing_key.as_str());
+    println!("msg body: {:?}", String::from_utf8(delivery.data.clone()));
+
+    Ok(())
 }
 
 #[cfg(test)]

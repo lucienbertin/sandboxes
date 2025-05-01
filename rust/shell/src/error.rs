@@ -3,6 +3,8 @@ pub enum Error {
     DieselConnectionError(diesel::result::ConnectionError),
     DieselQueryError(diesel::result::Error),
     DotEnvyError(dotenvy::Error),
+    FromUTF8Error(std::string::FromUtf8Error),
+    GeoJsonError(geojson::Error),
     HMacError(hmac::digest::InvalidLength),
     JwtError(jwt::Error),
     LapinError(lapin::Error),
@@ -54,6 +56,16 @@ impl From<diesel::result::Error> for Error {
 impl From<dotenvy::Error> for Error {
     fn from(value: dotenvy::Error) -> Self {
         Error::DotEnvyError(value)
+    }
+}
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(value: std::string::FromUtf8Error) -> Self {
+        Error::FromUTF8Error(value)
+    }
+}
+impl From<geojson::Error> for Error {
+    fn from(value: geojson::Error) -> Self {
+        Error::GeoJsonError(value)
     }
 }
 impl From<hmac::digest::InvalidLength> for Error {
@@ -158,6 +170,14 @@ impl From<Error> for ResponseError {
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
             Error::DieselQueryError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::FromUTF8Error(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::GeoJsonError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500

@@ -1,21 +1,6 @@
-// use serde::Deserialize;
-// use geojson::{Feature, PointType};
-
-// #[derive(Debug, Deserialize)]
-// struct Place {
-//     id: i32,
-//     name: String,
-// }
-
-// #[derive(Debug, Deserialize)]
-// struct PlaceGeoJSON  {
-//     #[serde(deserialize_with = "deserialize_geometry")]
-//     pub geometry: geo_types::Point<f64>,
-//     pub properties: Place,
-
-// }
-
-use geojson::{Feature, PointType};
+use domain::{models::Agent, usecases::CreatePlaceResult};
+use geojson::{Feature, GeoJson, PointType};
+use lapin::message::Delivery;
 
 use crate::error::{Error, GeoJSONSerdeError};
 
@@ -70,4 +55,37 @@ impl Place {
 
         Ok(place)
     }
+}
+
+pub fn handle_create_place(delivery: &Delivery) -> Result<(), Error> {
+    print!("place created event | ");
+
+    let data_str = String::from_utf8(delivery.data.clone())?;
+    let geojson: GeoJson = data_str.parse::<GeoJson>()?;
+    let feature: Feature = Feature::try_from(geojson)?;
+
+    let place = Place::try_from(feature)?;
+    let place: domain::models::Place = place.into();
+
+    print!("mdg body parsed as valid place | ");
+
+    let worker = Agent::Worker;
+
+    let result = domain::usecases::create_place(&worker, &place);
+    match result {
+        CreatePlaceResult::CantCreateAsUser => Err(Error::Error),
+        CreatePlaceResult::DoCreate(p) => {
+            use crate::db;
+            // write db code here
+            print!("inserting place in db | ");
+            let mut conn = db::establish_connection()?;
+
+            db::insert_place(&mut conn, p)?;
+
+            Ok(())
+        }
+    }?;
+    println!("ok");
+
+    Ok(())
 }
