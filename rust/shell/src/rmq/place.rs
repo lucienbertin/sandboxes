@@ -1,6 +1,7 @@
 use domain::{models::Agent, usecases::CreatePlaceResult};
 use geojson::{Feature, GeoJson, PointType};
 use lapin::message::Delivery;
+use crate::redis;
 
 use crate::error::{Error, GeoJSONSerdeError};
 
@@ -81,6 +82,11 @@ pub fn handle_create_place(delivery: &Delivery) -> Result<(), Error> {
             let mut conn = db::establish_connection()?;
 
             db::insert_place(&mut conn, p)?;
+
+            // refresh http cache
+            let cache_key = "places".to_string();
+            let mut redis_conn = redis::establish_connection()?;
+            redis::refresh_etag(&mut redis_conn, &cache_key)?;
 
             Ok(())
         }
