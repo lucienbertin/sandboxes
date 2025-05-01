@@ -13,7 +13,7 @@ diesel::table! {
     places (id) {
         id -> Int4,
         name -> Varchar,
-        geometry -> Nullable<Geometry>,
+        geometry -> Geometry,
     }
 }
 

@@ -1,7 +1,9 @@
 mod post;
 mod schema;
 mod user;
+mod place;
 
+pub use place::*;
 pub use post::*;
 pub use user::*;
 
