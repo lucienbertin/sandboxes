@@ -1,5 +1,5 @@
 use crate::auth::JwtIdentifiedSubject;
-use crate::db::{self, find_user};
+use crate::db::{self, find_user, DbConn};
 use crate::error::{Error, ResponseError};
 use crate::redis::{self, match_etag, IfNoneMatchHeader};
 use crate::ServerState;
@@ -86,21 +86,9 @@ pub async fn get_places(
         Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
     }?;
-
+    
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
-
-    let results = db_conn.build_transaction().read_only().run(|conn| {
-        let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
-        let agent = Agent::User(agent);
-
-        let result = domain::usecases::consult_places(&agent);
-
-        use domain::usecases::ConsultPlacesResult::*;
-        match result {
-            ConsultAllPlaces => db::select_places(conn),
-        }
-    })?;
+    let results = fetch_places(&mut db_conn, subject)?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
     let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
@@ -131,19 +119,7 @@ pub async fn get_places_geojson(
     }?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
-
-    let results = db_conn.build_transaction().read_only().run(|conn| {
-        let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
-        let agent = Agent::User(agent);
-
-        let result = domain::usecases::consult_places(&agent);
-
-        use domain::usecases::ConsultPlacesResult::*;
-        match result {
-            ConsultAllPlaces => db::select_places(conn),
-        }
-    })?;
+    let results = fetch_places(&mut db_conn, subject)?;
 
     let features: Vec<PlaceFeature> = results.into_iter().map(|x| x.into()).collect();
     let collection = PlaceFeatureCollection(features);
@@ -158,4 +134,24 @@ pub async fn get_places_geojson(
     };
 
     Ok(result)
+}
+
+fn fetch_places(
+    db_conn: &mut DbConn,
+    subject: JwtIdentifiedSubject, // is allowed with no auth
+) -> Result<Vec<domain::models::Place>, Error> {
+    let results = db_conn.build_transaction().read_only().run(|conn| {
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
+
+        let result = domain::usecases::consult_places(&agent);
+
+        use domain::usecases::ConsultPlacesResult::*;
+        match result {
+            ConsultAllPlaces => db::select_places(conn),
+        }
+    })?;
+
+    Ok(results)
 }
