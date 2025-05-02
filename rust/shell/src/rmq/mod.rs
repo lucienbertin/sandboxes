@@ -152,13 +152,11 @@ pub async fn start_consumer() -> Result<(), Error> {
         )
         .await?;
 
-    let _ = async_global_executor::spawn(async move {
-        println!("rmq consumer started and awaiting messages");
-        while let Some(rd) = consumer.next().await {
-            let _ = handle_delivery(rd).await; // fire n forget result
-        }
-    })
-    .await;
+
+    println!("rmq consumer started and awaiting messages");
+    while let Some(rd) = consumer.next().await {
+        let _ = handle_delivery(rd).await; // fire n forget result
+    }
 
     Ok(())
 }
