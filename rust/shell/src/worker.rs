@@ -13,9 +13,9 @@ async fn main() {
         Err(_) => println!("no local .env file to load"),
     };
 
-    // let db_pool = db::init_pool().expect("couldnt init db pool");
-    // let redis_pool = redis::init_pool().expect("couldnt init redis pool");
-    rmq::start_consumer()
+    let db_pool = db::init_pool().expect("couldnt init db pool");
+    let redis_pool = redis::init_pool().expect("couldnt init redis pool");
+    rmq::start_consumer(&db_pool, &redis_pool)
         .await
         .expect("couldnt start rmq's consumer");
 }

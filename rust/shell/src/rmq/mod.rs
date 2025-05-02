@@ -20,6 +20,10 @@ use lapin::{
         QueueDeclareOptions,
     },
 };
+#[cfg(feature = "rmq-sub")]
+use crate::redis::RedisPool;
+#[cfg(feature = "rmq-sub")]
+use crate::db::DbPool;
 use std::{env, sync::mpsc};
 
 // initialize connection
@@ -105,7 +109,7 @@ pub async fn init_publisher() -> Result<RmQPublisher, Error> {
 }
 
 #[cfg(feature = "rmq-sub")]
-pub async fn start_consumer() -> Result<(), Error> {
+pub async fn start_consumer(db_pool: &DbPool, redis_pool: &RedisPool) -> Result<(), Error> {
     use futures_lite::StreamExt;
     use lapin::{
         message::Delivery,
@@ -116,6 +120,8 @@ pub async fn start_consumer() -> Result<(), Error> {
         types::FieldTable,
         BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
     };
+
+    use crate::{db::{self, DbPool}, redis::RedisPool};
 
     let amqp_url = env::var("AMQP_URL")?;
     let channel = init_channel(&amqp_url).await?;
@@ -154,19 +160,19 @@ pub async fn start_consumer() -> Result<(), Error> {
 
     println!("rmq consumer started and awaiting messages");
     while let Some(rd) = consumer.next().await {
-        let _ = handle_delivery(rd).await; // fire n forget result
+        let _ = handle_delivery(db_pool, redis_pool, rd).await; // fire n forget result
     }
 
     Ok(())
 }
 
 #[cfg(feature = "rmq-sub")]
-async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
+async fn handle_delivery(db_pool: &DbPool, redis_pool: &RedisPool, r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
     use place::handle_create_place;
     let delivery = r.map_err(|e| Error::from(e))?;
 
     let result = match delivery.routing_key.as_str() {
-        "evt.place.created" => handle_create_place(&delivery),
+        "evt.place.created" => handle_create_place(db_pool, redis_pool, &delivery),
         _ => log_delivery(&delivery), // just log and go to ack
     };
 
