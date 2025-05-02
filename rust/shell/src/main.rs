@@ -45,6 +45,7 @@ async fn rocket() -> _ {
                 publish_post,
                 patch_post,
                 get_places,
+                get_places_geojson,
             ]
         })
         .attach(Cors)
