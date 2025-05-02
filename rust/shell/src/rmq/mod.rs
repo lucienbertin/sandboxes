@@ -21,7 +21,14 @@ use lapin::{
 use std::{env, sync::mpsc};
 
 // initialize connection
-async fn init_channel(amqp_url: &String, exchange_name: &String) -> Result<Channel, Error> {
+async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
+    let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
+
+    let chan = conn.create_channel().await?;
+
+    Ok(chan)
+}
+async fn init_channel_and_exchange(amqp_url: &String, exchange_name: &String) -> Result<Channel, Error> {
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
     let chan = conn.create_channel().await?;
@@ -71,13 +78,27 @@ impl RmQPublisher {
 }
 
 pub type RmqMessage = (String, String);
-pub async fn init() -> Result<RmQPublisher, Error> {
+pub async fn init_publisher() -> Result<RmQPublisher, Error> {
     let amqp_url = env::var("AMQP_URL")?;
     let exchange_name = env::var("RMQ_EXCHANGE")?;
 
-    let channel = init_channel(&amqp_url, &exchange_name).await?;
+    let channel = init_channel_and_exchange(&amqp_url, &exchange_name).await?;
     let channel_clone = channel.clone();
     let (tx, rx) = mpsc::channel::<RmqMessage>();
+
+    // publisher thread
+    async_global_executor::spawn(async move {
+        for (routing_key, message) in rx {
+            let _ = publish(&channel_clone, &exchange_name, routing_key, message).await;
+        }
+    })
+    .detach();
+
+    Ok(RmQPublisher::new(tx))
+}
+pub async fn start_consumer() -> Result<(), Error> {
+    let amqp_url = env::var("AMQP_URL")?;
+    let channel = init_channel(&amqp_url).await?;
 
     // consumer init
     // declare queue;
@@ -105,28 +126,21 @@ pub async fn init() -> Result<RmQPublisher, Error> {
     let mut consumer = channel
         .basic_consume(
             place_events_queue.name().as_str(),
-            "test_consumer",
+            "rust_consumer",
             BasicConsumeOptions::default(),
             FieldTable::default(),
         )
         .await?;
 
-    async_global_executor::spawn(async move {
+    let _ = async_global_executor::spawn(async move {
+        println!("rmq consumer started and awaiting messages");
         while let Some(rd) = consumer.next().await {
             let _ = handle_delivery(rd).await; // fire n forget result
         }
     })
-    .detach();
+    .await;
 
-    // publisher thread
-    async_global_executor::spawn(async move {
-        for (routing_key, message) in rx {
-            let _ = publish(&channel_clone, &exchange_name, routing_key, message).await;
-        }
-    })
-    .detach();
-
-    Ok(RmQPublisher::new(tx))
+    Ok(())
 }
 
 async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
