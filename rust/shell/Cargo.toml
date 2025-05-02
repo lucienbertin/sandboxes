@@ -2,6 +2,7 @@
 name = "shell"
 version = "0.1.0"
 edition = "2021"
+default-run = "web"
 
 [dependencies]
 domain = { path = "../domain" }
@@ -24,10 +25,6 @@ openssl-sys = { version = "0.9", features = ["vendored"] }
 serde_json = "1.0.140"
 geojson = { version = "0.24.2", features = ["geo-types"] }
 tokio = "1.44.1"
-
-[dev-dependencies]
-tokio = "1.44.1"
-
 
 [[bin]]
 name="web"
