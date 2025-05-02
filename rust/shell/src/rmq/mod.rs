@@ -7,10 +7,7 @@ pub use post::*;
 
 use crate::error::Error;
 use lapin::{
-    options::{
-        BasicPublishOptions,
-        ExchangeDeclareOptions,
-    },
+    options::{BasicPublishOptions, ExchangeDeclareOptions},
     types::FieldTable,
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
@@ -19,8 +16,8 @@ use lapin::{
 use lapin::{
     message::Delivery,
     options::{
-        BasicAckOptions, BasicConsumeOptions, BasicRejectOptions,
-        QueueBindOptions, QueueDeclareOptions,
+        BasicAckOptions, BasicConsumeOptions, BasicRejectOptions, QueueBindOptions,
+        QueueDeclareOptions,
     },
 };
 use std::{env, sync::mpsc};
@@ -35,7 +32,10 @@ async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
     Ok(chan)
 }
 
-async fn init_channel_and_exchange(amqp_url: &String, exchange_name: &String) -> Result<Channel, Error> {
+async fn init_channel_and_exchange(
+    amqp_url: &String,
+    exchange_name: &String,
+) -> Result<Channel, Error> {
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
     let chan = conn.create_channel().await?;

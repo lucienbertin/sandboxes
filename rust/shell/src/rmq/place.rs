@@ -1,10 +1,10 @@
 #[cfg(feature = "rmq-sub")]
 mod sub {
+    use crate::error::{Error, GeoJSONSerdeError};
+    use crate::redis;
     use domain::{models::Agent, usecases::CreatePlaceResult};
     use geojson::{Feature, GeoJson, PointType};
     use lapin::message::Delivery;
-    use crate::redis;
-    use crate::error::{Error, GeoJSONSerdeError};
 
     #[derive(Debug)]
     struct Place {
@@ -100,4 +100,3 @@ mod sub {
 
 #[cfg(feature = "rmq-sub")]
 pub use sub::*;
-
