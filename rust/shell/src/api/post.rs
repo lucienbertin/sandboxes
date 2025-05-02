@@ -4,6 +4,7 @@ use crate::error::{Error, ResponseError};
 use crate::redis::{self, match_etag, IfMatchHeader, IfNoneMatchHeader};
 use crate::rmq::{self};
 use crate::ServerState;
+use domain::models::Agent;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket::{
@@ -98,10 +99,11 @@ pub async fn get_posts(
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
 
     let results = db_conn.build_transaction().read_only().run(|conn| {
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
 
-        let result = domain::usecases::consult_posts(&subject);
+        let result = domain::usecases::consult_posts(&agent);
 
         use domain::usecases::ConsultPostsResult::*;
         match result {
@@ -130,7 +132,7 @@ pub async fn get_posts(
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject, // is allowed with no auth
+    subject: JwtIdentifiedSubject,
     id: i32,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Post>, ResponseError> {
@@ -145,16 +147,17 @@ pub fn get_post(
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
     let result = conn.build_transaction().read_only().run(|conn| {
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
         let post = db::find_post(conn, id)?;
         let post = post.ok_or(Error::NotFound)?;
 
-        let result = domain::usecases::consult_post(&subject, &post);
+        let result = domain::usecases::consult_post(&agent, &post);
 
         use domain::usecases::ConsultPostResult::*;
         match result {
-            DoConsultPost => Ok(post),
+            DoConsultPost(p) => Ok(p),
             CantConsultUnpublishedPostFromSomeoneElse => Err(Error::Forbidden),
             CantConsultUnpublishedPostAsReader => Err(Error::Forbidden),
         }
@@ -192,18 +195,20 @@ pub async fn publish_post(
     let rmq_publisher = &server_state.rmq_publisher;
 
     conn.build_transaction().run(move |conn| {
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
-        let result = db::find_post(conn, id)?;
-        let post = result.ok_or(Error::NotFound)?;
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
+        let post = db::find_post(conn, id)?;
+        let post = post.ok_or(Error::NotFound)?;
 
         use domain::usecases::{publish_post, PublishPostResult::*};
-        let result = publish_post(&subject, &post);
+        let result = publish_post(&agent, &post);
 
         match result {
             CantPublishAnotherOnesPost => Err(Error::Forbidden),
             CantPublishAsReader => Err(Error::Forbidden),
-            CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+            CantPublishAsWorker => Err(Error::Forbidden), // should never happen
+            CantPublishAlreadyPublishedPost => Ok(()),    // treat it as Ok for idempotency purpose
             DoPublishAndNotify(post_id, post) => {
                 db::publish_post(conn, post_id)?;
 
@@ -258,12 +263,12 @@ pub fn post_post(
     let result = conn.build_transaction().run(|conn| {
         use domain::usecases::{create_post, CreatePostResult::*};
 
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
 
-        let result = create_post(&subject, data.into_inner().into());
+        let result = create_post(&agent, data.into_inner().into());
         match result {
-            CantCreateAsReader => Err(Error::Forbidden),
             DoCreate(new_post) => {
                 let post_id = db::insert_new_post(conn, new_post)?;
 
@@ -273,6 +278,7 @@ pub fn post_post(
 
                 Ok(post_id)
             }
+            CantCreateAsReader | CantCreateAsWorker => Err(Error::Forbidden),
         }
     })?;
 
@@ -301,19 +307,21 @@ pub fn delete_post(
     let rmq_publisher = &server_state.rmq_publisher;
 
     conn.build_transaction().run(|conn| {
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
 
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(Error::Gone)?;
 
-        let result = domain::usecases::delete_post(&subject, &result);
+        let result = domain::usecases::delete_post(&agent, &result);
 
         use domain::usecases::DeletePostResult::*;
         match result {
             CantDeleteAnotherOnesPost => Err(Error::Forbidden),
             CantDeletePublishedPost => Err(Error::Conflict),
             CantDeleteAsReader => Err(Error::Forbidden),
+            CantDeleteAsWorker => Err(Error::Forbidden),
             DoDelete(post_id) => {
                 db::delete_post(conn, post_id)?;
 
@@ -363,18 +371,20 @@ pub fn patch_post(
     let rmq_publisher = &server_state.rmq_publisher;
 
     conn.build_transaction().run(|conn| {
-        let subject = find_user(conn, subject.email)?;
-        let subject = subject.ok_or(Error::Unauthorized)?;
+        let agent = find_user(conn, subject.email)?;
+        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = Agent::User(agent);
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(Error::NotFound)?;
 
-        let result = domain::usecases::edit_post(&subject, &result, data.into_inner().into());
+        let result = domain::usecases::edit_post(&agent, &result, data.into_inner().into());
 
         use domain::usecases::EditPostResult::*;
         match result {
             CantEditAnotherOnesPost => Err(Error::Forbidden),
             CantEditPublishedPost => Err(Error::Conflict),
             CantEditAsReader => Err(Error::Forbidden),
+            CantEditAsWorker => Err(Error::Forbidden),
             NothingToUpdate => Ok(()),
             DoUpdate(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;

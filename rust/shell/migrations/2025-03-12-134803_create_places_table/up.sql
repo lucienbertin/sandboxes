@@ -1,5 +1,5 @@
 CREATE TABLE places (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL,
-  geometry GEOMETRY(Point,4326)
+  geometry GEOMETRY(Point,4326) NOT Null
 );

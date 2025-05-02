@@ -43,7 +43,8 @@ async fn rocket() -> _ {
                 post_post,
                 delete_post,
                 publish_post,
-                patch_post
+                patch_post,
+                get_places,
             ]
         })
         .attach(Cors)

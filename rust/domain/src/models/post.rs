@@ -23,7 +23,7 @@ pub struct NewPost {
     pub author: User,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct PostEdition {
     pub title: Option<String>,
     pub body: Option<String>,

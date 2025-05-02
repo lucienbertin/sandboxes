@@ -3,6 +3,8 @@ pub enum Error {
     DieselConnectionError(diesel::result::ConnectionError),
     DieselQueryError(diesel::result::Error),
     DotEnvyError(dotenvy::Error),
+    FromUTF8Error(std::string::FromUtf8Error),
+    GeoJsonError(geojson::Error),
     HMacError(hmac::digest::InvalidLength),
     JwtError(jwt::Error),
     LapinError(lapin::Error),
@@ -14,6 +16,7 @@ pub enum Error {
 
     AuthError(AuthError),
     HttpError(HttpError),
+    GeoJSONSerdeError(GeoJSONSerdeError),
 
     NotFound,
     Forbidden,
@@ -22,6 +25,8 @@ pub enum Error {
     Gone,
     NotModified,
     PreconditionFailed,
+
+    Error, // Generic error
 }
 impl From<AuthError> for Error {
     fn from(value: AuthError) -> Self {
@@ -31,6 +36,11 @@ impl From<AuthError> for Error {
 impl From<HttpError> for Error {
     fn from(value: HttpError) -> Self {
         Error::HttpError(value)
+    }
+}
+impl From<GeoJSONSerdeError> for Error {
+    fn from(value: GeoJSONSerdeError) -> Self {
+        Error::GeoJSONSerdeError(value)
     }
 }
 impl From<diesel::result::ConnectionError> for Error {
@@ -46,6 +56,16 @@ impl From<diesel::result::Error> for Error {
 impl From<dotenvy::Error> for Error {
     fn from(value: dotenvy::Error) -> Self {
         Error::DotEnvyError(value)
+    }
+}
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(value: std::string::FromUtf8Error) -> Self {
+        Error::FromUTF8Error(value)
+    }
+}
+impl From<geojson::Error> for Error {
+    fn from(value: geojson::Error) -> Self {
+        Error::GeoJsonError(value)
     }
 }
 impl From<hmac::digest::InvalidLength> for Error {
@@ -108,7 +128,14 @@ pub enum HttpError {
     NoIfMatchHeader,
     NoIfNoneMatchHeader,
 }
-
+#[derive(Debug)]
+pub enum GeoJSONSerdeError {
+    NoProperties,
+    NoGeometry,
+    InvalidGeometryType,
+    MissingProperty(String),
+    InvalidPropertyType(String),
+}
 pub type ResponseError = rocket::response::status::Custom<String>;
 
 impl From<Error> for ResponseError {
@@ -119,6 +146,10 @@ impl From<Error> for ResponseError {
                 format!("error: {:?}", e).to_string(),
             ),
             Error::HttpError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ),
+            Error::GeoJSONSerdeError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ),
@@ -139,6 +170,14 @@ impl From<Error> for ResponseError {
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
             Error::DieselQueryError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::FromUTF8Error(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
+            ), // map every adapters error to 500
+            Error::GeoJsonError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
@@ -193,6 +232,10 @@ impl From<Error> for ResponseError {
             Error::PreconditionFailed => rocket::response::status::Custom(
                 rocket::http::Status::PreconditionFailed,
                 "precondition failed".to_string(),
+            ),
+            Error::Error => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                "error".to_string(),
             ),
         }
     }

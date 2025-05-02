@@ -1,7 +1,10 @@
+mod place;
 mod post;
 mod schema;
 mod user;
 
+use diesel::Connection;
+pub use place::*;
 pub use post::*;
 pub use user::*;
 
@@ -14,13 +17,21 @@ use std::env;
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConn = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 
-// initializes a data pool
+// initializes a connection pool
 pub fn init_pool() -> Result<DbPool, Error> {
     let database_url = env::var("DATABASE_URL")?;
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = diesel::r2d2::Pool::new(manager)?;
 
     Ok(pool)
+}
+
+// get a ine shot connection - slower
+pub fn establish_connection() -> Result<PgConnection, Error> {
+    let database_url = env::var("DATABASE_URL")?;
+    let connection = PgConnection::establish(&database_url)?;
+
+    Ok(connection)
 }
 
 pub fn get_conn(db_pool: &DbPool) -> Result<DbConn, Error> {

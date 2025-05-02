@@ -1,5 +1,7 @@
+mod place;
 mod post;
 
+pub use place::*;
 pub use post::*;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};

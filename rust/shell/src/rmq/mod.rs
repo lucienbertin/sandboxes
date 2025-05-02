@@ -1,15 +1,18 @@
 mod job;
+mod place;
 mod post;
 
 pub use job::*;
+use place::handle_create_place;
 pub use post::*;
 
 use crate::error::Error;
 use futures_lite::StreamExt;
 use lapin::{
+    message::Delivery,
     options::{
-        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions,
-        QueueDeclareOptions,
+        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions,
+        ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
     },
     types::FieldTable,
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
@@ -76,18 +79,32 @@ pub async fn init() -> Result<RmQPublisher, Error> {
     let channel_clone = channel.clone();
     let (tx, rx) = mpsc::channel::<RmqMessage>();
 
-    // consumer thread init
-    let queue = channel
+    // consumer init
+    // declare queue;
+    let place_events_queue = channel
         .queue_declare(
-            "test",
-            QueueDeclareOptions::default(),
+            "rust-evt.place.#",
+            QueueDeclareOptions {
+                durable: true,
+                ..Default::default()
+            },
+            FieldTable::default(),
+        )
+        .await?;
+    //bind queue
+    channel
+        .queue_bind(
+            place_events_queue.name().as_str(),
+            "nextjs",
+            "evt.place.#",
+            QueueBindOptions::default(),
             FieldTable::default(),
         )
         .await?;
 
     let mut consumer = channel
         .basic_consume(
-            queue.name().as_str(),
+            place_events_queue.name().as_str(),
             "test_consumer",
             BasicConsumeOptions::default(),
             FieldTable::default(),
@@ -95,14 +112,8 @@ pub async fn init() -> Result<RmQPublisher, Error> {
         .await?;
 
     async_global_executor::spawn(async move {
-        while let Some(delivery) = consumer.next().await {
-            let delivery = delivery.expect("error in consumer");
-            println!(
-                "delivery key: {:?} | msg: {:?}",
-                delivery.routing_key.as_str(),
-                String::from_utf8(delivery.data.clone())
-            );
-            delivery.ack(BasicAckOptions::default()).await.expect("ack");
+        while let Some(rd) = consumer.next().await {
+            let _ = handle_delivery(rd).await; // fire n forget result
         }
     })
     .detach();
@@ -116,6 +127,31 @@ pub async fn init() -> Result<RmQPublisher, Error> {
     .detach();
 
     Ok(RmQPublisher::new(tx))
+}
+
+async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
+    let delivery = r.map_err(|e| Error::from(e))?;
+
+    let result = match delivery.routing_key.as_str() {
+        "evt.place.created" => handle_create_place(&delivery),
+        _ => log_delivery(&delivery), // just log and go to ack
+    };
+
+    match result {
+        Ok(()) => delivery.ack(BasicAckOptions::default()).await,
+        Err(_) => delivery.reject(BasicRejectOptions { requeue: false }).await,
+    }
+    .map_err(|e| Error::from(e))
+}
+
+fn log_delivery(delivery: &Delivery) -> Result<(), Error> {
+    println!(
+        "Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked",
+        delivery.routing_key.as_str()
+    );
+    println!("msg body: {:?}", String::from_utf8(delivery.data.clone()));
+
+    Ok(())
 }
 
 #[cfg(test)]
