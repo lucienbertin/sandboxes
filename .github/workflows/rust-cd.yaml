@@ -21,10 +21,18 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build
+      - name: Build Server
         uses: docker/build-push-action@v6
         with:
           tags: sandboxes-rust:latest
           context: "{{defaultContext}}:rust"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build Worker
+        uses: docker/build-push-action@v6
+        with:
+          tags: sandboxes-rust-worker:latest
+          context: "{{defaultContext}}:rust"
+          file: Worker.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
