@@ -110,7 +110,7 @@ pub async fn get_places_geojson(
     subject: JwtIdentifiedSubject, // is allowed with no auth
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<PlaceFeatureCollection>, ResponseError> {
-    let cache_key = "places".to_string();
+    let cache_key = "places-geojson".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
