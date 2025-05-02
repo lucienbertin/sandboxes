@@ -49,6 +49,7 @@ pub fn select_places(connection: &mut PgConnection) -> Result<Vec<domain::models
     Ok(results)
 }
 
+#[cfg(feature = "rmq-sub")]
 pub fn insert_place(
     connection: &mut PgConnection,
     place: domain::models::Place,

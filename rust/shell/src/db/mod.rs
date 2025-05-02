@@ -3,7 +3,6 @@ mod post;
 mod schema;
 mod user;
 
-use diesel::Connection;
 pub use place::*;
 pub use post::*;
 pub use user::*;
@@ -26,8 +25,10 @@ pub fn init_pool() -> Result<DbPool, Error> {
     Ok(pool)
 }
 
-// get a ine shot connection - slower
+// get a one shot connection - slower, used by rmq sub only
+#[cfg(feature = "rmq-sub")]
 pub fn establish_connection() -> Result<PgConnection, Error> {
+    use diesel::Connection;
     let database_url = env::var("DATABASE_URL")?;
     let connection = PgConnection::establish(&database_url)?;
 
