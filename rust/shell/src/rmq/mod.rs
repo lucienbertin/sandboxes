@@ -13,6 +13,10 @@ use lapin::{
 };
 
 #[cfg(feature = "rmq-sub")]
+use crate::db::DbPool;
+#[cfg(feature = "rmq-sub")]
+use crate::redis::RedisPool;
+#[cfg(feature = "rmq-sub")]
 use lapin::{
     message::Delivery,
     options::{
@@ -20,10 +24,6 @@ use lapin::{
         QueueDeclareOptions,
     },
 };
-#[cfg(feature = "rmq-sub")]
-use crate::redis::RedisPool;
-#[cfg(feature = "rmq-sub")]
-use crate::db::DbPool;
 use std::{env, sync::mpsc};
 
 // initialize connection
@@ -121,7 +121,10 @@ pub async fn start_consumer(db_pool: &DbPool, redis_pool: &RedisPool) -> Result<
         BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
     };
 
-    use crate::{db::{self, DbPool}, redis::RedisPool};
+    use crate::{
+        db::{self, DbPool},
+        redis::RedisPool,
+    };
 
     let amqp_url = env::var("AMQP_URL")?;
     let channel = init_channel(&amqp_url).await?;
@@ -167,7 +170,11 @@ pub async fn start_consumer(db_pool: &DbPool, redis_pool: &RedisPool) -> Result<
 }
 
 #[cfg(feature = "rmq-sub")]
-async fn handle_delivery(db_pool: &DbPool, redis_pool: &RedisPool, r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
+async fn handle_delivery(
+    db_pool: &DbPool,
+    redis_pool: &RedisPool,
+    r: Result<Delivery, lapin::Error>,
+) -> Result<(), Error> {
     use place::handle_create_place;
     let delivery = r.map_err(|e| Error::from(e))?;
 

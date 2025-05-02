@@ -54,7 +54,6 @@ pub fn refresh_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error>
         .map(char::from)
         .collect();
 
-
     conn.set::<String, String, ()>(prefixed_key, etag.clone())?;
 
     Ok(etag)

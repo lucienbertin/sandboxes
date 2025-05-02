@@ -1,13 +1,13 @@
 #[cfg(feature = "rmq-sub")]
 mod sub {
+    use crate::db::DbPool;
     use crate::error::{Error, GeoJSONSerdeError};
+    use crate::redis::RedisPool;
     use crate::{db, redis};
     use domain::{models::Agent, usecases::CreatePlaceResult};
     use geojson::{Feature, GeoJson, PointType};
     use lapin::message::Delivery;
-    use crate::redis::RedisPool;
-    use crate::db::DbPool;
-    
+
     #[derive(Debug)]
     struct Place {
         id: i32,
@@ -61,7 +61,11 @@ mod sub {
         }
     }
 
-    pub fn handle_create_place(db_pool: &DbPool, redis_pool: &RedisPool, delivery: &Delivery) -> Result<(), Error> {
+    pub fn handle_create_place(
+        db_pool: &DbPool,
+        redis_pool: &RedisPool,
+        delivery: &Delivery,
+    ) -> Result<(), Error> {
         print!("place created event | ");
 
         let data_str = String::from_utf8(delivery.data.clone())?;
@@ -82,7 +86,7 @@ mod sub {
                 use crate::db;
                 // write db code here
                 print!("inserting place in db | ");
-                
+
                 let mut conn = db::get_conn(db_pool)?;
                 db::insert_place(&mut conn, p)?;
 
