@@ -19,6 +19,7 @@ pub fn get_conn(redis_pool: &RedisPool) -> Result<RedisConn, Error> {
     Ok(conn)
 }
 
+#[cfg(feature = "rmq-sub")]
 pub fn establish_connection() -> Result<RedisConn, Error> {
     // im just initiating a pool of one conn and getting it, it is not very optimized
     let redis_url = env::var("REDIS_URL")?;

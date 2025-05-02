@@ -3,24 +3,30 @@ mod place;
 mod post;
 
 pub use job::*;
-use place::handle_create_place;
 pub use post::*;
 
 use crate::error::Error;
-use futures_lite::StreamExt;
 use lapin::{
-    message::Delivery,
     options::{
-        BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions,
-        ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
+        BasicPublishOptions,
+        ExchangeDeclareOptions,
     },
     types::FieldTable,
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
 
+#[cfg(feature = "rmq-sub")]
+use lapin::{
+    message::Delivery,
+    options::{
+        BasicAckOptions, BasicConsumeOptions, BasicRejectOptions,
+        QueueBindOptions, QueueDeclareOptions,
+    },
+};
 use std::{env, sync::mpsc};
 
 // initialize connection
+#[cfg(feature = "rmq-sub")]
 async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
@@ -28,6 +34,7 @@ async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
 
     Ok(chan)
 }
+
 async fn init_channel_and_exchange(amqp_url: &String, exchange_name: &String) -> Result<Channel, Error> {
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
@@ -96,7 +103,20 @@ pub async fn init_publisher() -> Result<RmQPublisher, Error> {
 
     Ok(RmQPublisher::new(tx))
 }
+
+#[cfg(feature = "rmq-sub")]
 pub async fn start_consumer() -> Result<(), Error> {
+    use futures_lite::StreamExt;
+    use lapin::{
+        message::Delivery,
+        options::{
+            BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions,
+            ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
+        },
+        types::FieldTable,
+        BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
+    };
+
     let amqp_url = env::var("AMQP_URL")?;
     let channel = init_channel(&amqp_url).await?;
 
@@ -143,7 +163,9 @@ pub async fn start_consumer() -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(feature = "rmq-sub")]
 async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error> {
+    use place::handle_create_place;
     let delivery = r.map_err(|e| Error::from(e))?;
 
     let result = match delivery.routing_key.as_str() {
@@ -158,6 +180,7 @@ async fn handle_delivery(r: Result<Delivery, lapin::Error>) -> Result<(), Error>
     .map_err(|e| Error::from(e))
 }
 
+#[cfg(feature = "rmq-sub")]
 fn log_delivery(delivery: &Delivery) -> Result<(), Error> {
     println!(
         "Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked",

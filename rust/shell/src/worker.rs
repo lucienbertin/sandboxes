@@ -5,6 +5,7 @@ mod redis;
 mod rmq;
 
 #[tokio::main]
+#[cfg(feature = "rmq-sub")]
 async fn main() {
     use dotenvy::dotenv;
     match dotenv() {
@@ -18,3 +19,6 @@ async fn main() {
         .await
         .expect("couldnt start rmq's consumer");
 }
+
+#[cfg(not(feature = "rmq-sub"))]
+fn main() {}
