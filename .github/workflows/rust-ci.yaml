@@ -29,7 +29,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all-targets --manifest-path rust/Cargo.toml
+          args: --all-targets --locked --bins --manifest-path rust/Cargo.toml
       - name: Test
         uses: actions-rs/cargo@v1
         with:
