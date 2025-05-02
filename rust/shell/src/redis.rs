@@ -5,6 +5,11 @@ use std::env;
 pub type RedisPool = r2d2::Pool<redis::Client>;
 pub type RedisConn = r2d2::PooledConnection<redis::Client>;
 
+const KEY_PREFIX: &str = "rust";
+fn prefix_key(key: &String) -> String {
+    format!("{}|{}", KEY_PREFIX, key)
+}
+
 pub fn init_pool() -> Result<RedisPool, Error> {
     let redis_url = env::var("REDIS_URL")?;
     let client = redis::Client::open(redis_url)?;
@@ -20,13 +25,16 @@ pub fn get_conn(redis_pool: &RedisPool) -> Result<RedisConn, Error> {
 }
 
 pub fn match_etag(conn: &mut RedisConn, key: &String, etag: String) -> Result<bool, Error> {
-    let cached_etag = &conn.get::<&String, String>(key)?;
+    let prefixed_key = prefix_key(key);
 
-    Ok(*cached_etag == etag)
+    let cached_etag = conn.get::<String, String>(prefixed_key)?;
+
+    Ok(cached_etag == etag)
 }
 
 pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error> {
-    let etag = conn.get::<&String, Option<String>>(key)?;
+    let prefixed_key = prefix_key(key);
+    let etag = conn.get::<String, Option<String>>(prefixed_key)?;
     let etag = match etag {
         Some(t) => t,
         None => refresh_etag(conn, &key)?,
@@ -38,13 +46,16 @@ pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error> {
 pub fn refresh_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error> {
     use rand::{distr::Alphanumeric, Rng}; // 0.8
 
+    let prefixed_key = prefix_key(key);
+
     let etag: String = rand::rng()
         .sample_iter(&Alphanumeric)
         .take(12)
         .map(char::from)
         .collect();
 
-    conn.set::<&String, String, ()>(key, etag.clone())?;
+
+    conn.set::<String, String, ()>(prefixed_key, etag.clone())?;
 
     Ok(etag)
 }
