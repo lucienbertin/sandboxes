@@ -86,7 +86,7 @@ pub async fn get_places(
         Some(Ok(true)) => Err(Error::NotModified),
         _ => Ok(()),
     }?;
-    
+
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
 
@@ -104,7 +104,7 @@ pub async fn get_places(
     Ok(result)
 }
 
-#[get("/places", format = "application/geo+json", rank=2)]
+#[get("/places", format = "application/geo+json", rank = 2)]
 pub async fn get_places_geojson(
     server_state: &State<ServerState>,
     subject: JwtIdentifiedSubject, // is allowed with no auth
