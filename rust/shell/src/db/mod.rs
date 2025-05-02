@@ -25,16 +25,6 @@ pub fn init_pool() -> Result<DbPool, Error> {
     Ok(pool)
 }
 
-// get a one shot connection - slower, used by rmq sub only
-#[cfg(feature = "rmq-sub")]
-pub fn establish_connection() -> Result<PgConnection, Error> {
-    use diesel::Connection;
-    let database_url = env::var("DATABASE_URL")?;
-    let connection = PgConnection::establish(&database_url)?;
-
-    Ok(connection)
-}
-
 pub fn get_conn(db_pool: &DbPool) -> Result<DbConn, Error> {
     let conn: DbConn = db_pool.get()?;
 
