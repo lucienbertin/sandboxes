@@ -84,9 +84,9 @@ pub fn handle_create_place(delivery: &Delivery) -> Result<(), Error> {
             db::insert_place(&mut conn, p)?;
 
             // refresh http cache
-            let cache_key = "places".to_string();
             let mut redis_conn = redis::establish_connection()?;
-            redis::refresh_etag(&mut redis_conn, &cache_key)?;
+            redis::refresh_etag(&mut redis_conn, &"places".to_string())?;
+            redis::refresh_etag(&mut redis_conn, &"places-geojson".to_string())?;
 
             Ok(())
         }

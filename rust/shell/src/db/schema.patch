@@ -1,6 +1,6 @@
---- src/db/full_schema.rs	2025-03-12 14:54:20.449542884 +0100
-+++ src/db/schema.rs	2025-03-12 14:53:27.686636817 +0100
-@@ -1,34 +1,28 @@
+--- src/db/full_schema.rs	2025-05-02 10:43:24.908278166 +0200
++++ src/db/schema.rs	2025-05-02 10:44:19.764214721 +0200
+@@ -1,22 +1,17 @@
  // @generated automatically by Diesel CLI.
  
  pub mod sql_types {
@@ -21,17 +21,5 @@
      places (id) {
          id -> Int4,
          name -> Varchar,
-         geometry -> Nullable<Geometry>,
+         geometry -> Geometry,
      }
- }
- 
- diesel::table! {
-     use diesel::sql_types::*;
-     use postgis_diesel::sql_types::*;
--    use super::sql_types::Geometry;
- 
-     posts (id) {
-         id -> Int4,
-         title -> Varchar,
-         body -> Text,
-         published -> Bool,

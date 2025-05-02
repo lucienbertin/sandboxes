@@ -26,7 +26,6 @@ diesel::table! {
         title -> Varchar,
         body -> Text,
         published -> Bool,
-        geom -> Nullable<Geometry>,
         author_id -> Int4,
     }
 }
