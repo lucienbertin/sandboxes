@@ -1,0 +1,5 @@
+<h1>Cats</h1>
+
+<ul>
+  <li *ngFor="let cat of cats$ | async">{{ cat.name }} {{ cat.age }}</li>
+</ul>
