@@ -23,7 +23,7 @@ COPY ./domain/src ./domain/src
 COPY ./shell/src ./shell/src
 
 # Build your application
-RUN cargo build --release --bin worker --features="rmq-sub"
+RUN cargo build --release --bin worker --features rmqsub --no-default-features
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
 FROM debian:bullseye-slim

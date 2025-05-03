@@ -2,7 +2,7 @@
 name = "shell"
 version = "0.1.0"
 edition = "2021"
-default-run = "web"
+default-run = "server"
 
 [dependencies]
 domain = { path = "../domain" }
@@ -35,7 +35,7 @@ db = [] # db adapter
 default=["api"]
 
 [[bin]]
-name="web"
+name="server"
 path="src/main.rs"
 required-features = ["api"]
 

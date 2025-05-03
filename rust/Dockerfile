@@ -23,7 +23,7 @@ COPY ./domain/src ./domain/src
 COPY ./shell/src ./shell/src
 
 # Build your application
-RUN cargo build --release --bin web
+RUN cargo build --release --bin server --features api --no-default-features
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
 FROM debian:bullseye-slim
@@ -32,7 +32,7 @@ FROM debian:bullseye-slim
 WORKDIR /usr/src/app
 
 # Copy the built binary from the previous stage
-COPY --from=builder /usr/src/app/target/release/web ./
+COPY --from=builder /usr/src/app/target/release/server ./
 
 # Command to run the application
-CMD ["./web"]
+CMD ["./server"]
