@@ -1,5 +1,4 @@
 mod job;
-mod place;
 mod post;
 
 pub use job::*;
@@ -12,37 +11,18 @@ use lapin::{
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
 
-#[cfg(feature = "rmq-sub")]
-use crate::db::DbPool;
-#[cfg(feature = "rmq-sub")]
-use crate::redis::RedisPool;
-#[cfg(feature = "rmq-sub")]
-use lapin::{
-    message::Delivery,
-    options::{
-        BasicAckOptions, BasicConsumeOptions, BasicRejectOptions, QueueBindOptions,
-        QueueDeclareOptions,
-    },
-};
 use std::{env, sync::mpsc};
 
-// initialize connection
-#[cfg(feature = "rmq-sub")]
-async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
+async fn init_channel() -> Result<Channel, Error> {
+    let amqp_url = env::var("AMQP_URL")?;
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
     let chan = conn.create_channel().await?;
 
     Ok(chan)
 }
-
-async fn init_channel_and_exchange(
-    amqp_url: &String,
-    exchange_name: &String,
-) -> Result<Channel, Error> {
-    let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
-
-    let chan = conn.create_channel().await?;
+async fn init_exchange(chan: &Channel) -> Result<String, Error> {
+    let exchange_name = env::var("RMQ_EXCHANGE")?;
 
     chan.exchange_declare(
         exchange_name.as_str(),
@@ -52,7 +32,7 @@ async fn init_channel_and_exchange(
     )
     .await?;
 
-    Ok(chan)
+    Ok(exchange_name)
 }
 
 async fn publish(
@@ -90,14 +70,14 @@ impl RmQPublisher {
 
 pub type RmqMessage = (String, String);
 pub async fn init_publisher() -> Result<RmQPublisher, Error> {
-    let amqp_url = env::var("AMQP_URL")?;
-    let exchange_name = env::var("RMQ_EXCHANGE")?;
 
-    let channel = init_channel_and_exchange(&amqp_url, &exchange_name).await?;
-    let channel_clone = channel.clone();
+    let channel = init_channel().await?;
+    let exchange_name = init_exchange(&channel).await?;
+
     let (tx, rx) = mpsc::channel::<RmqMessage>();
-
+    
     // publisher thread
+    let channel_clone = channel.clone();
     async_global_executor::spawn(async move {
         for (routing_key, message) in rx {
             let _ = publish(&channel_clone, &exchange_name, routing_key, message).await;
@@ -106,99 +86,6 @@ pub async fn init_publisher() -> Result<RmQPublisher, Error> {
     .detach();
 
     Ok(RmQPublisher::new(tx))
-}
-
-#[cfg(feature = "rmq-sub")]
-pub async fn start_consumer(db_pool: &DbPool, redis_pool: &RedisPool) -> Result<(), Error> {
-    use futures_lite::StreamExt;
-    use lapin::{
-        message::Delivery,
-        options::{
-            BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions,
-            ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
-        },
-        types::FieldTable,
-        BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
-    };
-
-    use crate::{
-        db::{self, DbPool},
-        redis::RedisPool,
-    };
-
-    let amqp_url = env::var("AMQP_URL")?;
-    let channel = init_channel(&amqp_url).await?;
-
-    // consumer init
-    // declare queue;
-    let place_events_queue = channel
-        .queue_declare(
-            "rust-evt.place.#",
-            QueueDeclareOptions {
-                durable: true,
-                ..Default::default()
-            },
-            FieldTable::default(),
-        )
-        .await?;
-    //bind queue
-    channel
-        .queue_bind(
-            place_events_queue.name().as_str(),
-            "nextjs",
-            "evt.place.#",
-            QueueBindOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
-
-    let mut consumer = channel
-        .basic_consume(
-            place_events_queue.name().as_str(),
-            "rust_consumer",
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
-
-    println!("rmq consumer started and awaiting messages");
-    while let Some(rd) = consumer.next().await {
-        let _ = handle_delivery(db_pool, redis_pool, rd).await; // fire n forget result
-    }
-
-    Ok(())
-}
-
-#[cfg(feature = "rmq-sub")]
-async fn handle_delivery(
-    db_pool: &DbPool,
-    redis_pool: &RedisPool,
-    r: Result<Delivery, lapin::Error>,
-) -> Result<(), Error> {
-    use place::handle_create_place;
-    let delivery = r.map_err(|e| Error::from(e))?;
-
-    let result = match delivery.routing_key.as_str() {
-        "evt.place.created" => handle_create_place(db_pool, redis_pool, &delivery),
-        _ => log_delivery(&delivery), // just log and go to ack
-    };
-
-    match result {
-        Ok(()) => delivery.ack(BasicAckOptions::default()).await,
-        Err(_) => delivery.reject(BasicRejectOptions { requeue: false }).await,
-    }
-    .map_err(|e| Error::from(e))
-}
-
-#[cfg(feature = "rmq-sub")]
-fn log_delivery(delivery: &Delivery) -> Result<(), Error> {
-    println!(
-        "Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked",
-        delivery.routing_key.as_str()
-    );
-    println!("msg body: {:?}", String::from_utf8(delivery.data.clone()));
-
-    Ok(())
 }
 
 #[cfg(test)]
