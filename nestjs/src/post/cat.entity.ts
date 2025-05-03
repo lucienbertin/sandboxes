@@ -29,5 +29,5 @@ export class CreateCatDto {
   @Field()
   age: number;
   @Field({ nullable: true })
-  breed?: String;
+  breed?: string;
 }
