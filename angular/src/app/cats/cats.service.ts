@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
-import { map, Observable, of } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 export interface Cat {
   name: string;
   age: number;
+  breed?: string;
 }
 
 const GET_CATS = gql`
@@ -12,6 +13,7 @@ const GET_CATS = gql`
     cats {
       name
       age
+      breed
     }
   }
 `;
@@ -23,9 +25,8 @@ export class CatsService {
   constructor(private readonly apollo: Apollo) { }
 
   public getCats(): Observable<Cat[]> {
-    // return of([{ name: "grisou", age: 9 }, { name: "zebro", age: 6}]);
-    return this.apollo.query<Cat[]>({ query: GET_CATS }).pipe(
-      map(r => r.data)
+    return this.apollo.query<{ cats: Cat[] }>({ query: GET_CATS }).pipe(
+      map(r => r.data.cats),
     );
   }
 }
