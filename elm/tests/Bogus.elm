@@ -15,5 +15,5 @@ suite =
         , test "pipin' 1 |> add1 |> equal 2" <|
             \_ -> 1
                 |> add1
-                |> Expect.equal 3
+                |> Expect.equal 2
     ]
