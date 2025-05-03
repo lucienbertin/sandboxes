@@ -18,7 +18,7 @@
     "target": "ES2022",
     "module": "ES2022",
     "allowSyntheticDefaultImports": true,
-    "lib": ["esnext", "esnext.asynciterable"]
+    "lib": ["esnext", "esnext.asynciterable", "DOM"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
