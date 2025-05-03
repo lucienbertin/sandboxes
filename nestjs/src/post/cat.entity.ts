@@ -28,4 +28,6 @@ export class CreateCatDto {
   name: string;
   @Field()
   age: number;
+  @Field({ nullable: true })
+  breed?: string;
 }
