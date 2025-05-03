@@ -1,6 +1,7 @@
 use super::ServerState;
+use super::error::ResponseError;
 use crate::db::{self, find_user};
-use crate::error::{Error, ResponseError};
+use crate::error::{Error, HttpError};
 use crate::redis::{self, match_etag};
 use crate::rmqpub::{self};
 use domain::models::Agent;
@@ -91,15 +92,15 @@ pub async fn get_posts(
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
-        Some(Ok(true)) => Err(Error::NotModified),
+        Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }?;
+    }.map_err(|e: Error| e)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
 
-    let results = db_conn.build_transaction().read_only().run(|conn| {
+    let results = db_conn.build_transaction().read_only().run(|conn| -> Result<Vec<domain::models::Post>, Error> {
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);
 
         let result = domain::usecases::consult_posts(&agent);
@@ -139,26 +140,26 @@ pub fn get_post(
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
-        Some(Ok(true)) => Err(Error::NotModified),
+        Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }?;
+    }.map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
-    let result = conn.build_transaction().read_only().run(|conn| {
+    let result = conn.build_transaction().read_only().run(|conn| -> Result<domain::models::Post, Error> {
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);
         let post = db::find_post(conn, id)?;
-        let post = post.ok_or(Error::NotFound)?;
+        let post = post.ok_or(HttpError::NotFound)?;
 
         let result = domain::usecases::consult_post(&agent, &post);
 
         use domain::usecases::ConsultPostResult::*;
         match result {
             DoConsultPost(p) => Ok(p),
-            CantConsultUnpublishedPostFromSomeoneElse => Err(Error::Forbidden),
-            CantConsultUnpublishedPostAsReader => Err(Error::Forbidden),
+            CantConsultUnpublishedPostFromSomeoneElse => Err(HttpError::Forbidden.into()),
+            CantConsultUnpublishedPostAsReader => Err(HttpError::Forbidden.into()),
         }
     })?;
 
@@ -187,26 +188,26 @@ pub async fn publish_post(
     match use_cache {
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
-        _ => Err(Error::PreconditionFailed),
-    }?;
+        _ => Err(HttpError::PreconditionFailed.into()),
+    }.map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
 
-    conn.build_transaction().run(move |conn| {
+    conn.build_transaction().run(move |conn| -> Result<(), Error> {
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);
         let post = db::find_post(conn, id)?;
-        let post = post.ok_or(Error::NotFound)?;
+        let post = post.ok_or(HttpError::NotFound)?;
 
         use domain::usecases::{publish_post, PublishPostResult::*};
         let result = publish_post(&agent, &post);
 
         match result {
-            CantPublishAnotherOnesPost => Err(Error::Forbidden),
-            CantPublishAsReader => Err(Error::Forbidden),
-            CantPublishAsWorker => Err(Error::Forbidden), // should never happen
+            CantPublishAnotherOnesPost => Err(HttpError::Forbidden.into()),
+            CantPublishAsReader => Err(HttpError::Forbidden.into()),
+            CantPublishAsWorker => Err(HttpError::Forbidden.into()), // should never happen
             CantPublishAlreadyPublishedPost => Ok(()),    // treat it as Ok for idempotency purpose
             DoPublishAndNotify(post_id, post) => {
                 db::publish_post(conn, post_id)?;
@@ -254,16 +255,16 @@ pub fn post_post(
     match use_cache {
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
-        _ => Err(Error::PreconditionFailed),
-    }?;
+        _ => Err(HttpError::PreconditionFailed.into()),
+    }.map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
-    let result = conn.build_transaction().run(|conn| {
+    let result = conn.build_transaction().run(|conn| -> Result<i32, Error> {
         use domain::usecases::{create_post, CreatePostResult::*};
 
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);
 
         let result = create_post(&agent, data.into_inner().into());
@@ -277,7 +278,7 @@ pub fn post_post(
 
                 Ok(post_id)
             }
-            CantCreateAsReader | CantCreateAsWorker => Err(Error::Forbidden),
+            CantCreateAsReader | CantCreateAsWorker => Err(HttpError::Forbidden.into()),
         }
     })?;
 
@@ -299,28 +300,28 @@ pub fn delete_post(
     match use_cache {
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
-        _ => Err(Error::PreconditionFailed),
-    }?;
+        _ => Err(HttpError::PreconditionFailed.into()),
+    }.map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
 
-    conn.build_transaction().run(|conn| {
+    conn.build_transaction().run(|conn| -> Result<(), Error> {
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);
 
         let result = db::find_post(conn, id)?;
-        let result = result.ok_or(Error::Gone)?;
+        let result = result.ok_or(HttpError::Gone)?;
 
         let result = domain::usecases::delete_post(&agent, &result);
 
         use domain::usecases::DeletePostResult::*;
         match result {
-            CantDeleteAnotherOnesPost => Err(Error::Forbidden),
-            CantDeletePublishedPost => Err(Error::Conflict),
-            CantDeleteAsReader => Err(Error::Forbidden),
-            CantDeleteAsWorker => Err(Error::Forbidden),
+            CantDeleteAnotherOnesPost => Err(HttpError::Forbidden.into()),
+            CantDeletePublishedPost => Err(HttpError::Conflict.into()),
+            CantDeleteAsReader => Err(HttpError::Forbidden.into()),
+            CantDeleteAsWorker => Err(HttpError::Forbidden.into()),
             DoDelete(post_id) => {
                 db::delete_post(conn, post_id)?;
 
@@ -363,27 +364,27 @@ pub fn patch_post(
     match use_cache {
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
-        _ => Err(Error::PreconditionFailed),
-    }?;
+        _ => Err(HttpError::PreconditionFailed.into()),
+    }.map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
 
-    conn.build_transaction().run(|conn| {
+    conn.build_transaction().run(|conn| -> Result<(), Error>{
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);
         let result = db::find_post(conn, id)?;
-        let result = result.ok_or(Error::NotFound)?;
+        let result = result.ok_or(HttpError::NotFound)?;
 
         let result = domain::usecases::edit_post(&agent, &result, data.into_inner().into());
 
         use domain::usecases::EditPostResult::*;
         match result {
-            CantEditAnotherOnesPost => Err(Error::Forbidden),
-            CantEditPublishedPost => Err(Error::Conflict),
-            CantEditAsReader => Err(Error::Forbidden),
-            CantEditAsWorker => Err(Error::Forbidden),
+            CantEditAnotherOnesPost => Err(HttpError::Forbidden.into()),
+            CantEditPublishedPost => Err(HttpError::Conflict.into()),
+            CantEditAsReader => Err(HttpError::Forbidden.into()),
+            CantEditAsWorker => Err(HttpError::Forbidden.into()),
             NothingToUpdate => Ok(()),
             DoUpdate(post_id, post_edition) => {
                 db::update_post(conn, post_id, post_edition)?;

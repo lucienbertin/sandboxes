@@ -1,6 +1,7 @@
 use super::ServerState;
+use super::error::ResponseError;
 use crate::db::{self, find_user, DbConn};
-use crate::error::{Error, ResponseError};
+use crate::error::{Error, HttpError};
 use crate::redis::{self, match_etag};
 use domain::models::Agent;
 use rocket::serde::json::Json;
@@ -82,9 +83,9 @@ pub async fn get_places(
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
-        Some(Ok(true)) => Err(Error::NotModified),
+        Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }?;
+    }.map_err(|e: Error| e)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
@@ -113,9 +114,9 @@ pub async fn get_places_geojson(
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
     match use_cache {
-        Some(Ok(true)) => Err(Error::NotModified),
+        Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }?;
+    }.map_err(|e: Error| e)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
@@ -139,9 +140,9 @@ fn fetch_places(
     db_conn: &mut DbConn,
     subject: JwtIdentifiedSubject, // is allowed with no auth
 ) -> Result<Vec<domain::models::Place>, Error> {
-    let results = db_conn.build_transaction().read_only().run(|conn| {
+    let results = db_conn.build_transaction().read_only().run(|conn| -> Result<Vec<domain::models::Place>, Error> {
         let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(Error::Unauthorized)?;
+        let agent = agent.ok_or::<Error>(HttpError::Unauthorized.into())?;
         let agent = Agent::User(agent);
 
         let result = domain::usecases::consult_places(&agent);

@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Error, HttpError};
 
 pub type ResponseError = rocket::response::status::Custom<String>;
 
@@ -9,10 +9,7 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::Unauthorized,
                 format!("error: {:?}", e).to_string(),
             ),
-            Error::HttpError(e) => rocket::response::status::Custom(
-                rocket::http::Status::InternalServerError,
-                format!("error: {:?}", e).to_string(),
-            ),
+            #[cfg(feature="rmqsub")]
             Error::GeoJSONSerdeError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
@@ -37,10 +34,12 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
+            #[cfg(feature="rmqsub")]
             Error::FromUTF8Error(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
+            #[cfg(feature="rmqsub")]
             Error::GeoJsonError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
@@ -70,32 +69,36 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
-            Error::NotFound => rocket::response::status::Custom(
+            Error::HttpError(HttpError::NotFound) => rocket::response::status::Custom(
                 rocket::http::Status::NotFound,
                 "not found".to_string(),
             ),
-            Error::Forbidden => rocket::response::status::Custom(
+            Error::HttpError(HttpError::Forbidden) => rocket::response::status::Custom(
                 rocket::http::Status::Forbidden,
                 "forbiddon".to_string(),
             ),
-            Error::Conflict => rocket::response::status::Custom(
+            Error::HttpError(HttpError::Conflict) => rocket::response::status::Custom(
                 rocket::http::Status::Conflict,
                 "conflict".to_string(),
             ),
-            Error::Gone => {
+            Error::HttpError(HttpError::Gone) => {
                 rocket::response::status::Custom(rocket::http::Status::Gone, "gone".to_string())
             }
-            Error::Unauthorized => rocket::response::status::Custom(
+            Error::HttpError(HttpError::Unauthorized) => rocket::response::status::Custom(
                 rocket::http::Status::Unauthorized,
                 "unauthorized".to_string(),
             ),
-            Error::NotModified => rocket::response::status::Custom(
+            Error::HttpError(HttpError::NotModified) => rocket::response::status::Custom(
                 rocket::http::Status::NotModified,
                 "not modified".to_string(),
             ),
-            Error::PreconditionFailed => rocket::response::status::Custom(
+            Error::HttpError(HttpError::PreconditionFailed) => rocket::response::status::Custom(
                 rocket::http::Status::PreconditionFailed,
                 "precondition failed".to_string(),
+            ),
+            Error::HttpError(e) => rocket::response::status::Custom(
+                rocket::http::Status::InternalServerError,
+                format!("error: {:?}", e).to_string(),
             ),
             Error::Error => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,

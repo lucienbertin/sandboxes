@@ -206,6 +206,7 @@ pub enum HttpError {
 }
 
 #[derive(Debug, )]
+#[cfg(feature="rmqsub")]
 pub enum GeoJSONSerdeError {
     NoProperties,
     NoGeometry,
@@ -213,6 +214,7 @@ pub enum GeoJSONSerdeError {
     MissingProperty(String),
     InvalidPropertyType(String),
 }
+#[cfg(feature="rmqsub")]
 impl std::fmt::Display for GeoJSONSerdeError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self {
