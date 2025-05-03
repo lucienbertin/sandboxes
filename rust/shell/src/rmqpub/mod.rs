@@ -70,12 +70,11 @@ impl RmQPublisher {
 
 pub type RmqMessage = (String, String);
 pub async fn init_publisher() -> Result<RmQPublisher, Error> {
-
     let channel = init_channel().await?;
     let exchange_name = init_exchange(&channel).await?;
 
     let (tx, rx) = mpsc::channel::<RmqMessage>();
-    
+
     // publisher thread
     let channel_clone = channel.clone();
     async_global_executor::spawn(async move {

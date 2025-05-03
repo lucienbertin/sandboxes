@@ -1,9 +1,9 @@
 mod place;
 mod post;
 
+use crate::error::Error;
 pub use place::*;
 pub use post::*;
-use crate::error::Error;
 
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};

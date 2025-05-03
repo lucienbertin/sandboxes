@@ -1,6 +1,6 @@
 use crate::db::{self, find_user};
 use crate::error::{Error, ResponseError};
-use crate::redis::{self, match_etag };
+use crate::redis::{self, match_etag};
 use crate::rmqpub::{self};
 use crate::ServerState;
 use domain::models::Agent;

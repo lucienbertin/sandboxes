@@ -1,4 +1,3 @@
-
 use crate::db::DbPool;
 use crate::error::{Error, GeoJSONSerdeError};
 use crate::redis::RedisPool;

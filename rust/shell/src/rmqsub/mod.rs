@@ -1,4 +1,3 @@
-
 mod place;
 
 use crate::error::Error;
@@ -9,11 +8,12 @@ use futures_lite::StreamExt;
 use lapin::{
     message::Delivery,
     options::{
-        BasicAckOptions, BasicConsumeOptions, BasicRejectOptions,
-        QueueBindOptions, QueueDeclareOptions,
+        BasicAckOptions, BasicConsumeOptions, BasicRejectOptions, QueueBindOptions,
+        QueueDeclareOptions,
     },
     types::FieldTable,
-    Channel, Connection, ConnectionProperties};
+    Channel, Connection, ConnectionProperties,
+};
 use std::env;
 
 // initialize connection

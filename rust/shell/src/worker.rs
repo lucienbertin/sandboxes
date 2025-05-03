@@ -1,6 +1,6 @@
-mod error;
 #[cfg(feature = "db")]
 mod db;
+mod error;
 #[cfg(feature = "redis")]
 mod redis;
 #[cfg(feature = "rmqsub")]

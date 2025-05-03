@@ -60,8 +60,6 @@ pub fn refresh_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error>
     Ok(etag)
 }
 
-
-
 // mod test {
 //     use crate::error::Error;
 //     use dotenvy::dotenv;
