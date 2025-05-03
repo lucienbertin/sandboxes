@@ -1,4 +1,4 @@
-module Main exposing (main, Model, Msg)
+module Main exposing (..)
 
 -- Press buttons to increment and decrement a counter.
 --
