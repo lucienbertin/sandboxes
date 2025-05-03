@@ -1,16 +1,18 @@
 mod place;
 mod post;
 
+use crate::db::DbPool;
+use crate::redis::RedisPool;
+use crate::rmqpub::RmQPublisher;
+use crate::{db, redis, rmqpub};
 use crate::error::Error;
-pub use place::*;
-pub use post::*;
 
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};
 use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::Response;
+use rocket::{Build, Response, Rocket};
 use serde::Serialize;
 
 #[get("/health")]
@@ -206,4 +208,42 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
             Err(e) => Outcome::Error((Status::Unauthorized, e)),
         }
     }
+}
+
+pub struct ServerState {
+    pub db_pool: DbPool,
+    pub redis_pool: RedisPool,
+    pub rmq_publisher: RmQPublisher,
+}
+
+pub async fn build_server() -> Result<Rocket<Build>, Error> {
+    let db_pool = db::init_pool()?;
+    let rmq_publisher = rmqpub::init_publisher().await?;
+    let redis_pool = redis::init_pool()?;
+
+    let server = rocket::build()
+        .mount("/", routes![health])
+        .mount("/api/", {
+            routes![
+                all_options,
+
+                post::get_posts,
+                post::get_post,
+                post::post_post,
+                post::delete_post,
+                post::publish_post,
+                post::patch_post,
+
+                place::get_places,
+                place::get_places_geojson,
+            ]
+        })
+        .attach(Cors)
+        .manage(ServerState {
+            db_pool: db_pool,
+            rmq_publisher: rmq_publisher,
+            redis_pool: redis_pool,
+        });
+
+    Ok(server)
 }
