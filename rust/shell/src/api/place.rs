@@ -1,7 +1,7 @@
+use super::ServerState;
 use crate::db::{self, find_user, DbConn};
 use crate::error::{Error, ResponseError};
 use crate::redis::{self, match_etag};
-use super::ServerState;
 use domain::models::Agent;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;

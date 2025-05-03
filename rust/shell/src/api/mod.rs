@@ -2,10 +2,10 @@ mod place;
 mod post;
 
 use crate::db::DbPool;
+use crate::error::Error;
 use crate::redis::RedisPool;
 use crate::rmqpub::RmQPublisher;
 use crate::{db, redis, rmqpub};
-use crate::error::Error;
 
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};
@@ -226,14 +226,12 @@ pub async fn build_server() -> Result<Rocket<Build>, Error> {
         .mount("/api/", {
             routes![
                 all_options,
-
                 post::get_posts,
                 post::get_post,
                 post::post_post,
                 post::delete_post,
                 post::publish_post,
                 post::patch_post,
-
                 place::get_places,
                 place::get_places_geojson,
             ]

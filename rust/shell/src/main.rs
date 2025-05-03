@@ -15,7 +15,6 @@ mod redis;
 #[cfg(feature = "rmqpub")]
 mod rmqpub;
 
-
 #[rocket::main]
 async fn main() {
     use dotenvy::dotenv;
@@ -24,7 +23,9 @@ async fn main() {
         Err(_) => println!("no local .env file to load"),
     };
 
-    let server = api::build_server().await.expect("couldn't build rocket server");
+    let server = api::build_server()
+        .await
+        .expect("couldn't build rocket server");
 
     let _ = server.launch().await;
 }
