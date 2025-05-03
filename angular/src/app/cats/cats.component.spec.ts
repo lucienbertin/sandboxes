@@ -9,8 +9,7 @@ describe('CatsComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CatsComponent, ApolloTestingModule],
-    })
-    .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(CatsComponent);
     component = fixture.componentInstance;

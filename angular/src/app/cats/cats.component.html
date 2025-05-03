@@ -1,7 +1,9 @@
 <h1>Cats</h1>
 
 <ul>
-  <li *ngFor="let cat of cats$ | async">{{ cat.name }} {{ cat.age }} {{ cat.breed }}</li>
+  <li *ngFor="let cat of cats$ | async">
+    {{ cat.name }} {{ cat.age }} {{ cat.breed }}
+  </li>
 </ul>
 
 <!-- <button (click)="createZebro()">create cat</button> -->

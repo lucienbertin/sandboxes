@@ -1,4 +1,8 @@
-import { ApplicationConfig, provideZoneChangeDetection, inject } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideZoneChangeDetection,
+  inject,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -16,7 +20,9 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch()), provideHttpClient(), provideApollo(() => {
+    provideHttpClient(withFetch()),
+    provideHttpClient(),
+    provideApollo(() => {
       const httpLink = inject(HttpLink);
 
       return {

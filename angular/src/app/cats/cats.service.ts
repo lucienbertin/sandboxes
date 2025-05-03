@@ -25,26 +25,25 @@ const CREATE_CAT = gql`
       breed
     }
   }
-`
+`;
 @Injectable({
-  providedIn: 'any'
+  providedIn: 'any',
 })
 export class CatsService {
-
-  constructor(private readonly apollo: Apollo) { }
+  constructor(private readonly apollo: Apollo) {}
 
   public getCats(): Observable<Cat[]> {
-    return this.apollo.query<{ cats: Cat[] }>({ query: GET_CATS }).pipe(
-      map(r => r.data.cats),
-    );
+    return this.apollo
+      .query<{ cats: Cat[] }>({ query: GET_CATS })
+      .pipe(map((r) => r.data.cats));
   }
 
   public createCat(cat: Cat) {
-    return this.apollo.mutate({
-      mutation: CREATE_CAT,
-      variables: { cat }
-    }).pipe(
-      tap(r => console.log(r)),
-    )
+    return this.apollo
+      .mutate({
+        mutation: CREATE_CAT,
+        variables: { cat },
+      })
+      .pipe(tap((r) => console.log(r)));
   }
 }
