@@ -27,14 +27,19 @@ geojson = { version = "0.24.2", features = ["geo-types"] }
 tokio = "1.44.1"
 
 [features]
-rmq-sub = []
+api = ["db", "redis", "rmqpub"] # rest api web exposition
+rmqsub = ["db", "redis"] # rmq subscriber worker
+redis = [] # redis adapter
+rmqpub = [] # rmq publisher adapter
+db = [] # db adapter
+default=["api"]
 
 [[bin]]
 name="web"
 path="src/main.rs"
-required-features = []
+required-features = ["api"]
 
 [[bin]]
 name="worker"
 path="src/worker.rs"
-required-features = ["rmq-sub"]
+required-features = ["rmqsub"]
