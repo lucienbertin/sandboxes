@@ -1,5 +1,5 @@
-use super::ServerState;
 use super::error::ResponseError;
+use super::ServerState;
 use crate::db::{self, find_user, DbConn};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, match_etag};
@@ -85,7 +85,8 @@ pub async fn get_places(
     match use_cache {
         Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
@@ -116,7 +117,8 @@ pub async fn get_places_geojson(
     match use_cache {
         Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
@@ -140,18 +142,20 @@ fn fetch_places(
     db_conn: &mut DbConn,
     subject: JwtIdentifiedSubject, // is allowed with no auth
 ) -> Result<Vec<domain::models::Place>, Error> {
-    let results = db_conn.build_transaction().read_only().run(|conn| -> Result<Vec<domain::models::Place>, Error> {
-        let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or::<Error>(HttpError::Unauthorized.into())?;
-        let agent = Agent::User(agent);
+    let results = db_conn.build_transaction().read_only().run(
+        |conn| -> Result<Vec<domain::models::Place>, Error> {
+            let agent = find_user(conn, subject.email)?;
+            let agent = agent.ok_or::<Error>(HttpError::Unauthorized.into())?;
+            let agent = Agent::User(agent);
 
-        let result = domain::usecases::consult_places(&agent);
+            let result = domain::usecases::consult_places(&agent);
 
-        use domain::usecases::ConsultPlacesResult::*;
-        match result {
-            ConsultAllPlaces => db::select_places(conn),
-        }
-    })?;
+            use domain::usecases::ConsultPlacesResult::*;
+            match result {
+                ConsultAllPlaces => db::select_places(conn),
+            }
+        },
+    )?;
 
     Ok(results)
 }

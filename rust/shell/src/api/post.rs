@@ -1,5 +1,5 @@
-use super::ServerState;
 use super::error::ResponseError;
+use super::ServerState;
 use crate::db::{self, find_user};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, match_etag};
@@ -94,26 +94,29 @@ pub async fn get_posts(
     match use_cache {
         Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
 
-    let results = db_conn.build_transaction().read_only().run(|conn| -> Result<Vec<domain::models::Post>, Error> {
-        let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(HttpError::Unauthorized)?;
-        let agent = Agent::User(agent);
+    let results = db_conn.build_transaction().read_only().run(
+        |conn| -> Result<Vec<domain::models::Post>, Error> {
+            let agent = find_user(conn, subject.email)?;
+            let agent = agent.ok_or(HttpError::Unauthorized)?;
+            let agent = Agent::User(agent);
 
-        let result = domain::usecases::consult_posts(&agent);
+            let result = domain::usecases::consult_posts(&agent);
 
-        use domain::usecases::ConsultPostsResult::*;
-        match result {
-            ConsultPublishedPosts => db::select_published_posts(conn),
-            ConsultPublishedPostsAndAuthoredBy(author) => {
-                db::select_published_posts_or_authored_by(conn, author)
+            use domain::usecases::ConsultPostsResult::*;
+            match result {
+                ConsultPublishedPosts => db::select_published_posts(conn),
+                ConsultPublishedPostsAndAuthoredBy(author) => {
+                    db::select_published_posts_or_authored_by(conn, author)
+                }
+                ConsultAllPosts => db::select_posts(conn),
             }
-            ConsultAllPosts => db::select_posts(conn),
-        }
-    })?;
+        },
+    )?;
 
     let results = results.into_iter().map(|x| x.into()).collect();
     let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
@@ -142,26 +145,29 @@ pub fn get_post(
     match use_cache {
         Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
-    let result = conn.build_transaction().read_only().run(|conn| -> Result<domain::models::Post, Error> {
-        let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(HttpError::Unauthorized)?;
-        let agent = Agent::User(agent);
-        let post = db::find_post(conn, id)?;
-        let post = post.ok_or(HttpError::NotFound)?;
+    let result = conn.build_transaction().read_only().run(
+        |conn| -> Result<domain::models::Post, Error> {
+            let agent = find_user(conn, subject.email)?;
+            let agent = agent.ok_or(HttpError::Unauthorized)?;
+            let agent = Agent::User(agent);
+            let post = db::find_post(conn, id)?;
+            let post = post.ok_or(HttpError::NotFound)?;
 
-        let result = domain::usecases::consult_post(&agent, &post);
+            let result = domain::usecases::consult_post(&agent, &post);
 
-        use domain::usecases::ConsultPostResult::*;
-        match result {
-            DoConsultPost(p) => Ok(p),
-            CantConsultUnpublishedPostFromSomeoneElse => Err(HttpError::Forbidden.into()),
-            CantConsultUnpublishedPostAsReader => Err(HttpError::Forbidden.into()),
-        }
-    })?;
+            use domain::usecases::ConsultPostResult::*;
+            match result {
+                DoConsultPost(p) => Ok(p),
+                CantConsultUnpublishedPostFromSomeoneElse => Err(HttpError::Forbidden.into()),
+                CantConsultUnpublishedPostAsReader => Err(HttpError::Forbidden.into()),
+            }
+        },
+    )?;
 
     let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
         Ok(t) => Some(t),
@@ -189,55 +195,57 @@ pub async fn publish_post(
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
         _ => Err(HttpError::PreconditionFailed.into()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
 
-    conn.build_transaction().run(move |conn| -> Result<(), Error> {
-        let agent = find_user(conn, subject.email)?;
-        let agent = agent.ok_or(HttpError::Unauthorized)?;
-        let agent = Agent::User(agent);
-        let post = db::find_post(conn, id)?;
-        let post = post.ok_or(HttpError::NotFound)?;
+    conn.build_transaction()
+        .run(move |conn| -> Result<(), Error> {
+            let agent = find_user(conn, subject.email)?;
+            let agent = agent.ok_or(HttpError::Unauthorized)?;
+            let agent = Agent::User(agent);
+            let post = db::find_post(conn, id)?;
+            let post = post.ok_or(HttpError::NotFound)?;
 
-        use domain::usecases::{publish_post, PublishPostResult::*};
-        let result = publish_post(&agent, &post);
+            use domain::usecases::{publish_post, PublishPostResult::*};
+            let result = publish_post(&agent, &post);
 
-        match result {
-            CantPublishAnotherOnesPost => Err(HttpError::Forbidden.into()),
-            CantPublishAsReader => Err(HttpError::Forbidden.into()),
-            CantPublishAsWorker => Err(HttpError::Forbidden.into()), // should never happen
-            CantPublishAlreadyPublishedPost => Ok(()),    // treat it as Ok for idempotency purpose
-            DoPublishAndNotify(post_id, post) => {
-                db::publish_post(conn, post_id)?;
+            match result {
+                CantPublishAnotherOnesPost => Err(HttpError::Forbidden.into()),
+                CantPublishAsReader => Err(HttpError::Forbidden.into()),
+                CantPublishAsWorker => Err(HttpError::Forbidden.into()), // should never happen
+                CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
+                DoPublishAndNotify(post_id, post) => {
+                    db::publish_post(conn, post_id)?;
 
-                let _ = rmqpub::notify_post_published(&rmq_publisher, &post);
+                    let _ = rmqpub::notify_post_published(&rmq_publisher, &post);
 
-                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-                for cache_key in cache_keys {
-                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+                    for cache_key in cache_keys {
+                        redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                    }
+
+                    Ok(())
                 }
+                DoPublishNotifyAndSendMailToAuthor(post_id, post, author) => {
+                    db::publish_post(conn, post_id)?;
+                    let _ = rmqpub::notify_post_published(&rmq_publisher, &post);
 
-                Ok(())
-            }
-            DoPublishNotifyAndSendMailToAuthor(post_id, post, author) => {
-                db::publish_post(conn, post_id)?;
-                let _ = rmqpub::notify_post_published(&rmq_publisher, &post);
+                    let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+                    for cache_key in cache_keys {
+                        redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                    }
 
-                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-                let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-                for cache_key in cache_keys {
-                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                    let _ = rmqpub::trigger_mail_post_published(&rmq_publisher, &post, &author);
+
+                    Ok(())
                 }
-
-                let _ = rmqpub::trigger_mail_post_published(&rmq_publisher, &post, &author);
-
-                Ok(())
             }
-        }
-    })?;
+        })?;
 
     Ok(Status::NoContent)
 }
@@ -256,7 +264,8 @@ pub fn post_post(
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
         _ => Err(HttpError::PreconditionFailed.into()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
@@ -301,7 +310,8 @@ pub fn delete_post(
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
         _ => Err(HttpError::PreconditionFailed.into()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
@@ -365,12 +375,13 @@ pub fn patch_post(
         None => Ok(()),
         Some(Ok(true)) => Ok(()),
         _ => Err(HttpError::PreconditionFailed.into()),
-    }.map_err(|e: Error| e)?;
+    }
+    .map_err(|e: Error| e)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
 
-    conn.build_transaction().run(|conn| -> Result<(), Error>{
+    conn.build_transaction().run(|conn| -> Result<(), Error> {
         let agent = find_user(conn, subject.email)?;
         let agent = agent.ok_or(HttpError::Unauthorized)?;
         let agent = Agent::User(agent);

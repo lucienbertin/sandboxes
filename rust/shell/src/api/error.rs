@@ -9,7 +9,7 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::Unauthorized,
                 format!("error: {:?}", e).to_string(),
             ),
-            #[cfg(feature="rmqsub")]
+            #[cfg(feature = "rmqsub")]
             Error::GeoJSONSerdeError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
@@ -34,12 +34,12 @@ impl From<Error> for ResponseError {
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
-            #[cfg(feature="rmqsub")]
+            #[cfg(feature = "rmqsub")]
             Error::FromUTF8Error(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),
             ), // map every adapters error to 500
-            #[cfg(feature="rmqsub")]
+            #[cfg(feature = "rmqsub")]
             Error::GeoJsonError(e) => rocket::response::status::Custom(
                 rocket::http::Status::InternalServerError,
                 format!("error: {:?}", e).to_string(),

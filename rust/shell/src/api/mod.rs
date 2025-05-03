@@ -1,6 +1,6 @@
+mod error;
 mod place;
 mod post;
-mod error;
 
 use crate::db::DbPool;
 use crate::error::Error;
