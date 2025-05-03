@@ -8,9 +8,6 @@ mod api;
 #[cfg(feature = "api")]
 use api::Cors;
 
-#[cfg(feature = "api")]
-mod auth;
-
 #[cfg(feature = "db")]
 mod db;
 #[cfg(feature = "db")]

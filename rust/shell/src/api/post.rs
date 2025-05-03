@@ -1,4 +1,3 @@
-use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
 use crate::error::{Error, ResponseError};
 use crate::redis::{self, match_etag };
@@ -14,7 +13,7 @@ use rocket::{
     serde::json::Json,
 };
 
-use super::{EtagJson, IfMatchHeader, IfNoneMatchHeader};
+use super::{EtagJson, IfMatchHeader, IfNoneMatchHeader, JwtIdentifiedSubject};
 
 #[derive(Serialize, Deserialize)]
 pub struct User {

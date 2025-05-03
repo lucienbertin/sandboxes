@@ -134,3 +134,76 @@ impl<'r> FromRequest<'r> for IfMatchHeader {
         }
     }
 }
+
+use hmac::{Hmac, Mac};
+use jwt::{SignWithKey, VerifyWithKey};
+use sha2::Sha256;
+use std::collections::BTreeMap;
+use std::env;
+
+pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
+    let secret = env::var("SECRET")?;
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
+
+    Ok(key)
+}
+
+pub fn _sign_token(sub: String) -> Result<String, Error> {
+    let key = load_hmac_key()?;
+
+    let mut claims = BTreeMap::new();
+    claims.insert("sub", sub);
+    let token_str = claims.sign_with_key(&key)?;
+
+    Ok(token_str)
+}
+
+pub fn verify_token(token_str: &str) -> Result<BTreeMap<String, String>, Error> {
+    let key = load_hmac_key()?;
+
+    let claims: BTreeMap<String, String> = token_str.verify_with_key(&key)?;
+
+    Ok(claims)
+}
+
+#[derive(Debug)]
+pub struct JwtIdentifiedSubject {
+    pub email: String,
+}
+
+fn extract_subject(req: &Request<'_>) -> Result<JwtIdentifiedSubject, Error> {
+    use super::error::AuthError;
+    let result = req
+        .headers()
+        .get_one("Authorization")
+        .ok_or(Error::AuthError(AuthError::NoAuthorizationHeader))?;
+    let result = if result.starts_with("Bearer ") {
+        Ok(&result[7..])
+    } else {
+        Err(Error::AuthError(AuthError::NoBearerToken))
+    }?;
+    let result = verify_token(result)?;
+
+    let result = result
+        .get("sub")
+        .ok_or(Error::AuthError(AuthError::NoSubjectClaim))?;
+    let result = JwtIdentifiedSubject {
+        email: result.to_string(),
+    };
+
+    Ok(result)
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_subject(req);
+
+        match result {
+            Ok(subject) => Outcome::Success(subject),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
+    }
+}
