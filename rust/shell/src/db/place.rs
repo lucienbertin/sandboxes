@@ -40,6 +40,7 @@ impl Into<domain::models::Place> for Place {
     }
 }
 
+#[cfg(feature = "api")]
 pub fn select_places(connection: &mut PgConnection) -> Result<Vec<domain::models::Place>, Error> {
     let results: Vec<Place> = places::table.select(Place::as_select()).load(connection)?;
 

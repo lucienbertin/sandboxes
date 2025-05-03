@@ -1,10 +1,15 @@
-mod place;
-mod post;
 mod schema;
+
+mod place;
+#[cfg(feature = "api")]
+mod post;
+#[cfg(feature = "api")]
 mod user;
 
 pub use place::*;
+#[cfg(feature = "api")]
 pub use post::*;
+#[cfg(feature = "api")]
 pub use user::*;
 
 use crate::error::Error;
