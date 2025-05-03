@@ -8,15 +8,15 @@ WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir domain
 RUN mkdir shell
-COPY domain/Cargo.toml Cargo.lock ./domain
-COPY shell/Cargo.toml Cargo.lock ./shell
+COPY domain/Cargo.toml ./domain
+COPY shell/Cargo.toml ./shell
 
 # Create an empty src directory to trick Cargo into thinking it's a valid Rust project
 RUN mkdir domain/src && echo "fn main() {}" > domain/src/main.rs
 RUN mkdir shell/src && echo "fn main() {}" > shell/src/main.rs
 
 # Build the dependencies without the actual source code to cache dependencies separately
-RUN cargo build --release --locked
+RUN cargo build --release --locked --features rmqsub --no-default-features
 
 # Now copy the source code
 COPY ./domain/src ./domain/src
