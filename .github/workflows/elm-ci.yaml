@@ -18,7 +18,10 @@ jobs:
 
     steps:
       steps:
-      - uses: jorelali/setup-elm@v6
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup
+        uses: jorelali/setup-elm@v6
         with:
           elm-version: 0.19.1
       - name: Build
