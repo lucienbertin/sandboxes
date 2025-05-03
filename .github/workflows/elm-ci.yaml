@@ -19,10 +19,22 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Setup
+    - name: Setup Elm
       uses: jorelali/setup-elm@v6
       with:
         elm-version: 0.19.1
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    - name: Setup Elm tooling
+      run: npm i -g elm-review elm-test
     - name: Build
       working-directory: ./elm
       run: elm make src/Main.elm
+    - name: Test
+      working-directory: ./elm
+      run: elm-test
+    - name: Lint
+      working-directory: ./elm
+      run: elm-review
