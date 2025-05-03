@@ -7,31 +7,39 @@ default-run = "server"
 [dependencies]
 domain = { path = "../domain" }
 dotenvy = "0.15.7"
-hmac = "0.12.1"
-sha2 = "0.10.8"
-rocket = { version = "0.5.1", features = ["json"] }
-serde = { version = "1.0", features = ["derive"] }
-jwt = "0.16.0"
-diesel = { version = "2", features = ["postgres", "r2d2"] }
-postgis_diesel = { version = "2", features = ["serde"] }
-r2d2 = "0.8"
-lapin = "2.5.2"
-async-global-executor = "3.1.0"
-futures-lite = "2.6.0"
-redis = { version = "0.29.2", features = ["r2d2"] }
-rand = "0.9.0"
-pq-sys = { version = "0.7", features = ["bundled"] }
-openssl-sys = { version = "0.9", features = ["vendored"] } 
-serde_json = "1.0.140"
-geojson = { version = "0.24.2", features = ["geo-types"] }
-tokio = "1.44.1"
+
+tokio = { version = "1.44.1", features = ["rt-multi-thread", "macros"], optional = true }
+
+rocket = { version = "0.5.1", features = ["json"], optional = true }
+hmac = { version = "0.12.1", optional = true }
+sha2 = { version = "0.10.8", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+jwt = { version = "0.16.0", optional = true }
+serde_json = { version = "1.0.140", optional = true }
+geojson = { version = "0.24.2", features = ["geo-types"], optional = true }
+
+diesel = { version = "2", features = ["postgres", "r2d2"], optional = true }
+postgis_diesel = { version = "2", features = ["serde"], optional = true }
+pq-sys = { version = "0.7", features = ["bundled"], optional = true }
+openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
+
+r2d2 = { version = "0.8", optional = true }
+
+lapin = { version = "2.5.2", optional = true }
+async-global-executor = { version = "3.1.0", optional = true }
+futures-lite = { version = "2.6.0", optional = true }
+
+redis = { version = "0.29.2", features = ["r2d2"], optional = true }
+rand = { version = "0.9.0", optional = true }
+
 
 [features]
-api = ["db", "redis", "rmqpub"] # rest api web exposition
-rmqsub = ["db", "redis"] # rmq subscriber worker
-redis = [] # redis adapter
-rmqpub = [] # rmq publisher adapter
-db = [] # db adapter
+api = ["db", "redis", "rmqpub", "dep:rocket", "dep:hmac", "dep:sha2", "dep:jwt", "dep:serde", "dep:serde_json", "dep:geojson"] # rest api web exposition
+rmqsub = ["db", "redis", "dep:tokio", "dep:lapin", "dep:serde", "dep:serde_json", "dep:geojson", "dep:r2d2", "dep:futures-lite"] # rmq subscriber worker
+
+redis = ["dep:redis", "dep:rand"] # redis adapter
+rmqpub = ["dep:lapin", "dep:serde", "dep:serde_json", "dep:r2d2", "dep:async-global-executor"] # rmq publisher adapter
+db = ["dep:diesel", "dep:postgis_diesel", "dep:pq-sys", "dep:openssl-sys", "dep:r2d2"] # db adapter
 default=["api"]
 
 [[bin]]
