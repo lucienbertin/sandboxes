@@ -1,7 +1,7 @@
 use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user, DbConn};
 use crate::error::{Error, ResponseError};
-use crate::redis::{self, match_etag, IfNoneMatchHeader};
+use crate::redis::{self, match_etag};
 use crate::ServerState;
 use domain::models::Agent;
 use rocket::serde::json::Json;
@@ -10,7 +10,7 @@ use rocket::State;
 use serde::ser::SerializeStruct;
 use serde::Serializer;
 
-use super::EtagJson;
+use super::{EtagJson, IfNoneMatchHeader};
 
 #[derive(Serialize)]
 pub struct Place {

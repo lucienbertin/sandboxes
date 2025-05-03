@@ -23,7 +23,7 @@ pub fn get_conn(redis_pool: &RedisPool) -> Result<RedisConn, Error> {
 
     Ok(conn)
 }
-
+#[cfg(feature = "api")]
 pub fn match_etag(conn: &mut RedisConn, key: &String, etag: String) -> Result<bool, Error> {
     let prefixed_key = prefix_key(key);
 
@@ -32,6 +32,7 @@ pub fn match_etag(conn: &mut RedisConn, key: &String, etag: String) -> Result<bo
     Ok(cached_etag == etag)
 }
 
+#[cfg(feature = "api")]
 pub fn get_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error> {
     let prefixed_key = prefix_key(key);
     let etag = conn.get::<String, Option<String>>(prefixed_key)?;
@@ -59,69 +60,7 @@ pub fn refresh_etag(conn: &mut RedisConn, key: &String) -> Result<String, Error>
     Ok(etag)
 }
 
-use rocket::{
-    http::Status,
-    request::{FromRequest, Outcome},
-    Request,
-};
-pub struct IfNoneMatchHeader {
-    pub etag: String,
-}
 
-fn extract_if_none_match(req: &Request<'_>) -> Result<IfNoneMatchHeader, Error> {
-    use super::error::HttpError;
-    let etag = req
-        .headers()
-        .get_one("If-None-Match")
-        .ok_or(Error::HttpError(HttpError::NoIfNoneMatchHeader))?;
-
-    Ok(IfNoneMatchHeader {
-        etag: etag.to_string(),
-    })
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for IfNoneMatchHeader {
-    type Error = super::error::Error;
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let result = extract_if_none_match(req);
-
-        match result {
-            Ok(e) => Outcome::Success(e),
-            Err(e) => Outcome::Error((Status::Unauthorized, e)),
-        }
-    }
-}
-pub struct IfMatchHeader {
-    pub etag: String,
-}
-
-fn extract_if_match(req: &Request<'_>) -> Result<IfMatchHeader, Error> {
-    use super::error::HttpError;
-    let etag = req
-        .headers()
-        .get_one("If-Match")
-        .ok_or(Error::HttpError(HttpError::NoIfMatchHeader))?;
-
-    Ok(IfMatchHeader {
-        etag: etag.to_string(),
-    })
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for IfMatchHeader {
-    type Error = super::error::Error;
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let result = extract_if_match(req);
-
-        match result {
-            Ok(e) => Outcome::Success(e),
-            Err(e) => Outcome::Error((Status::Unauthorized, e)),
-        }
-    }
-}
 
 // mod test {
 //     use crate::error::Error;

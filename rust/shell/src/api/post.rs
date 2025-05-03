@@ -1,8 +1,8 @@
 use crate::auth::JwtIdentifiedSubject;
 use crate::db::{self, find_user};
 use crate::error::{Error, ResponseError};
-use crate::redis::{self, match_etag, IfMatchHeader, IfNoneMatchHeader};
-use crate::rmq::{self};
+use crate::redis::{self, match_etag };
+use crate::rmqpub::{self};
 use crate::ServerState;
 use domain::models::Agent;
 use rocket::serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use rocket::{
     serde::json::Json,
 };
 
-use super::EtagJson;
+use super::{EtagJson, IfMatchHeader, IfNoneMatchHeader};
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -212,7 +212,7 @@ pub async fn publish_post(
             DoPublishAndNotify(post_id, post) => {
                 db::publish_post(conn, post_id)?;
 
-                let _ = rmq::notify_post_published(&rmq_publisher, &post);
+                let _ = rmqpub::notify_post_published(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -224,7 +224,7 @@ pub async fn publish_post(
             }
             DoPublishNotifyAndSendMailToAuthor(post_id, post, author) => {
                 db::publish_post(conn, post_id)?;
-                let _ = rmq::notify_post_published(&rmq_publisher, &post);
+                let _ = rmqpub::notify_post_published(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
@@ -232,7 +232,7 @@ pub async fn publish_post(
                     redis::refresh_etag(&mut redis_conn, &cache_key)?;
                 }
 
-                let _ = rmq::trigger_mail_post_published(&rmq_publisher, &post, &author);
+                let _ = rmqpub::trigger_mail_post_published(&rmq_publisher, &post, &author);
 
                 Ok(())
             }
@@ -335,7 +335,7 @@ pub fn delete_post(
             DoDeleteAndNotify(post_id, post) => {
                 db::delete_post(conn, post_id)?;
 
-                let _ = rmq::notify_post_deleted(&rmq_publisher, &post);
+                let _ = rmqpub::notify_post_deleted(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {
@@ -397,7 +397,7 @@ pub fn patch_post(
             DoUpdateAndNotify(post_id, post_edition, post) => {
                 db::update_post(conn, post_id, post_edition)?;
 
-                let _ = rmq::notify_post_updated(&rmq_publisher, &post);
+                let _ = rmqpub::notify_post_updated(&rmq_publisher, &post);
 
                 let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
                 for cache_key in cache_keys {

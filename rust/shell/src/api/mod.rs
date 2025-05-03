@@ -3,6 +3,8 @@ mod post;
 
 pub use place::*;
 pub use post::*;
+use crate::error::Error;
+
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};
 use rocket::request::Request;
@@ -68,5 +70,67 @@ impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
         };
 
         builder.ok()
+    }
+}
+use rocket::{
+    http::Status,
+    request::{FromRequest, Outcome},
+};
+pub struct IfNoneMatchHeader {
+    pub etag: String,
+}
+
+fn extract_if_none_match(req: &Request<'_>) -> Result<IfNoneMatchHeader, Error> {
+    use super::error::HttpError;
+    let etag = req
+        .headers()
+        .get_one("If-None-Match")
+        .ok_or(Error::HttpError(HttpError::NoIfNoneMatchHeader))?;
+
+    Ok(IfNoneMatchHeader {
+        etag: etag.to_string(),
+    })
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for IfNoneMatchHeader {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_if_none_match(req);
+
+        match result {
+            Ok(e) => Outcome::Success(e),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
+    }
+}
+pub struct IfMatchHeader {
+    pub etag: String,
+}
+
+fn extract_if_match(req: &Request<'_>) -> Result<IfMatchHeader, Error> {
+    use super::error::HttpError;
+    let etag = req
+        .headers()
+        .get_one("If-Match")
+        .ok_or(Error::HttpError(HttpError::NoIfMatchHeader))?;
+
+    Ok(IfMatchHeader {
+        etag: etag.to_string(),
+    })
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for IfMatchHeader {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_if_match(req);
+
+        match result {
+            Ok(e) => Outcome::Success(e),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
     }
 }

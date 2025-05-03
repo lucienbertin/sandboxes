@@ -4,7 +4,6 @@ use postgis_diesel::types::Point;
 
 // Bindings
 use crate::db::schema::places;
-// use crate::db::schema::places::dsl::*;
 #[derive(Queryable, Insertable, Identifiable, Selectable)]
 #[diesel(table_name = places)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -49,7 +48,7 @@ pub fn select_places(connection: &mut PgConnection) -> Result<Vec<domain::models
     Ok(results)
 }
 
-#[cfg(feature = "rmq-sub")]
+#[cfg(feature = "rmqsub")]
 pub fn insert_place(
     connection: &mut PgConnection,
     place: domain::models::Place,
