@@ -1,0 +1,26 @@
+on:
+  pull_request:
+    paths:
+      - 'elm/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'elm/**'
+
+name: CI Elm
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      steps:
+      - uses: jorelali/setup-elm@v6
+        with:
+          elm-version: 0.19.1
+      - name: Build
+        working-directory: ./elm
+        run: elm make src/Main.elm
