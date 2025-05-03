@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { ApolloTestingModule } from 'apollo-angular/testing';
 import { CatsComponent } from './cats.component';
 
 describe('CatsComponent', () => {
@@ -8,7 +8,7 @@ describe('CatsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CatsComponent]
+      imports: [CatsComponent, ApolloTestingModule],
     })
     .compileComponents();
 
