@@ -26,15 +26,16 @@ init =
 type Msg
   = Increment
   | Decrement
+  | Plus Int
+  | Minus Int
 
 update : Msg -> Model -> Model
 update msg model =
   case msg of
-    Increment ->
-      model + 1
-
-    Decrement ->
-      model - 1
+    Increment -> model + 1
+    Decrement -> model - 1
+    Plus x    -> model + x
+    Minus y   -> model - y
 
 -- VIEW
 view : Model -> Html Msg
@@ -42,8 +43,12 @@ view model =
   main_ []
     [ h1 [] [text "testing elm" ]
     , div []
-      [ button [ onClick Decrement ] [ text "-" ]
+      [ button [ onClick (Minus 17) ] [ text "-17" ]
+      , button [ onClick (Minus 3) ] [ text "-3" ]
+      , button [ onClick Decrement ] [ text "-" ]
       , span [] [ text (String.fromInt model) ]
       , button [ onClick Increment ] [ text "+" ]
+      , button [ onClick (Plus 5) ] [ text "+5" ]
+      , button [ onClick (Plus 25) ] [ text "+25" ]
       ]
     ]
