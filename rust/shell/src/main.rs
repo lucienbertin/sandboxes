@@ -1,17 +1,30 @@
-use api::Cors;
-use db::DbPool;
-use redis::RedisPool;
-use rmq::RmQPublisher;
+mod error;
 
 #[macro_use]
 extern crate rocket;
 
+#[cfg(feature = "api")]
 mod api;
+#[cfg(feature = "api")]
+use api::Cors;
+
+#[cfg(feature = "api")]
 mod auth;
+
+#[cfg(feature = "db")]
 mod db;
-mod error;
+#[cfg(feature = "db")]
+use db::DbPool;
+
+#[cfg(feature = "redis")]
 mod redis;
-mod rmq;
+#[cfg(feature = "redis")]
+use redis::RedisPool;
+
+#[cfg(feature = "rmqpub")]
+mod rmqpub;
+#[cfg(feature = "rmqpub")]
+use rmqpub::RmQPublisher;
 
 pub struct ServerState {
     pub db_pool: DbPool,
@@ -27,7 +40,7 @@ async fn main() {
     };
 
     let db_pool = db::init_pool().expect("couldnt init db pool");
-    let rmq_publisher = rmq::init_publisher()
+    let rmq_publisher = rmqpub::init_publisher()
         .await
         .expect("couldnt init rmq's consumer/publisher duo");
     let redis_pool = redis::init_pool().expect("couldnt init redis pool");
