@@ -1,33 +1,22 @@
-mod job;
 mod place;
-mod post;
-
-pub use job::*;
-pub use post::*;
 
 use crate::error::Error;
-use lapin::{
-    options::{BasicPublishOptions, ExchangeDeclareOptions},
-    types::FieldTable,
-    BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
-};
 
-#[cfg(feature = "rmq-sub")]
 use crate::db::DbPool;
-#[cfg(feature = "rmq-sub")]
 use crate::redis::RedisPool;
-#[cfg(feature = "rmq-sub")]
+use futures_lite::StreamExt;
 use lapin::{
     message::Delivery,
     options::{
         BasicAckOptions, BasicConsumeOptions, BasicRejectOptions, QueueBindOptions,
         QueueDeclareOptions,
     },
+    types::FieldTable,
+    Channel, Connection, ConnectionProperties,
 };
-use std::{env, sync::mpsc};
+use std::env;
 
 // initialize connection
-#[cfg(feature = "rmq-sub")]
 async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
     let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
 
@@ -36,96 +25,7 @@ async fn init_channel(amqp_url: &String) -> Result<Channel, Error> {
     Ok(chan)
 }
 
-async fn init_channel_and_exchange(
-    amqp_url: &String,
-    exchange_name: &String,
-) -> Result<Channel, Error> {
-    let conn = Connection::connect(&amqp_url, ConnectionProperties::default()).await?;
-
-    let chan = conn.create_channel().await?;
-
-    chan.exchange_declare(
-        exchange_name.as_str(),
-        ExchangeKind::Topic,
-        ExchangeDeclareOptions::default(),
-        FieldTable::default(),
-    )
-    .await?;
-
-    Ok(chan)
-}
-
-async fn publish(
-    chan: &Channel,
-    exchange_name: &String,
-    routing_key: String,
-    message: String,
-) -> Result<(), Error> {
-    chan.basic_publish(
-        exchange_name.as_str(),
-        routing_key.as_str(),
-        BasicPublishOptions::default(),
-        message.as_bytes(),
-        BasicProperties::default(),
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub struct RmQPublisher {
-    sender: std::sync::mpsc::Sender<RmqMessage>,
-}
-impl RmQPublisher {
-    fn new(sender: std::sync::mpsc::Sender<RmqMessage>) -> Self {
-        Self { sender: sender }
-    }
-
-    pub fn publish(&self, routing_key: String, message: String) -> Result<(), Error> {
-        self.sender.send((routing_key, message))?;
-
-        Ok(())
-    }
-}
-
-pub type RmqMessage = (String, String);
-pub async fn init_publisher() -> Result<RmQPublisher, Error> {
-    let amqp_url = env::var("AMQP_URL")?;
-    let exchange_name = env::var("RMQ_EXCHANGE")?;
-
-    let channel = init_channel_and_exchange(&amqp_url, &exchange_name).await?;
-    let channel_clone = channel.clone();
-    let (tx, rx) = mpsc::channel::<RmqMessage>();
-
-    // publisher thread
-    async_global_executor::spawn(async move {
-        for (routing_key, message) in rx {
-            let _ = publish(&channel_clone, &exchange_name, routing_key, message).await;
-        }
-    })
-    .detach();
-
-    Ok(RmQPublisher::new(tx))
-}
-
-#[cfg(feature = "rmq-sub")]
 pub async fn start_consumer(db_pool: &DbPool, redis_pool: &RedisPool) -> Result<(), Error> {
-    use futures_lite::StreamExt;
-    use lapin::{
-        message::Delivery,
-        options::{
-            BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, BasicRejectOptions,
-            ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
-        },
-        types::FieldTable,
-        BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
-    };
-
-    use crate::{
-        db::{self, DbPool},
-        redis::RedisPool,
-    };
-
     let amqp_url = env::var("AMQP_URL")?;
     let channel = init_channel(&amqp_url).await?;
 
@@ -169,7 +69,6 @@ pub async fn start_consumer(db_pool: &DbPool, redis_pool: &RedisPool) -> Result<
     Ok(())
 }
 
-#[cfg(feature = "rmq-sub")]
 async fn handle_delivery(
     db_pool: &DbPool,
     redis_pool: &RedisPool,
@@ -189,8 +88,6 @@ async fn handle_delivery(
     }
     .map_err(|e| Error::from(e))
 }
-
-#[cfg(feature = "rmq-sub")]
 fn log_delivery(delivery: &Delivery) -> Result<(), Error> {
     println!(
         "Delivery with key: {:?} recieved, but there are no handlers for it so it'll just be acked",

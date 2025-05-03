@@ -1,11 +1,13 @@
-mod auth;
+#[cfg(feature = "db")]
 mod db;
 mod error;
+#[cfg(feature = "redis")]
 mod redis;
-mod rmq;
+#[cfg(feature = "rmqsub")]
+mod rmqsub;
 
 #[tokio::main]
-#[cfg(feature = "rmq-sub")]
+#[cfg(feature = "rmqsub")]
 async fn main() {
     use dotenvy::dotenv;
     match dotenv() {
@@ -15,10 +17,10 @@ async fn main() {
 
     let db_pool = db::init_pool().expect("couldnt init db pool");
     let redis_pool = redis::init_pool().expect("couldnt init redis pool");
-    rmq::start_consumer(&db_pool, &redis_pool)
+    rmqsub::start_consumer(&db_pool, &redis_pool)
         .await
         .expect("couldnt start rmq's consumer");
 }
 
-#[cfg(not(feature = "rmq-sub"))]
+#[cfg(not(feature = "rmqsub"))]
 fn main() {}

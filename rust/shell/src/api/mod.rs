@@ -1,14 +1,19 @@
+mod error;
 mod place;
 mod post;
 
-pub use place::*;
-pub use post::*;
+use crate::db::DbPool;
+use crate::error::Error;
+use crate::redis::RedisPool;
+use crate::rmqpub::RmQPublisher;
+use crate::{db, redis, rmqpub};
+
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};
 use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::Response;
+use rocket::{Build, Response, Rocket};
 use serde::Serialize;
 
 #[get("/health")]
@@ -69,4 +74,175 @@ impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
 
         builder.ok()
     }
+}
+use rocket::{
+    http::Status,
+    request::{FromRequest, Outcome},
+};
+pub struct IfNoneMatchHeader {
+    pub etag: String,
+}
+
+fn extract_if_none_match(req: &Request<'_>) -> Result<IfNoneMatchHeader, Error> {
+    use super::error::HttpError;
+    let etag = req
+        .headers()
+        .get_one("If-None-Match")
+        .ok_or(Error::HttpError(HttpError::NoIfNoneMatchHeader))?;
+
+    Ok(IfNoneMatchHeader {
+        etag: etag.to_string(),
+    })
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for IfNoneMatchHeader {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_if_none_match(req);
+
+        match result {
+            Ok(e) => Outcome::Success(e),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
+    }
+}
+pub struct IfMatchHeader {
+    pub etag: String,
+}
+
+fn extract_if_match(req: &Request<'_>) -> Result<IfMatchHeader, Error> {
+    use super::error::HttpError;
+    let etag = req
+        .headers()
+        .get_one("If-Match")
+        .ok_or(Error::HttpError(HttpError::NoIfMatchHeader))?;
+
+    Ok(IfMatchHeader {
+        etag: etag.to_string(),
+    })
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for IfMatchHeader {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_if_match(req);
+
+        match result {
+            Ok(e) => Outcome::Success(e),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
+    }
+}
+
+use hmac::{Hmac, Mac};
+use jwt::{SignWithKey, VerifyWithKey};
+use sha2::Sha256;
+use std::collections::BTreeMap;
+use std::env;
+
+pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
+    let secret = env::var("SECRET")?;
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
+
+    Ok(key)
+}
+
+pub fn _sign_token(sub: String) -> Result<String, Error> {
+    let key = load_hmac_key()?;
+
+    let mut claims = BTreeMap::new();
+    claims.insert("sub", sub);
+    let token_str = claims.sign_with_key(&key)?;
+
+    Ok(token_str)
+}
+
+pub fn verify_token(token_str: &str) -> Result<BTreeMap<String, String>, Error> {
+    let key = load_hmac_key()?;
+
+    let claims: BTreeMap<String, String> = token_str.verify_with_key(&key)?;
+
+    Ok(claims)
+}
+
+#[derive(Debug)]
+pub struct JwtIdentifiedSubject {
+    pub email: String,
+}
+
+fn extract_subject(req: &Request<'_>) -> Result<JwtIdentifiedSubject, Error> {
+    use super::error::AuthError;
+    let result = req
+        .headers()
+        .get_one("Authorization")
+        .ok_or(Error::AuthError(AuthError::NoAuthorizationHeader))?;
+    let result = if result.starts_with("Bearer ") {
+        Ok(&result[7..])
+    } else {
+        Err(Error::AuthError(AuthError::NoBearerToken))
+    }?;
+    let result = verify_token(result)?;
+
+    let result = result
+        .get("sub")
+        .ok_or(Error::AuthError(AuthError::NoSubjectClaim))?;
+    let result = JwtIdentifiedSubject {
+        email: result.to_string(),
+    };
+
+    Ok(result)
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
+    type Error = super::error::Error;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = extract_subject(req);
+
+        match result {
+            Ok(subject) => Outcome::Success(subject),
+            Err(e) => Outcome::Error((Status::Unauthorized, e)),
+        }
+    }
+}
+
+pub struct ServerState {
+    pub db_pool: DbPool,
+    pub redis_pool: RedisPool,
+    pub rmq_publisher: RmQPublisher,
+}
+
+pub async fn build_server() -> Result<Rocket<Build>, Error> {
+    let db_pool = db::init_pool()?;
+    let rmq_publisher = rmqpub::init_publisher().await?;
+    let redis_pool = redis::init_pool()?;
+
+    let server = rocket::build()
+        .mount("/", routes![health])
+        .mount("/api/", {
+            routes![
+                all_options,
+                post::get_posts,
+                post::get_post,
+                post::post_post,
+                post::delete_post,
+                post::publish_post,
+                post::patch_post,
+                place::get_places,
+                place::get_places_geojson,
+            ]
+        })
+        .attach(Cors)
+        .manage(ServerState {
+            db_pool: db_pool,
+            rmq_publisher: rmq_publisher,
+            redis_pool: redis_pool,
+        });
+
+    Ok(server)
 }
