@@ -17,13 +17,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup
-        uses: jorelali/setup-elm@v6
-        with:
-          elm-version: 0.19.1
-      - name: Build
-        working-directory: ./elm
-        run: elm make src/Main.elm
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup
+      uses: jorelali/setup-elm@v6
+      with:
+        elm-version: 0.19.1
+    - name: Build
+      working-directory: ./elm
+      run: elm make src/Main.elm
