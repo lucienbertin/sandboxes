@@ -1,0 +1,30 @@
+on:
+  pull_request:
+    paths:
+      - 'elm/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'elm/**'
+
+name: CD Elm
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          tags: sandboxes-elm:latest
+          context: "{{defaultContext}}:elm"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

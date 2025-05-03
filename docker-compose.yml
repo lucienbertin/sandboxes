@@ -205,6 +205,16 @@ services:
     networks:
       - sandboxes
 
+  elm:
+    image: sandboxes-elm
+    build: ./elm
+    # env_file: ./elm/.env.dc
+    deploy:
+      replicas: 1
+    restart: always
+    networks:
+      - sandboxes
+
   blazor:
     image: sandboxes-blazor
     build: ./blazor
