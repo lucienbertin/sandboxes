@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
-import { map, Observable } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 
 export interface Cat {
   name: string;
@@ -17,6 +17,15 @@ const GET_CATS = gql`
     }
   }
 `;
+const CREATE_CAT = gql`
+  mutation createCat($cat: CreateCatDto!) {
+    createCat(cat: $cat) {
+      name
+      age
+      breed
+    }
+  }
+`
 @Injectable({
   providedIn: 'any'
 })
@@ -28,5 +37,14 @@ export class CatsService {
     return this.apollo.query<{ cats: Cat[] }>({ query: GET_CATS }).pipe(
       map(r => r.data.cats),
     );
+  }
+
+  public createCat(cat: Cat) {
+    return this.apollo.mutate({
+      mutation: CREATE_CAT,
+      variables: { cat }
+    }).pipe(
+      tap(r => console.log(r)),
+    )
   }
 }

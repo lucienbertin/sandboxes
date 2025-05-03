@@ -14,6 +14,14 @@ export class CatsComponent {
   private service = inject(CatsService);
 
   cats$: Observable<Cat[]> = this.service.getCats();
-  
+
+  createZebro() {
+    const zebro = {
+      name: "zebro",
+      age: 6,
+      breed: "tigré"
+    };
+    this.service.createCat(zebro).subscribe(() => console.log("zebro created"));
+  }
 
 }
