@@ -16,7 +16,44 @@ import Data.Serialize (Serialize)
 import Data.Aeson ( toJSON, fromJSON, Result(Success))
 import qualified Data.Serialize
 import qualified Data.Aeson
+import Control.Monad ( (>=>) )
+import Data.Functor ( (<$>), (<&>) )
+import Data.Monoid ((<>))
+import Data.Maybe (isNothing)
+import Data.Function ((&), )
 
+
+keepOdds :: Int -> Maybe Int
+keepOdds n
+    | even n = Nothing
+    | otherwise = Just n
+mKeepOdds :: Maybe Int -> Maybe Int
+mKeepOdds Nothing = Nothing
+mKeepOdds (Just n) = keepOdds n
+-- mKeepOdds = (>=>) keepOdds
+
+collatz n
+    | even n = quot n 2
+    | otherwise = 3 * n + 1
+
+justCollatz = Just . collatz
+mCollatz :: Int -> Maybe Int
+mCollatz 1 = Nothing
+-- mCollatz n = n & collatz & Just
+-- mCollatz n = Just $ collatz n
+mCollatz n = justCollatz n
+
+mNthCollatz :: Int -> Int -> Maybe Int
+mNthCollatz 0 = Just
+mNthCollatz n = mCollatz >=> mNthCollatz (n - 1)
+
+collatzLen :: Int -> Int
+collatzLen n
+    | isNothing $ mCollatz n = 0
+    -- | otherwise              = collatzLen (collatz n) + 1
+    -- | otherwise              = (+1).collatzLen.collatz $ n
+    | otherwise              = (+1) $ collatzLen $ collatz n
+    -- | otherwise              = n & collatz & collatzLen & (+1)
 
 -- date and times
 monday =    fromOrdinalDate 2025 6 -- 1st complete week of 2025
@@ -358,7 +395,26 @@ tests = TestList [
     TestLabel "serDe1" serDe1,
     TestLabel "serDe2" serDe2]
 
+l :: Either Integer Integer
+l = Left 12
+r :: Either Integer Integer
+r = Right 15
+
 main :: IO ()
 main = do
+    -- print $ keepOdds <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    -- print $ collatz <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    -- print $ mCollatz <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    print $ collatzLen <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    print $ [ 1, 2, 3, 4, 5, 6, 7, 8 ] <&> collatzLen
+    print $ collatzLen 27
+    -- print $ mNthCollatz 0 <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    -- print $ mNthCollatz 1 <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    -- print $ mNthCollatz 2 <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+    -- print $ mNthCollatz 3 <$> [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+
+    -- print $ (+1) <$> l
+    -- print $ (+1) <$> r
+
     result <- runTestTT tests
     if failures result > 0 then Exit.exitFailure else Exit.exitSuccess
