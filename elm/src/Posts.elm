@@ -1,9 +1,11 @@
 module Posts exposing (main, Model, Msg)
 
 import Browser
-import Html exposing (Html, text, ul, li, div, h2, blockquote, p)
+import Html exposing (Html, text, ul, li, div, h1)
 import Http
-import Json.Decode exposing (Decoder, map3, field, int, string)
+import Json.Decode exposing (Decoder, map3, field, int, string, list)
+import Html exposing (b)
+
 main : Program () Model Msg
 main =
   Browser.element
@@ -20,12 +22,12 @@ type alias Post =
     , title : String
     , body  : String
     }
--- type alias Posts = List Post
+type alias Posts = List Post
 
 type Model
   = Failure
   | Loading
-  | Success Post
+  | Success Posts
 
 -- INIT
 init : () -> (Model, Cmd Msg)
@@ -39,15 +41,18 @@ headers =
 getPosts : Cmd Msg
 getPosts =
   Http.request
-    { url = "http://rust.sandboxes.local/api/post/1"
+    { url = "http://rust.sandboxes.local/api/posts"
     , method = "GET"
     , headers = headers
     , body = Http.emptyBody
-    , expect = Http.expectJson GotPost postDecoder
+    , expect = Http.expectJson GotPosts postsDecoder
     , timeout = Nothing
     , tracker = Nothing
     }
 
+
+postsDecoder : Decoder Posts
+postsDecoder = list postDecoder
 
 postDecoder : Decoder Post
 postDecoder =
@@ -63,15 +68,15 @@ subscriptions _ =
   Sub.none
 
 type Msg
-  = GotPost (Result Http.Error Post)
+  = GotPosts (Result Http.Error Posts)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg _ =
   case msg of
-    GotPost result ->
+    GotPosts result ->
       case result of
-        Ok post ->
-          (Success post, Cmd.none)
+        Ok posts ->
+          (Success posts, Cmd.none)
 
         Err _ ->
           (Failure, Cmd.none)
@@ -80,25 +85,21 @@ update msg _ =
 view : Model -> Html Msg
 view model =
   div []
-    [ h2 [] [ text "Post" ]
-    , viewPost model
+    [ h1 [] [ text "Posts" ]
+    , viewPosts model
     ]
 
 
-viewPost : Model -> Html Msg
-viewPost model =
+viewPosts : Model -> Html Msg
+viewPosts model =
   case model of
-    Failure ->
-      div []
-        [ text "I could not load a post for some rease. "
-        ]
+    Failure -> text "I could not load a post for some rease. "
+    Loading -> text "Loading..."
+    Success posts -> ul [] (posts |> List.map viewPost)
 
-    Loading ->
-      text "Loading..."
-
-    Success post ->
-      div []
-        [ blockquote [] [ text post.title ]
-        , p [  ]
-            [ text post.body ]
-        ]
+viewPost : Post -> Html Msg
+viewPost post = li [] 
+  [ b [] [text post.title]
+  , text " "
+  , text post.body
+  ]
