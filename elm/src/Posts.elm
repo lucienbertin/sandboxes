@@ -3,7 +3,7 @@ module Posts exposing (main, Model, Msg)
 import Browser
 import Html exposing (Html, text, ul, li, div, h1)
 import Http
-import Json.Decode exposing (Decoder, map3, field, int, string, list)
+import Json.Decode exposing (Decoder, map4, map2, field, int, string, list)
 import Html exposing (b)
 
 main : Program () Model Msg
@@ -17,10 +17,15 @@ main =
 
 
 -- MODEL
+type alias Author =
+  { first_name : String
+  , last_name : String
+  }
 type alias Post = 
-  { id    : Int
-  , title : String
-  , body  : String
+  { id     : Int
+  , title  : String
+  , body   : String
+  , author : Author
   }
 type alias Posts = List Post
 
@@ -51,16 +56,20 @@ getPosts =
     }
 
 
-postsDecoder : Decoder Posts
-postsDecoder = list postDecoder
+authorDecoder : Decoder Author
+authorDecoder = map2 Author
+  (field "first_name" string)
+  (field "last_name" string)
 
 postDecoder : Decoder Post
-postDecoder =
-  map3 Post
-    (field "id" int)
-    (field "title" string)
-    (field "body" string)
+postDecoder = map4 Post
+  (field "id" int)
+  (field "title" string)
+  (field "body" string)
+  (field "author" authorDecoder)
 
+postsDecoder : Decoder Posts
+postsDecoder = list postDecoder
 
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
@@ -91,6 +100,8 @@ viewPosts model = case model of
 viewPost : Post -> Html Msg
 viewPost post = li [] 
   [ b [] [text post.title]
+  , text " by "
+  , text post.author.first_name
   , text " "
-  , text post.body
+  , text post.author.last_name
   ]
