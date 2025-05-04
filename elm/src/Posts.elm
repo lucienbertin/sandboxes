@@ -46,7 +46,7 @@ headers =
 getPosts : Cmd Msg
 getPosts =
   Http.request
-    { url = "http://rust.sandboxes.local/api/posts"
+    { url = "//rust.sandboxes.local/api/posts"
     , method = "GET"
     , headers = headers
     , body = Http.emptyBody

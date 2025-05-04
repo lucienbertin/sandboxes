@@ -27,7 +27,7 @@ export const appConfig: ApplicationConfig = {
 
       return {
         link: httpLink.create({
-          uri: 'http://nestjs.sandboxes.local/graphql',
+          uri: '//nestjs.sandboxes.local/graphql',
         }),
         cache: new InMemoryCache(),
       };
