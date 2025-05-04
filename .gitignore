@@ -2,3 +2,7 @@
 .env.dc
 
 go-logs
+
+sandboxes-dhparam.pem
+sandboxes-selfsigned.crt
+sandboxes-selfsigned.key
