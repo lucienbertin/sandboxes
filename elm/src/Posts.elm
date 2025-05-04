@@ -1,10 +1,10 @@
 module Posts exposing (main, Model, Msg)
 
 import Browser
-import Html exposing (Html, text, ul, li, div, h1)
+import Html exposing (Html, text, ul, li, h1, main_, b)
 import Http
 import Json.Decode exposing (Decoder, map4, map2, field, int, string, list)
-import Html exposing (b)
+
 
 main : Program () Model Msg
 main =
@@ -85,7 +85,7 @@ update msg _ = case msg of
 -- VIEW
 view : Model -> Html Msg
 view model =
-  div []
+  main_ []
     [ h1 [] [ text "Posts" ]
     , viewPosts model
     ]
