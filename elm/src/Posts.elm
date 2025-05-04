@@ -18,10 +18,10 @@ main =
 
 -- MODEL
 type alias Post = 
-    { id    : Int
-    , title : String
-    , body  : String
-    }
+  { id    : Int
+  , title : String
+  , body  : String
+  }
 type alias Posts = List Post
 
 type Model
@@ -37,7 +37,7 @@ init _ =
 -- HTTP
 headers : List Http.Header
 headers = 
-    [ Http.header "Authorization" "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsdWNpZW5AYmVydC5pbiJ9.MQ2AtPRuMhZuu84jFpjbnZF3tMREpSi51YEU6yq8KBI"]
+  [ Http.header "Authorization" "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsdWNpZW5AYmVydC5pbiJ9.MQ2AtPRuMhZuu84jFpjbnZF3tMREpSi51YEU6yq8KBI"]
 getPosts : Cmd Msg
 getPosts =
   Http.request
@@ -64,22 +64,14 @@ postDecoder =
 
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-  Sub.none
+subscriptions _ = Sub.none
 
-type Msg
-  = GotPosts (Result Http.Error Posts)
+type Msg = GotPosts (Result Http.Error Posts)
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg _ =
-  case msg of
-    GotPosts result ->
-      case result of
-        Ok posts ->
-          (Success posts, Cmd.none)
-
-        Err _ ->
-          (Failure, Cmd.none)
+update msg _ = case msg of
+  GotPosts (Ok posts) -> (Success posts, Cmd.none)
+  GotPosts (Err _)    -> (Failure, Cmd.none)
 
 -- VIEW
 view : Model -> Html Msg
@@ -91,11 +83,10 @@ view model =
 
 
 viewPosts : Model -> Html Msg
-viewPosts model =
-  case model of
-    Failure -> text "I could not load a post for some rease. "
-    Loading -> text "Loading..."
-    Success posts -> ul []  <| List.map viewPost posts
+viewPosts model = case model of
+  Failure -> text "I could not load a post for some rease. "
+  Loading -> text "Loading..."
+  Success posts -> ul []  <| List.map viewPost posts
 
 viewPost : Post -> Html Msg
 viewPost post = li [] 
