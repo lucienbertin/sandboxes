@@ -101,7 +101,7 @@ viewPost : Post -> Html Msg
 viewPost post = li [] 
   [ b [] [text post.title]
   , text " by "
-  , text post.author.first_name
-  , text " "
-  , text post.author.last_name
+  , viewAuthor <| post.author
   ]
+viewAuthor : Author -> Html Msg
+viewAuthor author = text <| author.first_name ++ " " ++ author.last_name
