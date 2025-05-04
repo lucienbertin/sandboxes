@@ -95,7 +95,7 @@ viewPosts model =
   case model of
     Failure -> text "I could not load a post for some rease. "
     Loading -> text "Loading..."
-    Success posts -> ul [] (posts |> List.map viewPost)
+    Success posts -> ul []  <| List.map viewPost posts
 
 viewPost : Post -> Html Msg
 viewPost post = li [] 
