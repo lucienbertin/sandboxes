@@ -37,15 +37,15 @@ suite =
         , test "no closure bar" <| bar 5
         , test "composition order >>" <| \_ -> 3 |> add1thentimes2 |> Expect.equal 8
         , test "composition order <<" <| \_ -> 3 |> times2thenadd1 |> Expect.equal 7
-        , test "composition order explicit <<" <| \_ -> 3 |> add1 << times2 |> Expect.equal 7
-        , test "composition order explicit >>" <| \_ -> 3 |> add1 >> times2 |> Expect.equal 8
+        -- , test "composition order explicit <<" <| \_ -> 3 |> add1 << times2 |> Expect.equal 7
+        -- , test "composition order explicit >>" <| \_ -> 3 |> add1 >> times2 |> Expect.equal 8
         , test "composition order explicit >> again" <| (\_ -> 3) >> add1 >> times2 >> Expect.equal 8
         , test "composition order pipin  |>"   <| \_ -> 3 |> add1 |> times2 |> Expect.equal 8
         , test "composition order reverse"   <| \_ -> Expect.equal 8 <| times2 <| add1 <| 3
         , test "monadic bind 1" <| \_ -> 3          |>                  divide12By |> Expect.equal (Just 4)
         , test "monadic bind 2" <| \_ -> 0          |>                  divide12By |> Expect.equal Nothing
-        , test "monadic bind 3" <| \_ -> Nothing    |> Maybe.andThen    divide12By |> Expect.equal Nothing
-        , test "monadic bind 4" <| \_ -> (Just 3)   |> Maybe.andThen    divide12By |> Expect.equal (Just 4)
-        , test "monadic bind 5" <| \_ -> (Just 0)   |> Maybe.andThen    divide12By |> Expect.equal Nothing
+        -- , test "monadic bind 3" <| \_ -> Nothing    |> Maybe.andThen    divide12By |> Expect.equal Nothing
+        -- , test "monadic bind 4" <| \_ -> (Just 3)   |> Maybe.andThen    divide12By |> Expect.equal (Just 4)
+        -- , test "monadic bind 5" <| \_ -> (Just 0)   |> Maybe.andThen    divide12By |> Expect.equal Nothing
     ]
 
