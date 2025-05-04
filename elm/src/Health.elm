@@ -26,7 +26,7 @@ init : () -> (Model, Cmd Msg)
 init _ =
   ( Loading
   , Http.get
-      { url = "http://rust.sandboxes.local/health"
+      { url = "//rust.sandboxes.local/health"
       , expect = Http.expectString GotText
       }
   )

@@ -5,7 +5,9 @@ WORKDIR /app
 COPY elm.json ./
 COPY src ./src
 
-RUN elm make src/Main.elm --optimize
+RUN elm make src/Main.elm --optimize --output dist/index.html
+RUN elm make src/Posts.elm --optimize --output dist/posts/index.html
+RUN elm make src/Health.elm --optimize --output dist/health/index.html
 
 FROM busybox:1.35 AS runner
 
@@ -17,7 +19,7 @@ WORKDIR /app
 
 # Copy the static website
 # Use the .dockerignore file to control what ends up inside the image!
-COPY --from=builder app/index.html .
+COPY --from=builder app/dist .
 
 # Run BusyBox httpd
 CMD ["busybox", "httpd", "-f", "-v", "-p", "3000"]
