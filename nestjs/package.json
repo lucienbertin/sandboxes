@@ -33,6 +33,7 @@
     "@nestjs/graphql": "^13.1.0",
     "@nestjs/mapped-types": "*",
     "@nestjs/mercurius": "^13.1.0",
+    "@nestjs/microservices": "^11.1.0",
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-fastify": "^11.0.16",
     "@nestjs/typeorm": "^11.0.0",
