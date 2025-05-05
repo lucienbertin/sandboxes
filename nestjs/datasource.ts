@@ -1,4 +1,4 @@
-import { typeOrmConfig } from "./src/typeorm.options";
+import { typeOrmConfig } from "./apps/server/src/typeorm.options";
 import { DataSource, DataSourceOptions } from "typeorm";
 
 // used by typeorm cli

@@ -22,4 +22,4 @@ import { CatModule } from './cat';
     CatModule, // vertical slice
   ],
 })
-export class AppModule {}
+export class ServerModule {}
