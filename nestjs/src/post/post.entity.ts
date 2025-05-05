@@ -8,15 +8,11 @@ export class Post {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Field({ nullable: true })
+  @Field()
   @Column({ type: 'text' })
   title: string;
 
-  @Field({ nullable: true })
+  @Field()
   @Column({ type: 'text' })
   body: string;
-
-  @Field(() => Boolean)
-  @Column({ type: 'boolean' })
-  published: boolean;
 }
