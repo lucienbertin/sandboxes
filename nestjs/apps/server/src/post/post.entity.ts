@@ -35,7 +35,7 @@ export class Post {
   @Column({ type: 'text' })
   body: string;
 
-  @Field(type => Author)
+  @Field(() => Author)
   @ManyToOne(() => Author, (author: Author) => author.posts)
   author: Author;
 }

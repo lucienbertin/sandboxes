@@ -13,7 +13,7 @@ export class PostService {
     return this.repo.find({
       relations: {
         author: true,
-      }
+      },
     });
   }
 
