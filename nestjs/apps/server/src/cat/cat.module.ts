@@ -5,9 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Cat, CatSchema } from './cat.entity';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Cat.name, schema: CatSchema }]),
-  ],
+  imports: [MongooseModule.forFeature([{ name: Cat.name, schema: CatSchema }])],
   providers: [CatService, CatResolver],
 })
 export class CatModule {}

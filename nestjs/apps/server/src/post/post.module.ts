@@ -5,9 +5,7 @@ import { Author, Post } from './post.entity';
 import { PostResolver } from './post.resolver';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Author, Post]),
-  ],
+  imports: [TypeOrmModule.forFeature([Author, Post])],
   providers: [PostService, PostResolver],
 })
 export class PostModule {}

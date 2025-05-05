@@ -3,17 +3,17 @@ import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 @Entity()
 export class Author {
-    @Column()
-    firstName: string
+  @Column()
+  firstName: string;
 
-    @Column()
-    lastName: string
+  @Column()
+  lastName: string;
 
-    @PrimaryColumn({ type: String })
-    email: string
+  @PrimaryColumn({ type: String })
+  email: string;
 
-    @OneToMany(() => Post, (post: Post) => post.author)
-    posts: Post[]
+  @OneToMany(() => Post, (post: Post) => post.author)
+  posts: Post[];
 }
 
 @ObjectType()

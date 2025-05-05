@@ -7,6 +7,6 @@ import { Module } from '@nestjs/common';
 })
 export class WorkerModule {
   constructor() {
-    console.log("constructing worker module");
+    console.log('constructing worker module');
   }
 }

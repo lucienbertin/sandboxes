@@ -12,9 +12,11 @@ export class CatService {
   }
 
   async findByName(name: string): Promise<Cat | null> {
-    return this.catModel.findOne({
-      name: name
-    }).exec();
+    return this.catModel
+      .findOne({
+        name: name,
+      })
+      .exec();
   }
 
   async create(createCatDto: CreateCatDto): Promise<Cat> {
