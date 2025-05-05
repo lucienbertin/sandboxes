@@ -18,12 +18,10 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [rmqUrl],
-      queue: 'cats_queue',
-      // queue: 'nestjs-evt.post.#',
+      queue: 'nestjs-evt.#',
       queueOptions: {
         durable: true,
       },
-      // wildcards: true,
     },
   });
   await worker.listen();
