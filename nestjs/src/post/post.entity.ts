@@ -17,7 +17,7 @@ export class Author {
 }
 
 @ObjectType()
-@Entity({ name: 'posts' })
+@Entity()
 export class Post {
   @Field(() => Int)
   @PrimaryColumn()
@@ -31,7 +31,7 @@ export class Post {
   @Column({ type: 'text' })
   body: string;
 
-  @Field()
+  // @Field()
   @ManyToOne(() => Author, (author: Author) => author.posts)
   author: Author;
 }
