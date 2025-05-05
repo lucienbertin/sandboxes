@@ -184,6 +184,27 @@ services:
         restart: true
     networks:
       - sandboxes
+  nestjs-worker:
+    image: sandboxes-nestjs-worker
+    build: 
+      context: nestjs
+      dockerfile: Worker.Dockerfile
+    env_file: ./nestjs/.env.dc
+    deploy:
+      replicas: 1
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      mongo:
+        condition: service_healthy
+        restart: true
+      rmq:
+        condition: service_healthy
+        restart: true
+    networks:
+      - sandboxes
 
   haskell:
     image: sandboxes-haskell
