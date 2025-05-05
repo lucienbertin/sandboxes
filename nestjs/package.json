@@ -40,6 +40,8 @@
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-fastify": "^11.0.16",
     "@nestjs/typeorm": "^11.0.0",
+    "amqp-connection-manager": "^4.1.14",
+    "amqplib": "^0.10.8",
     "graphql": "^16.10.0",
     "mercurius": "^16.1.0",
     "mongoose": "^8.13.2",
