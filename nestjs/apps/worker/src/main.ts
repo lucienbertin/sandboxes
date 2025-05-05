@@ -12,18 +12,21 @@ const rmqUrl = {
   username: AMQP_USER,
   password: AMQP_PWD,
   heartbeat: 60,
-} as RmqUrl
+} as RmqUrl;
 async function bootstrap() {
-  const worker = await NestFactory.createMicroservice<RmqOptions>(WorkerModule, {
-    transport: Transport.RMQ,
-    options: {
-      urls: [rmqUrl],
-      queue: 'nestjs-evt.#',
-      queueOptions: {
-        durable: true,
+  const worker = await NestFactory.createMicroservice<RmqOptions>(
+    WorkerModule,
+    {
+      transport: Transport.RMQ,
+      options: {
+        urls: [rmqUrl],
+        queue: 'nestjs-evt.#',
+        queueOptions: {
+          durable: true,
+        },
       },
     },
-  });
+  );
   await worker.listen();
 }
 bootstrap().catch(() => {});

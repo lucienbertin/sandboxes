@@ -5,12 +5,12 @@ import { stdout } from 'process';
 
 @Injectable()
 export class WorkerService {
-    constructor(@Inject('PG_CONNECTION') private conn: Pool) {}
+  constructor(@Inject('PG_CONNECTION') private conn: Pool) {}
 
-    async upsertPost(post: Post) {
-        const author = post.author;
-        stdout.write(`upserting author ${author.email} | `);
-        const authorQuery = `
+  async upsertPost(post: Post) {
+    const author = post.author;
+    stdout.write(`upserting author ${author.email} | `);
+    const authorQuery = `
             INSERT INTO author ("firstName", "lastName", "email")
             VALUES ($1, $2, $3)
             ON CONFLICT (email)
@@ -18,14 +18,15 @@ export class WorkerService {
                 "firstName" = EXCLUDED."firstName",
                 "lastName" = EXCLUDED."lastName";
         `;
-        await this.conn.query(
-            authorQuery,
-            [author.first_name, author.last_name, author.email]
-        );
-        stdout.write("done | ")
-        
-        stdout.write(`upserting post ${post.id} | `)
-        const postQuery = `
+    await this.conn.query(authorQuery, [
+      author.first_name,
+      author.last_name,
+      author.email,
+    ]);
+    stdout.write('done | ');
+
+    stdout.write(`upserting post ${post.id} | `);
+    const postQuery = `
             INSERT INTO post ("id", "title", "body", "authorEmail")
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id)
@@ -34,24 +35,22 @@ export class WorkerService {
                 "body" = EXCLUDED."body",
                 "authorEmail" = EXCLUDED."authorEmail";
         `;
-        await this.conn.query(
-            postQuery,
-            [post.id, post.title, post.body, author.email]
-        );
-        stdout.write("done \n");
-    }
+    await this.conn.query(postQuery, [
+      post.id,
+      post.title,
+      post.body,
+      author.email,
+    ]);
+    stdout.write('done \n');
+  }
 
-    async deletePost(post: Post) {
-        stdout.write(`deleting post ${post.id} | `)
-        const query = `
+  async deletePost(post: Post) {
+    stdout.write(`deleting post ${post.id} | `);
+    const query = `
             DELETE FROM post
             WHERE id = $1;
         `;
-        await this.conn.query(
-            query,
-            [post.id]
-        );
-        stdout.write("done \n");
-    }
+    await this.conn.query(query, [post.id]);
+    stdout.write('done \n');
+  }
 }
-
