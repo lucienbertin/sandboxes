@@ -7,4 +7,5 @@ export const typeOrmConfig = {
   database: 'nestjs-db',
   autoLoadEntities: true,
   synchronize: false,
+  readonly: true,
 };
