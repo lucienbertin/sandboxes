@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
+// import { WorkerService } from './worker.service';
+import { WorkerController } from './worker.controller';
 
 @Module({
   imports: [],
-  controllers: [],
-  providers: [],
+  // providers: [WorkerService],
+  controllers: [WorkerController],
 })
 export class WorkerModule {
-  constructor() {
-    console.log('constructing worker module');
-  }
+  constructor() {}
 }
