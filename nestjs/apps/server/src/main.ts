@@ -7,15 +7,15 @@ import {
 import { ServerModule } from './server.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
+  const server = await NestFactory.create<NestFastifyApplication>(
     ServerModule,
     new FastifyAdapter(),
   );
-  app.enableCors({
+  server.enableCors({
     allowedHeaders: '*',
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
-  await app.listen(process.env.PORT as string, process.env.HOST as string);
+  await server.listen(process.env.PORT as string, process.env.HOST as string);
 }
 bootstrap().catch(() => {});
