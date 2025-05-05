@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { PostModule } from './post';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MercuriusDriver, MercuriusDriverConfig } from '@nestjs/mercurius';
 import { GraphqlOptions } from './graphql.options';
 import { MongooseModule } from '@nestjs/mongoose';
 import { typeOrmConfig } from './typeorm.options';
+
+import { PostModule } from './post';
+import { CatModule } from './cat';
 
 @Module({
   imports: [
@@ -15,7 +17,9 @@ import { typeOrmConfig } from './typeorm.options';
     }),
     TypeOrmModule.forRoot(typeOrmConfig as TypeOrmModuleOptions),
     MongooseModule.forRoot(process.env.MONGO_URL as string),
-    PostModule,
+
+    PostModule, // vertical slice
+    CatModule, // vertical slice
   ],
 })
 export class AppModule {}
