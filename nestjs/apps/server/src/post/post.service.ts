@@ -10,7 +10,11 @@ export class PostService {
   ) {}
 
   findAll(): Promise<Post[]> {
-    return this.repo.find();
+    return this.repo.find({
+      relations: {
+        author: true,
+      }
+    });
   }
 
   findOneById(id: number): Promise<Post | null> {

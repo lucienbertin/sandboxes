@@ -1,14 +1,18 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 
+@ObjectType()
 @Entity()
 export class Author {
+  @Field()
   @Column()
   firstName: string;
 
+  @Field()
   @Column()
   lastName: string;
 
+  @Field()
   @PrimaryColumn({ type: String })
   email: string;
 
@@ -31,7 +35,7 @@ export class Post {
   @Column({ type: 'text' })
   body: string;
 
-  // @Field()
+  @Field(type => Author)
   @ManyToOne(() => Author, (author: Author) => author.posts)
   author: Author;
 }
