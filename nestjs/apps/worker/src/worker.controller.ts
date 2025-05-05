@@ -25,11 +25,10 @@ export class WorkerController {
     }
 
     async handlePostModified(post: Post) {
-        console.log(`upserting post | post: `, post)
         this.service.upsertPost(post);
     }
 
     async handlePostDeleted(post: Post) {
-
+        this.service.deletePost(post);
     }
 }

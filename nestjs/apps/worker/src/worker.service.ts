@@ -1,15 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Pool } from 'pg';
 import { Post } from './models';
+import { stdout } from 'process';
 
 @Injectable()
 export class WorkerService {
     constructor(@Inject('PG_CONNECTION') private conn: Pool) {}
 
     async upsertPost(post: Post) {
-
-        console.log("upserting author")
         const author = post.author;
+        stdout.write(`upserting author ${author.email} | `);
         const authorQuery = `
             INSERT INTO author ("firstName", "lastName", "email")
             VALUES ($1, $2, $3)
@@ -22,9 +22,9 @@ export class WorkerService {
             authorQuery,
             [author.first_name, author.last_name, author.email]
         );
-        console.log("author upserted")
+        stdout.write("done | ")
         
-        console.log("upserting post")
+        stdout.write(`upserting post ${post.id} | `)
         const postQuery = `
             INSERT INTO post ("id", "title", "body", "authorEmail")
             VALUES ($1, $2, $3, $4)
@@ -38,7 +38,20 @@ export class WorkerService {
             postQuery,
             [post.id, post.title, post.body, author.email]
         );
-        console.log("post upserted")
+        stdout.write("done \n");
+    }
+
+    async deletePost(post: Post) {
+        stdout.write(`deleting post ${post.id} | `)
+        const query = `
+            DELETE FROM post
+            WHERE id = $1;
+        `;
+        await this.conn.query(
+            query,
+            [post.id]
+        );
+        stdout.write("done \n");
     }
 }
 
