@@ -27,7 +27,10 @@ async fn init_exchange(chan: &Channel) -> Result<String, Error> {
     chan.exchange_declare(
         exchange_name.as_str(),
         ExchangeKind::Topic,
-        ExchangeDeclareOptions::default(),
+        ExchangeDeclareOptions {
+            durable: true,
+            ..ExchangeDeclareOptions::default()
+        },
         FieldTable::default(),
     )
     .await?;
