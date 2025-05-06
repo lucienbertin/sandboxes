@@ -13,10 +13,11 @@ describe('PlaceService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [        {
-        provide: 'PlaceRepository',
-        useClass: MockPlaceRepo,
-      },
+      providers: [
+        {
+          provide: 'PlaceRepository',
+          useClass: MockPlaceRepo,
+        },
         PlaceService,
       ],
     }).compile();

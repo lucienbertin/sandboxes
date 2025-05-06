@@ -66,11 +66,7 @@ export class WorkerService {
                 "name" = EXCLUDED."name",
                 "point" = EXCLUDED."point";
         `;
-    await this.conn.query(query, [
-      place.id,
-      place.name,
-      placeFeature.geometry,
-    ]);
+    await this.conn.query(query, [place.id, place.name, placeFeature.geometry]);
     stdout.write('done \n');
   }
 }

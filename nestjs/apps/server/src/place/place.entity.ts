@@ -13,9 +13,9 @@ export class Place {
   name: string;
 
   @Column({
-    type: "geometry",
+    type: 'geometry',
     srid: 4326,
-    spatialFeatureType: "Point",
+    spatialFeatureType: 'Point',
   })
   point: Point;
 }

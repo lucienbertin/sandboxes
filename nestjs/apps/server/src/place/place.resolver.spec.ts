@@ -8,7 +8,8 @@ describe('PlaceResolver', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PlaceResolver, 
+      providers: [
+        PlaceResolver,
         {
           provide: PlaceService,
           useClass: MockService,
