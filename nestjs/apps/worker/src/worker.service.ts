@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Pool } from 'pg';
-import { Post } from './models';
+import { Place, Post } from './models';
 import { stdout } from 'process';
+import { Feature, Point } from 'geojson';
 
 @Injectable()
 export class WorkerService {
@@ -51,6 +52,25 @@ export class WorkerService {
             WHERE id = $1;
         `;
     await this.conn.query(query, [post.id]);
+    stdout.write('done \n');
+  }
+
+  async upsertPlace(placeFeature: Feature<Point, Place>) {
+    const place = placeFeature.properties;
+    stdout.write(`upserting place ${place.id} | `);
+    const query = `
+            INSERT INTO place ("id", "name", "point")
+            VALUES ($1, $2, $3)
+            ON CONFLICT (id)
+            DO UPDATE SET
+                "name" = EXCLUDED."name",
+                "point" = EXCLUDED."point";
+        `;
+    await this.conn.query(query, [
+      place.id,
+      place.name,
+      placeFeature.geometry,
+    ]);
     stdout.write('done \n');
   }
 }

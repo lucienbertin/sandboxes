@@ -6,7 +6,8 @@ import {
   RmqContext,
 } from '@nestjs/microservices';
 import { WorkerService } from './worker.service';
-import { Post } from './models';
+import { Place, Post } from './models';
+import { Feature, Point } from 'geojson';
 
 @Controller()
 export class WorkerController {
@@ -25,6 +26,8 @@ export class WorkerController {
         return await this.handlePostModified(payload as Post);
       case 'evt.post.deleted':
         return await this.handlePostDeleted(payload as Post);
+      case 'evt.place.created':
+        return await this.handlePlaceModified(payload as Feature<Point, Place>);
       default:
         console.log(
           `no handler for routingKey '${routingKey}' | payload: `,
@@ -33,11 +36,17 @@ export class WorkerController {
     }
   }
 
+  // POSTS
   async handlePostModified(post: Post) {
     await this.service.upsertPost(post);
   }
 
   async handlePostDeleted(post: Post) {
     await this.service.deletePost(post);
+  }
+
+  // PLACES
+  async handlePlaceModified(placeFeature: Feature<Point, Place>) {
+    await this.service.upsertPlace(placeFeature);
   }
 }

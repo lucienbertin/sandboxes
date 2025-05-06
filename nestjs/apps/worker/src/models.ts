@@ -8,3 +8,8 @@ export type Post = {
     email: string;
   };
 };
+
+export type Place = {
+  id: number;
+  name: string;
+}
