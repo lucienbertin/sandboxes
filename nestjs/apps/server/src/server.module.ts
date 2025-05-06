@@ -8,6 +8,7 @@ import { typeOrmConfig } from './typeorm.options';
 
 import { PostModule } from './post';
 import { CatModule } from './cat';
+import { PlaceModule } from './place';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CatModule } from './cat';
 
     PostModule, // vertical slice
     CatModule, // vertical slice
+    PlaceModule, // vertical slice
   ],
 })
 export class ServerModule {}
