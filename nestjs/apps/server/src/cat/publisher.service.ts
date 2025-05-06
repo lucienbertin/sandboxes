@@ -1,6 +1,6 @@
-import { connect, Channel } from "amqplib";
-import { Injectable } from "@nestjs/common";
-import { Cat } from "./cat.entity";
+import { connect, Channel } from 'amqplib';
+import { Injectable } from '@nestjs/common';
+import { Cat } from './cat.entity';
 
 const AMQP_HOST = process.env.AMQP_HOST as string;
 const AMQP_USER = process.env.AMQP_USER as string;
@@ -17,7 +17,7 @@ export class PublisherService {
     console.log(`✅ Rabbit MQ Connection is ready`);
     this.channel = await connection.createChannel();
     console.log(`🛸 Created RabbitMQ Channel successfully`);
-    await this.channel.assertExchange(EXCHANGE_NAME, "topic", {
+    await this.channel.assertExchange(EXCHANGE_NAME, 'topic', {
       durable: true,
     });
   }
@@ -28,6 +28,6 @@ export class PublisherService {
       'evt.cat.created',
       Buffer.from(JSON.stringify(cat)),
     );
-    console.log('message published')
+    console.log('message published');
   }
 }
