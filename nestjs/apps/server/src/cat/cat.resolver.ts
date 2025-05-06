@@ -1,23 +1,30 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Cat, CreateCatDto } from './cat.entity';
-import { CatService } from './cat.service';
+import { DbService } from './db.service';
+import { PublisherService } from './publisher.service';
 
 @Resolver(() => Cat)
 export class CatResolver {
-  constructor(private catService: CatService) {}
+  constructor(
+    private db: DbService,
+    private publisher: PublisherService,
+  ) {}
 
   @Query(() => [Cat])
   async cats() {
-    return await this.catService.findAll();
+    return await this.db.findAllCats();
   }
 
   @Query(() => Cat)
   async cat(@Args('name', { type: () => String }) name: string) {
-    return await this.catService.findByName(name);
+    return await this.db.findCatByName(name);
   }
 
   @Mutation(() => Cat)
   async createCat(@Args('cat') cat: CreateCatDto) {
-    return await this.catService.create(cat);
+    const createdCat = await this.db.createCat(cat);
+    this.publisher.publishCatCreated(createdCat);
+
+    return createdCat;
   }
 }
