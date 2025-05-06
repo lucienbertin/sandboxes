@@ -75,6 +75,13 @@ func subToRmq(wg *sync.WaitGroup) {
 		false,           // no-wait
 		nil,             // arguments
 	)
+	ch.QueueBind(
+		logs_queue.Name, // queue name
+		"evt.#",         // routing key
+		"nestjs",        // exchange
+		false,           // no-wait
+		nil,             // arguments
+	)
 	mail_jobs, err := ch.Consume(
 		mails_queue.Name, // queue
 		"",               // consumer
