@@ -6,6 +6,11 @@ import { PostService } from './post.service';
 export class PostResolver {
   constructor(private postService: PostService) {}
 
+  @Query(() => [Post])
+  async posts() {
+    return this.postService.findAll();
+  }
+
   @Query(() => Post)
   async post(@Args('id', { type: () => Int }) id: number) {
     return this.postService.findOneById(id);

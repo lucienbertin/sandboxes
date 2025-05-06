@@ -11,14 +11,14 @@ RUN npm ci
 
 # Rebuild the source code only when needed
 COPY . .
-RUN npm run build:server
+RUN npm run build:worker
 
 # Production image, copy all the files and run server
 FROM base AS runner
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist/apps/server ./dist
+COPY --from=builder /app/dist/apps/worker ./dist
 
 ENV NODE_ENV=production
 

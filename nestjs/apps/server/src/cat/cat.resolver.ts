@@ -11,6 +11,11 @@ export class CatResolver {
     return await this.catService.findAll();
   }
 
+  @Query(() => Cat)
+  async cat(@Args('name', { type: () => String }) name: string) {
+    return await this.catService.findByName(name);
+  }
+
   @Mutation(() => Cat)
   async createCat(@Args('cat') cat: CreateCatDto) {
     return await this.catService.create(cat);

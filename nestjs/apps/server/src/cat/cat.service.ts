@@ -11,6 +11,14 @@ export class CatService {
     return this.catModel.find().exec();
   }
 
+  async findByName(name: string): Promise<Cat | null> {
+    return this.catModel
+      .findOne({
+        name: name,
+      })
+      .exec();
+  }
+
   async create(createCatDto: CreateCatDto): Promise<Cat> {
     const createdCat = new this.catModel(createCatDto);
     return createdCat.save();

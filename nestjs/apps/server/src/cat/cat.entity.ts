@@ -7,7 +7,7 @@ export type CatDocument = HydratedDocument<Cat>;
 @ObjectType()
 @Schema()
 export class Cat {
-  @Field({ nullable: true })
+  @Field()
   @Prop()
   name: string;
 

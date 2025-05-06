@@ -44,7 +44,7 @@ pub fn notify_post_published(
 ) -> Result<(), Error> {
     let p = Post::from(post);
     let message = serde_json::to_string(&p)?;
-    publisher.publish("evt.post.pulished".to_string(), message)?;
+    publisher.publish("evt.post.published".to_string(), message)?;
 
     Ok(())
 }
