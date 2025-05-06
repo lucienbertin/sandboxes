@@ -36,6 +36,6 @@ export class Post {
   body: string;
 
   @Field(() => Author)
-  @ManyToOne(() => Author, (author: Author) => author.posts)
+  @ManyToOne(() => Author, (author: Author) => author.posts, { eager: true })
   author: Author;
 }
