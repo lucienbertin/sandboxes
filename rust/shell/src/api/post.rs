@@ -1,5 +1,5 @@
 use super::error::ResponseError;
-use super::{check_match, check_none_match, resolve_agent, get_etag_safe, ServerState};
+use super::{check_match, check_none_match, get_etag_safe, resolve_agent, ServerState};
 use crate::db::{self};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, RedisConn};
@@ -135,7 +135,7 @@ pub fn get_post(
     let result = conn.build_transaction().read_only().run(
         |conn| -> Result<domain::models::Post, Error> {
             let agent = resolve_agent(conn, subject)?;
-    
+
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
 
@@ -180,8 +180,13 @@ pub async fn publish_post(
             let post = post.ok_or(HttpError::NotFound)?;
 
             let result = domain::usecases::publish_post(&agent, &post);
-            
-            let do_publish_and_notify = |db_conn: &mut PgConnection, rmq_publisher: &rmqpub::RmQPublisher, redis_conn: &mut RedisConn, post_id: i32, post: &domain::models::Post| -> Result<(), Error> {
+
+            let do_publish_and_notify = |db_conn: &mut PgConnection,
+                                         rmq_publisher: &rmqpub::RmQPublisher,
+                                         redis_conn: &mut RedisConn,
+                                         post_id: i32,
+                                         post: &domain::models::Post|
+             -> Result<(), Error> {
                 db::publish_post(db_conn, post_id)?;
                 rmqpub::notify_post_published(&rmq_publisher, &post)?;
 
@@ -198,7 +203,9 @@ pub async fn publish_post(
                 CantPublishAsReader => Err(HttpError::Forbidden.into()),
                 CantPublishAsWorker => Err(HttpError::Forbidden.into()), // should never happen
                 CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
-                DoPublishAndNotify(post_id, post) => do_publish_and_notify(conn, rmq_publisher, &mut redis_conn, post_id, &post),
+                DoPublishAndNotify(post_id, post) => {
+                    do_publish_and_notify(conn, rmq_publisher, &mut redis_conn, post_id, &post)
+                }
                 DoPublishNotifyAndSendMailToAuthor(post_id, post, author) => {
                     do_publish_and_notify(conn, rmq_publisher, &mut redis_conn, post_id, &post)?;
                     rmqpub::trigger_mail_post_published(&rmq_publisher, &post, &author)?;
@@ -225,7 +232,7 @@ pub fn post_post(
     let mut conn = db::get_conn(&server_state.db_pool)?;
     let result = conn.build_transaction().run(|conn| -> Result<i32, Error> {
         let agent = resolve_agent(conn, subject)?;
-        
+
         let result = domain::usecases::create_post(&agent, data.into_inner().into());
         use domain::usecases::CreatePostResult::*;
         match result {
@@ -267,7 +274,10 @@ pub fn delete_post(
 
         let result = domain::usecases::delete_post(&agent, &result);
 
-        let do_delete = |db_conn: &mut PgConnection, redis_conn: &mut RedisConn, post_id: i32| -> Result<(), Error> {
+        let do_delete = |db_conn: &mut PgConnection,
+                         redis_conn: &mut RedisConn,
+                         post_id: i32|
+         -> Result<(), Error> {
             db::delete_post(db_conn, post_id)?;
 
             let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
@@ -288,7 +298,7 @@ pub fn delete_post(
             DoDeleteAndNotify(post_id, post) => {
                 do_delete(conn, &mut redis_conn, post_id)?;
                 rmqpub::notify_post_deleted(&rmq_publisher, &post)?;
-                
+
                 Ok(())
             }
         }
@@ -319,7 +329,11 @@ pub fn patch_post(
 
         let result = domain::usecases::edit_post(&agent, &result, data.into_inner().into());
 
-        let do_update = |db_conn: &mut PgConnection, redis_conn: &mut RedisConn, post_id: i32, edits: PostEdition| -> Result<(), Error> {
+        let do_update = |db_conn: &mut PgConnection,
+                         redis_conn: &mut RedisConn,
+                         post_id: i32,
+                         edits: PostEdition|
+         -> Result<(), Error> {
             db::update_post(db_conn, post_id, edits)?;
             let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
             for cache_key in cache_keys {

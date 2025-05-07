@@ -60,7 +60,10 @@ where
 }
 impl<T: Serialize> EtagJson<T> {
     pub fn new(body: T, etag: Option<String>) -> Self {
-        Self { body: Json(body), etag: etag }
+        Self {
+            body: Json(body),
+            etag: etag,
+        }
     }
 }
 
@@ -254,8 +257,11 @@ pub async fn build_server() -> Result<Rocket<Build>, Error> {
     Ok(server)
 }
 
-
-pub fn check_none_match(conn: &mut RedisConn, cache_key: &String, if_none_match_header: Option<IfNoneMatchHeader>) -> Result<(), Error> {
+pub fn check_none_match(
+    conn: &mut RedisConn,
+    cache_key: &String,
+    if_none_match_header: Option<IfNoneMatchHeader>,
+) -> Result<(), Error> {
     let use_cache = if_none_match_header.map(|er| redis::match_etag(conn, cache_key, er.etag));
     match use_cache {
         Some(Ok(true)) => Err(HttpError::NotModified.into()),
@@ -265,7 +271,11 @@ pub fn check_none_match(conn: &mut RedisConn, cache_key: &String, if_none_match_
 
     Ok(())
 }
-pub fn check_match(conn: &mut RedisConn, cache_key: &String, if_match_header: Option<IfMatchHeader>) -> Result<(), Error> {
+pub fn check_match(
+    conn: &mut RedisConn,
+    cache_key: &String,
+    if_match_header: Option<IfMatchHeader>,
+) -> Result<(), Error> {
     let use_cache = if_match_header.map(|er| redis::match_etag(conn, cache_key, er.etag));
     match use_cache {
         None => Ok(()),
@@ -277,7 +287,10 @@ pub fn check_match(conn: &mut RedisConn, cache_key: &String, if_match_header: Op
     Ok(())
 }
 
-pub fn resolve_agent(conn: &mut PgConnection, subject: JwtIdentifiedSubject) -> Result<Agent, Error> {
+pub fn resolve_agent(
+    conn: &mut PgConnection,
+    subject: JwtIdentifiedSubject,
+) -> Result<Agent, Error> {
     let agent = db::find_user(conn, subject.email)?;
     let agent = agent.ok_or(HttpError::Unauthorized)?;
     let agent = Agent::User(agent);

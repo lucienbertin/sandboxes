@@ -1,5 +1,8 @@
 use super::error::ResponseError;
-use super::{check_none_match, get_etag_safe, ServerState, resolve_agent, EtagJson, IfNoneMatchHeader, JwtIdentifiedSubject};
+use super::{
+    check_none_match, get_etag_safe, resolve_agent, EtagJson, IfNoneMatchHeader,
+    JwtIdentifiedSubject, ServerState,
+};
 use crate::db::{self, DbConn};
 use crate::error::Error;
 use crate::redis;
