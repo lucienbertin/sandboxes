@@ -1,11 +1,11 @@
 use super::error::ResponseError;
-use super::ServerState;
-use crate::db::{self, find_user};
+use super::{check_match, check_none_match, resolve_agent, get_etag_safe, ServerState};
+use crate::db::{self};
 use crate::error::{Error, HttpError};
-use crate::redis::{self, match_etag, RedisConn};
+use crate::redis::{self, RedisConn};
 use crate::rmqpub::{self};
 use diesel::PgConnection;
-use domain::models::{Agent, PostEdition};
+use domain::models::PostEdition;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket::{
@@ -83,45 +83,6 @@ impl From<PatchPost> for domain::models::PostEdition {
     }
 }
 
-fn check_none_match(conn: &mut RedisConn, cache_key: &String, if_none_match_header: Option<IfNoneMatchHeader>) -> Result<(), Error> {
-    let use_cache = if_none_match_header.map(|er| match_etag(conn, cache_key, er.etag));
-    match use_cache {
-        Some(Ok(true)) => Err(HttpError::NotModified.into()),
-        _ => Ok(()),
-    }
-    .map_err(|e: Error| e)?;
-
-    Ok(())
-}
-fn check_match(conn: &mut RedisConn, cache_key: &String, if_match_header: Option<IfMatchHeader>) -> Result<(), Error> {
-    let use_cache = if_match_header.map(|er| match_etag(conn, cache_key, er.etag));
-    match use_cache {
-        None => Ok(()),
-        Some(Ok(true)) => Ok(()),
-        _ => Err(HttpError::PreconditionFailed.into()),
-    }
-    .map_err(|e: Error| e)?;
-
-    Ok(())
-}
-
-fn resolve_agent(conn: &mut PgConnection, subject: JwtIdentifiedSubject) -> Result<Agent, Error> {
-    let agent = find_user(conn, subject.email)?;
-    let agent = agent.ok_or(HttpError::Unauthorized)?;
-    let agent = Agent::User(agent);
-
-    Ok(agent)
-}
-
-fn get_etag_safe(conn: &mut RedisConn, cache_key: &String) -> Option<String> {
-    let etag = match redis::get_etag(conn, cache_key) {
-        Ok(t) => Some(t),
-        _ => None,
-    };
-
-    etag
-}
-
 #[get("/posts", format = "json")]
 pub async fn get_posts(
     server_state: &State<ServerState>,
@@ -153,7 +114,6 @@ pub async fn get_posts(
 
     let posts = posts.into_iter().map(|x| x.into()).collect();
     let etag = get_etag_safe(&mut redis_conn, &cache_key);
-
     let result = EtagJson::new(posts, etag);
 
     Ok(result)

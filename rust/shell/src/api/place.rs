@@ -1,16 +1,12 @@
 use super::error::ResponseError;
-use super::ServerState;
-use crate::db::{self, find_user, DbConn};
-use crate::error::{Error, HttpError};
-use crate::redis::{self, match_etag};
-use domain::models::Agent;
-use rocket::serde::json::Json;
+use super::{check_none_match, get_etag_safe, ServerState, resolve_agent, EtagJson, IfNoneMatchHeader, JwtIdentifiedSubject};
+use crate::db::{self, DbConn};
+use crate::error::Error;
+use crate::redis;
 use rocket::serde::Serialize;
 use rocket::State;
 use serde::ser::SerializeStruct;
 use serde::Serializer;
-
-use super::{EtagJson, IfNoneMatchHeader, JwtIdentifiedSubject};
 
 #[derive(Serialize)]
 pub struct Place {
@@ -81,26 +77,14 @@ pub async fn get_places(
 ) -> Result<EtagJson<Vec<Place>>, ResponseError> {
     let cache_key = "places".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
-    match use_cache {
-        Some(Ok(true)) => Err(HttpError::NotModified.into()),
-        _ => Ok(()),
-    }
-    .map_err(|e: Error| e)?;
+    check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
 
-    let results = results.into_iter().map(|x| x.into()).collect();
-    let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
-        Ok(t) => Some(t),
-        _ => None, // i dont want to 500 on a redis error when i have the results available
-    };
-
-    let result = EtagJson {
-        body: Json(results),
-        etag: etag,
-    };
+    let places = results.into_iter().map(|x| x.into()).collect();
+    let etag = get_etag_safe(&mut redis_conn, &cache_key);
+    let result = EtagJson::new(places, etag);
 
     Ok(result)
 }
@@ -113,27 +97,15 @@ pub async fn get_places_geojson(
 ) -> Result<EtagJson<PlaceFeatureCollection>, ResponseError> {
     let cache_key = "places-geojson".to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
-    match use_cache {
-        Some(Ok(true)) => Err(HttpError::NotModified.into()),
-        _ => Ok(()),
-    }
-    .map_err(|e: Error| e)?;
+    check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
 
     let features: Vec<PlaceFeature> = results.into_iter().map(|x| x.into()).collect();
     let collection = PlaceFeatureCollection(features);
-    let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
-        Ok(t) => Some(t),
-        _ => None, // i dont want to 500 on a redis error when i have the results available
-    };
-
-    let result = EtagJson {
-        body: Json(collection),
-        etag: etag,
-    };
+    let etag = get_etag_safe(&mut redis_conn, &cache_key);
+    let result = EtagJson::new(collection, etag);
 
     Ok(result)
 }
@@ -144,12 +116,9 @@ fn fetch_places(
 ) -> Result<Vec<domain::models::Place>, Error> {
     let results = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Place>, Error> {
-            let agent = find_user(conn, subject.email)?;
-            let agent = agent.ok_or::<Error>(HttpError::Unauthorized.into())?;
-            let agent = Agent::User(agent);
+            let agent = resolve_agent(conn, subject)?;
 
             let result = domain::usecases::consult_places(&agent);
-
             use domain::usecases::ConsultPlacesResult::*;
             match result {
                 ConsultAllPlaces => db::select_places(conn),
