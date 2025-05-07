@@ -3,11 +3,13 @@ mod place;
 mod post;
 
 use crate::db::DbPool;
-use crate::error::Error;
-use crate::redis::RedisPool;
+use crate::error::{Error, HttpError};
+use crate::redis::{RedisConn, RedisPool};
 use crate::rmqpub::RmQPublisher;
 use crate::{db, redis, rmqpub};
 
+use diesel::PgConnection;
+use domain::models::Agent;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header};
 use rocket::request::Request;
@@ -55,6 +57,14 @@ where
 {
     body: Json<T>,
     etag: Option<String>,
+}
+impl<T: Serialize> EtagJson<T> {
+    pub fn new(body: T, etag: Option<String>) -> Self {
+        Self {
+            body: Json(body),
+            etag: etag,
+        }
+    }
 }
 
 #[rocket::async_trait]
@@ -245,4 +255,54 @@ pub async fn build_server() -> Result<Rocket<Build>, Error> {
         });
 
     Ok(server)
+}
+
+pub fn check_none_match(
+    conn: &mut RedisConn,
+    cache_key: &String,
+    if_none_match_header: Option<IfNoneMatchHeader>,
+) -> Result<(), Error> {
+    let use_cache = if_none_match_header.map(|er| redis::match_etag(conn, cache_key, er.etag));
+    match use_cache {
+        Some(Ok(true)) => Err(HttpError::NotModified.into()),
+        _ => Ok(()),
+    }
+    .map_err(|e: Error| e)?;
+
+    Ok(())
+}
+pub fn check_match(
+    conn: &mut RedisConn,
+    cache_key: &String,
+    if_match_header: Option<IfMatchHeader>,
+) -> Result<(), Error> {
+    let use_cache = if_match_header.map(|er| redis::match_etag(conn, cache_key, er.etag));
+    match use_cache {
+        None => Ok(()),
+        Some(Ok(true)) => Ok(()),
+        _ => Err(HttpError::PreconditionFailed.into()),
+    }
+    .map_err(|e: Error| e)?;
+
+    Ok(())
+}
+
+pub fn resolve_agent(
+    conn: &mut PgConnection,
+    subject: JwtIdentifiedSubject,
+) -> Result<Agent, Error> {
+    let agent = db::find_user(conn, subject.email)?;
+    let agent = agent.ok_or(HttpError::Unauthorized)?;
+    let agent = Agent::User(agent);
+
+    Ok(agent)
+}
+
+pub fn get_etag_safe(conn: &mut RedisConn, cache_key: &String) -> Option<String> {
+    let etag = match redis::get_etag(conn, cache_key) {
+        Ok(t) => Some(t),
+        _ => None,
+    };
+
+    etag
 }
