@@ -293,11 +293,9 @@ pub fn resolve_agent(
 ) -> Result<Agent, Error> {
     match subject {
         None => Ok(Agent::Unknown),
-        Some(s) => {
-            db::find_user(conn, s.email)?
-                .ok_or(Error::from(HttpError::Unauthorized))
-                .map(|u| Agent::User(u))
-        }
+        Some(s) => db::find_user(conn, s.email)?
+            .ok_or(Error::from(HttpError::Unauthorized))
+            .map(|u| Agent::User(u)),
     }
 }
 

@@ -143,7 +143,7 @@ pub fn get_post(
 
             use domain::usecases::ConsultPostResult::*;
             match result {
-                DoConsultPost(p)=>Ok(p),
+                DoConsultPost(p) => Ok(p),
                 CantConsultUnpublishedPostFromSomeoneElse => Err(HttpError::Forbidden.into()),
                 CantConsultUnpublishedPostAsReader => Err(HttpError::Forbidden.into()),
                 CantConsultUnpublishedPostAsUnknown => Err(HttpError::Unauthorized.into()),
