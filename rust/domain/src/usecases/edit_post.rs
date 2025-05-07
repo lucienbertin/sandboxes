@@ -9,6 +9,7 @@ pub enum EditPostResult {
     CantEditPublishedPost,
     CantEditAsReader,
     CantEditAsWorker,
+    CantEditAsUnknown,
 }
 
 pub fn edit_post(agent: &Agent, post: &Post, request: PostEdition) -> EditPostResult {
@@ -22,6 +23,7 @@ pub fn edit_post(agent: &Agent, post: &Post, request: PostEdition) -> EditPostRe
 
     match (agent, post, edits) {
         // check if you have the right to edit
+        (Agent::Unknown, _, _) => CantEditAsUnknown,
         (Agent::Worker, _, _) => CantEditAsWorker,
         (Agent::User(User { role: Reader, .. }), _, _) => CantEditAsReader,
         (
