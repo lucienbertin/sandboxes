@@ -6,6 +6,7 @@ pub enum DeletePostResult {
     DoDeleteAndNotify(i32, Post),
     CantDeleteAsReader,
     CantDeleteAsWorker,
+    CantDeleteAsUnknown,
     CantDeletePublishedPost,
     CantDeleteAnotherOnesPost,
 }
@@ -14,6 +15,7 @@ pub fn delete_post(agent: &Agent, post: &Post) -> DeletePostResult {
     use Role::*;
 
     match (agent, post) {
+        (Agent::Unknown, _) => CantDeleteAsUnknown,
         (Agent::Worker, _) => CantDeleteAsWorker,
         (Agent::User(User { role: Reader, .. }), _) => CantDeleteAsReader,
         (Agent::User(User { role: Admin, .. }), p) if p.published => {

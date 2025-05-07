@@ -8,12 +8,14 @@ pub enum PublishPostResult {
     CantPublishAlreadyPublishedPost,
     CantPublishAsReader,
     CantPublishAsWorker,
+    CantPublishAsUnknown,
 }
 
 pub fn publish_post(agent: &Agent, post: &Post) -> PublishPostResult {
     use crate::models::Role::*;
     use PublishPostResult::*;
     match (agent, post) {
+        (Agent::Unknown, _) => CantPublishAsUnknown,
         (Agent::Worker, _) => CantPublishAsWorker,
         (Agent::User(User { role: Reader, .. }), _) => CantPublishAsReader,
         (

@@ -18,4 +18,5 @@ pub enum Role {
 pub enum Agent {
     User(User),
     Worker,
+    Unknown,
 }

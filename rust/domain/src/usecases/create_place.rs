@@ -4,12 +4,14 @@ use crate::models::{Agent, Place};
 pub enum CreatePlaceResult {
     DoCreate(Place),
     CantCreateAsUser,
+    CantCreateAsUnknown,
 }
 
 pub fn create_place(agent: &Agent, place: &Place) -> CreatePlaceResult {
     use CreatePlaceResult::*;
     match agent {
         Agent::Worker => DoCreate(place.clone()),
+        Agent::Unknown => CantCreateAsUnknown,
         _ => CantCreateAsUser,
     }
 }

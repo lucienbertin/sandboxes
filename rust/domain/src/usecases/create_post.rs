@@ -5,12 +5,14 @@ pub enum CreatePostResult {
     DoCreate(NewPost),
     CantCreateAsReader,
     CantCreateAsWorker,
+    CantCreateAsUnknown,
 }
 
 pub fn create_post(agent: &Agent, create_post_request: NewPostRequest) -> CreatePostResult {
     use CreatePostResult::*;
     use Role::*;
     match agent {
+        Agent::Unknown => CantCreateAsUnknown,
         Agent::Worker => CantCreateAsWorker,
         Agent::User(User { role: Reader, .. }) => CantCreateAsReader,
         Agent::User(u) => {

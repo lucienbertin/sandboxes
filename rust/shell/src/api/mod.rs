@@ -289,13 +289,14 @@ pub fn check_match(
 
 pub fn resolve_agent(
     conn: &mut PgConnection,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
 ) -> Result<Agent, Error> {
-    let agent = db::find_user(conn, subject.email)?;
-    let agent = agent.ok_or(HttpError::Unauthorized)?;
-    let agent = Agent::User(agent);
-
-    Ok(agent)
+    match subject {
+        None => Ok(Agent::Unknown),
+        Some(s) => db::find_user(conn, s.email)?
+            .ok_or(Error::from(HttpError::Unauthorized))
+            .map(|u| Agent::User(u)),
+    }
 }
 
 pub fn get_etag_safe(conn: &mut RedisConn, cache_key: &String) -> Option<String> {

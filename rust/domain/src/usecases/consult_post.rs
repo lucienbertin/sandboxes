@@ -5,6 +5,7 @@ pub enum ConsultPostResult {
     DoConsultPost(Post),
     CantConsultUnpublishedPostFromSomeoneElse,
     CantConsultUnpublishedPostAsReader,
+    CantConsultUnpublishedPostAsUnknown,
 }
 pub fn consult_post(agent: &Agent, post: &Post) -> ConsultPostResult {
     use self::ConsultPostResult::*;
@@ -20,6 +21,7 @@ pub fn consult_post(agent: &Agent, post: &Post) -> ConsultPostResult {
         (Agent::User(User { role: Admin, .. }), _) => DoConsultPost(post.clone()),
         (Agent::User(u), Post { author, .. }) if u == author => DoConsultPost(post.clone()),
         (Agent::User(User { role: Reader, .. }), _) => CantConsultUnpublishedPostAsReader,
+        (Agent::Unknown, _) => CantConsultUnpublishedPostAsUnknown,
         _ => CantConsultUnpublishedPostFromSomeoneElse,
     }
 }
