@@ -2,8 +2,9 @@ use super::error::ResponseError;
 use super::ServerState;
 use crate::db::{self, find_user};
 use crate::error::{Error, HttpError};
-use crate::redis::{self, match_etag};
+use crate::redis::{self, match_etag, RedisConn};
 use crate::rmqpub::{self};
+use diesel::PgConnection;
 use domain::models::Agent;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
@@ -82,28 +83,49 @@ impl From<PatchPost> for domain::models::PostEdition {
     }
 }
 
-#[get("/posts", format = "json")]
-pub async fn get_posts(
-    server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject, // is allowed with no auth
-    if_none_match: Option<IfNoneMatchHeader>,
-) -> Result<EtagJson<Vec<Post>>, ResponseError> {
-    let cache_key = "posts".to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
+fn check_cache(conn: &mut RedisConn, cache_key: &String, if_none_match_header: Option<IfNoneMatchHeader>) -> Result<(), Error> {
+    let use_cache = if_none_match_header.map(|er| match_etag(conn, cache_key, er.etag));
     match use_cache {
         Some(Ok(true)) => Err(HttpError::NotModified.into()),
         _ => Ok(()),
     }
     .map_err(|e: Error| e)?;
 
+    Ok(())
+}
+
+fn resolve_agent(conn: &mut PgConnection, subject: JwtIdentifiedSubject) -> Result<Agent, Error> {
+    let agent = find_user(conn, subject.email)?;
+    let agent = agent.ok_or(HttpError::Unauthorized)?;
+    let agent = Agent::User(agent);
+
+    Ok(agent)
+}
+
+fn get_etag_safe(conn: &mut RedisConn, cache_key: &String) -> Option<String> {
+    let etag = match redis::get_etag(conn, cache_key) {
+        Ok(t) => Some(t),
+        _ => None,
+    };
+
+    etag
+}
+
+#[get("/posts", format = "json")]
+pub async fn get_posts(
+    server_state: &State<ServerState>,
+    subject: JwtIdentifiedSubject,
+    if_none_match: Option<IfNoneMatchHeader>,
+) -> Result<EtagJson<Vec<Post>>, ResponseError> {
+    let cache_key = "posts".to_string();
+    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
+    check_cache(& mut redis_conn, &cache_key, if_none_match)?;
+
     let mut db_conn = db::get_conn(&server_state.db_pool)?;
 
-    let results = db_conn.build_transaction().read_only().run(
+    let posts = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Post>, Error> {
-            let agent = find_user(conn, subject.email)?;
-            let agent = agent.ok_or(HttpError::Unauthorized)?;
-            let agent = Agent::User(agent);
+            let agent = resolve_agent(conn, subject)?;
 
             let result = domain::usecases::consult_posts(&agent);
 
@@ -118,16 +140,10 @@ pub async fn get_posts(
         },
     )?;
 
-    let results = results.into_iter().map(|x| x.into()).collect();
-    let etag = match redis::get_etag(&mut redis_conn, &cache_key) {
-        Ok(t) => Some(t),
-        _ => None, // i dont want to 500 on a redis error when i have the results available
-    };
+    let posts = posts.into_iter().map(|x| x.into()).collect();
+    let etag = get_etag_safe(&mut redis_conn, &cache_key);
 
-    let result = EtagJson {
-        body: Json(results),
-        etag: etag,
-    };
+    let result = EtagJson::new(posts, etag);
 
     Ok(result)
 }
@@ -141,20 +157,14 @@ pub fn get_post(
 ) -> Result<EtagJson<Post>, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
-    let use_cache = if_none_match.map(|er| match_etag(&mut redis_conn, &cache_key, er.etag));
-    match use_cache {
-        Some(Ok(true)) => Err(HttpError::NotModified.into()),
-        _ => Ok(()),
-    }
-    .map_err(|e: Error| e)?;
+    check_cache(& mut redis_conn, &cache_key, if_none_match)?;
 
     let mut conn = db::get_conn(&server_state.db_pool)?;
 
     let result = conn.build_transaction().read_only().run(
         |conn| -> Result<domain::models::Post, Error> {
-            let agent = find_user(conn, subject.email)?;
-            let agent = agent.ok_or(HttpError::Unauthorized)?;
-            let agent = Agent::User(agent);
+            let agent = resolve_agent(conn, subject)?;
+    
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
 

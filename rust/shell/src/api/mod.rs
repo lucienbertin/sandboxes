@@ -56,6 +56,11 @@ where
     body: Json<T>,
     etag: Option<String>,
 }
+impl<T: Serialize> EtagJson<T> {
+    pub fn new(body: T, etag: Option<String>) -> Self {
+        Self { body: Json(body), etag: etag }
+    }
+}
 
 #[rocket::async_trait]
 impl<'r, T: Serialize> Responder<'r, 'static> for EtagJson<T> {
