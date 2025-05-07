@@ -1,5 +1,5 @@
 use super::error::ResponseError;
-use super::{check_match, check_none_match, get_etag_safe, resolve_agent, ServerState};
+use super::{check_match, check_none_match, get_etag_safe, resolve_agent, AgentWrapper, DbConnWrapper, ServerState};
 use crate::db::{self};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, RedisConn};
@@ -259,7 +259,9 @@ pub fn post_post(
 #[delete("/post/<id>")]
 pub fn delete_post(
     server_state: &State<ServerState>,
-    subject: Option<JwtIdentifiedSubject>,
+    // subject: Option<JwtIdentifiedSubject>,
+    agent: AgentWrapper,
+    mut conn: DbConnWrapper,
     if_match: Option<IfMatchHeader>,
     id: i32,
 ) -> Result<NoContent, ResponseError> {
@@ -267,10 +269,10 @@ pub fn delete_post(
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    let mut conn = db::get_conn(&server_state.db_pool)?;
+    // let mut conn = db::get_conn(&server_state.db_pool)?;
     let rmq_publisher = &server_state.rmq_publisher;
     conn.build_transaction().run(|conn| -> Result<(), Error> {
-        let agent = resolve_agent(conn, subject)?;
+        // let agent = resolve_agent(conn, subject)?;
 
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(HttpError::Gone)?;
@@ -314,6 +316,7 @@ pub fn delete_post(
 #[patch("/post/<id>", data = "<data>")]
 pub fn patch_post(
     server_state: &State<ServerState>,
+    mut db_conn: DbConnWrapper,
     subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     id: i32,
@@ -323,10 +326,11 @@ pub fn patch_post(
     let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    let mut conn = db::get_conn(&server_state.db_pool)?;
+    // let mut conn = db::get_conn(&server_state.db_pool)?;
+    // let db_conn = wrap.deref_mut();
     let rmq_publisher = &server_state.rmq_publisher;
 
-    conn.build_transaction().run(|conn| -> Result<(), Error> {
+    db_conn.build_transaction().run(|conn| -> Result<(), Error> {
         let agent = resolve_agent(conn, subject)?;
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(HttpError::NotFound)?;

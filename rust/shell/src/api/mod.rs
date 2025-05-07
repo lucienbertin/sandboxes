@@ -8,6 +8,7 @@ use crate::redis::{RedisConn, RedisPool};
 use crate::rmqpub::RmQPublisher;
 use crate::{db, redis, rmqpub};
 
+use diesel::pg::TransactionBuilder;
 use diesel::PgConnection;
 use domain::models::Agent;
 use rocket::fairing::{Fairing, Info, Kind};
@@ -15,7 +16,7 @@ use rocket::http::{ContentType, Header};
 use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::{Build, Response, Rocket};
+use rocket::{Build, Response, Rocket, State};
 use serde::Serialize;
 
 #[get("/health")]
@@ -152,7 +153,7 @@ use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
 use sha2::Sha256;
 use std::collections::BTreeMap;
-use std::env;
+use std::{env, result};
 
 pub fn load_hmac_key() -> Result<Hmac<Sha256>, Error> {
     let secret = env::var("SECRET")?;
@@ -220,6 +221,64 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
         }
     }
 }
+pub struct DbConnWrapper(db::DbConn);
+impl Deref for DbConnWrapper {
+    type Target = db::DbConn;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for DbConnWrapper {
+    fn deref_mut(&mut self) -> &mut db::DbConn {
+        &mut self.0
+    }
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for DbConnWrapper {
+    type Error = super::error::Error;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let r_state = request.guard::<&'r State<ServerState>>().await.succeeded().ok_or(super::error::Error::Error);
+        let r_db_conn:Result<db::DbConn, Error> = r_state.and_then(|s| s.db_pool.get().map_err(|e| e.into()));
+        match r_db_conn {
+            Ok(c) => Outcome::Success(DbConnWrapper(c)),
+            Err(e) => Outcome::Error((Status::InternalServerError, e))
+        }
+    }
+}
+use std::ops::{Deref, DerefMut};
+struct AgentWrapper(Agent);
+impl Deref for AgentWrapper {
+    type Target = Agent;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for AgentWrapper {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for AgentWrapper {
+    type Error = super::error::Error;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let subject = request.guard::<JwtIdentifiedSubject>().await.succeeded();
+        let r_state = request.guard::<&'r State<ServerState>>().await.succeeded().ok_or(super::error::Error::Error);
+        let r_db_conn:Result<db::DbConn, Error> = r_state.and_then(|s| s.db_pool.get().map_err(|e| e.into()));
+        let r_agent = r_db_conn.and_then(|mut conn| resolve_agent(&mut conn, subject));
+        match r_agent {
+            Err(e) => Outcome::Error((Status::InternalServerError, e)),
+            Ok(agent) => Outcome::Success(AgentWrapper(agent)),
+        }
+    }
+}
+
+
 
 pub struct ServerState {
     pub db_pool: DbPool,
