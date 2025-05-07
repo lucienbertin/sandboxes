@@ -86,7 +86,7 @@ impl From<PatchPost> for domain::models::PostEdition {
 #[get("/posts", format = "json")]
 pub async fn get_posts(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Vec<Post>>, ResponseError> {
     let cache_key = "posts".to_string();
@@ -122,7 +122,7 @@ pub async fn get_posts(
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
     id: i32,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Post>, ResponseError> {
@@ -143,9 +143,10 @@ pub fn get_post(
 
             use domain::usecases::ConsultPostResult::*;
             match result {
-                DoConsultPost(p) => Ok(p),
+                DoConsultPost(p)=>Ok(p),
                 CantConsultUnpublishedPostFromSomeoneElse => Err(HttpError::Forbidden.into()),
                 CantConsultUnpublishedPostAsReader => Err(HttpError::Forbidden.into()),
+                CantConsultUnpublishedPostAsUnknown => Err(HttpError::Unauthorized.into()),
             }
         },
     )?;
@@ -162,7 +163,7 @@ pub fn get_post(
 #[post("/post/<id>/publish")]
 pub async fn publish_post(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
     id: i32,
     if_match: Option<IfMatchHeader>,
 ) -> Result<Status, ResponseError> {
@@ -200,6 +201,7 @@ pub async fn publish_post(
             use domain::usecases::PublishPostResult::*;
             match result {
                 CantPublishAnotherOnesPost => Err(HttpError::Forbidden.into()),
+                CantPublishAsUnknown => Err(HttpError::Unauthorized.into()),
                 CantPublishAsReader => Err(HttpError::Forbidden.into()),
                 CantPublishAsWorker => Err(HttpError::Forbidden.into()), // should never happen
                 CantPublishAlreadyPublishedPost => Ok(()), // treat it as Ok for idempotency purpose
@@ -221,7 +223,7 @@ pub async fn publish_post(
 #[post("/posts", data = "<data>")]
 pub fn post_post(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
     data: Form<NewPost>,
     if_match: Option<IfMatchHeader>,
 ) -> Result<Created<Json<Post>>, ResponseError> {
@@ -245,6 +247,7 @@ pub fn post_post(
                 Ok(post_id)
             }
             CantCreateAsReader | CantCreateAsWorker => Err(HttpError::Forbidden.into()),
+            CantCreateAsUnknown => Err(HttpError::Unauthorized.into()),
         }
     })?;
 
@@ -256,7 +259,7 @@ pub fn post_post(
 #[delete("/post/<id>")]
 pub fn delete_post(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     id: i32,
 ) -> Result<NoContent, ResponseError> {
@@ -292,6 +295,7 @@ pub fn delete_post(
         match result {
             CantDeleteAnotherOnesPost => Err(HttpError::Forbidden.into()),
             CantDeletePublishedPost => Err(HttpError::Conflict.into()),
+            CantDeleteAsUnknown => Err(HttpError::Unauthorized.into()),
             CantDeleteAsReader => Err(HttpError::Forbidden.into()),
             CantDeleteAsWorker => Err(HttpError::Forbidden.into()),
             DoDelete(post_id) => do_delete(conn, &mut redis_conn, post_id),
@@ -310,7 +314,7 @@ pub fn delete_post(
 #[patch("/post/<id>", data = "<data>")]
 pub fn patch_post(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject,
+    subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     id: i32,
     data: Form<PatchPost>,
@@ -345,6 +349,7 @@ pub fn patch_post(
         match result {
             CantEditAnotherOnesPost => Err(HttpError::Forbidden.into()),
             CantEditPublishedPost => Err(HttpError::Conflict.into()),
+            CantEditAsUnknown => Err(HttpError::Unauthorized.into()),
             CantEditAsReader => Err(HttpError::Forbidden.into()),
             CantEditAsWorker => Err(HttpError::Forbidden.into()),
             NothingToUpdate => Ok(()),

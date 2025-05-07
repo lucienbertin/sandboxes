@@ -75,7 +75,7 @@ impl Serialize for PlaceFeatureCollection {
 #[get("/places", format = "json")]
 pub async fn get_places(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject, // is allowed with no auth
+    subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Vec<Place>>, ResponseError> {
     let cache_key = "places".to_string();
@@ -95,7 +95,7 @@ pub async fn get_places(
 #[get("/places", format = "application/geo+json", rank = 2)]
 pub async fn get_places_geojson(
     server_state: &State<ServerState>,
-    subject: JwtIdentifiedSubject, // is allowed with no auth
+    subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<PlaceFeatureCollection>, ResponseError> {
     let cache_key = "places-geojson".to_string();
@@ -115,7 +115,7 @@ pub async fn get_places_geojson(
 
 fn fetch_places(
     db_conn: &mut DbConn,
-    subject: JwtIdentifiedSubject, // is allowed with no auth
+    subject: Option<JwtIdentifiedSubject>,
 ) -> Result<Vec<domain::models::Place>, Error> {
     let results = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Place>, Error> {
