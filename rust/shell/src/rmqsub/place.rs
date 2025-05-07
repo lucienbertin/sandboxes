@@ -78,6 +78,7 @@ pub fn handle_create_place(
 
     let result = domain::usecases::create_place(&worker, &place);
     match result {
+        CreatePlaceResult::CantCreateAsUnknown => Err(Error::Error),
         CreatePlaceResult::CantCreateAsUser => Err(Error::Error),
         CreatePlaceResult::DoCreate(p) => {
             use crate::db;
