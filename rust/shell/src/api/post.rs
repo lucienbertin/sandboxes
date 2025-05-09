@@ -1,9 +1,9 @@
 use super::error::ResponseError;
-use super::{check_match, check_none_match, get_etag_safe, resolve_agent, AgentWrapper, DbConnWrapper, ServerState};
+use super::{check_match, check_none_match, get_etag_safe, resolve_agent, AgentWrapper, DbConnWrapper, RedisConnWrapper, ServerState};
 use crate::db::{self};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, RedisConn};
-use crate::rmqpub::{self};
+use crate::rmqpub::{self, RmQPublisher};
 use diesel::PgConnection;
 use domain::models::PostEdition;
 use rocket::serde::{Deserialize, Serialize};
@@ -258,19 +258,19 @@ pub fn post_post(
 
 #[delete("/post/<id>")]
 pub fn delete_post(
-    server_state: &State<ServerState>,
+    // server_state: &State<ServerState>,
     // subject: Option<JwtIdentifiedSubject>,
     agent: AgentWrapper,
     mut conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
+    rmq_publisher: &RmQPublisher,
     if_match: Option<IfMatchHeader>,
     id: i32,
 ) -> Result<NoContent, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    // let mut conn = db::get_conn(&server_state.db_pool)?;
-    let rmq_publisher = &server_state.rmq_publisher;
+    // let rmq_publisher = &server_state.rmq_publisher;
     conn.build_transaction().run(|conn| -> Result<(), Error> {
         // let agent = resolve_agent(conn, subject)?;
 
