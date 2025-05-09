@@ -1,5 +1,5 @@
 use super::error::ResponseError;
-use super::{check_match, check_none_match, get_etag_safe, resolve_agent, AgentWrapper, DbConnWrapper, RedisConnWrapper, ServerState};
+use super::{check_match, check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, RedisConnWrapper};
 use crate::db::{self};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, RedisConn};
@@ -7,7 +7,6 @@ use crate::rmqpub::{self, RmQPublisher};
 use diesel::PgConnection;
 use domain::models::PostEdition;
 use rocket::serde::{Deserialize, Serialize};
-use rocket::State;
 use rocket::{
     form::Form,
     http::Status,
@@ -15,7 +14,7 @@ use rocket::{
     serde::json::Json,
 };
 
-use super::{EtagJson, IfMatchHeader, IfNoneMatchHeader, JwtIdentifiedSubject};
+use super::{EtagJson, IfMatchHeader, IfNoneMatchHeader};
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -85,20 +84,16 @@ impl From<PatchPost> for domain::models::PostEdition {
 
 #[get("/posts", format = "json")]
 pub async fn get_posts(
-    server_state: &State<ServerState>,
-    subject: Option<JwtIdentifiedSubject>,
+    mut db_conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
+    agent: AgentWrapper,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Vec<Post>>, ResponseError> {
     let cache_key = "posts".to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
-
-    let mut db_conn = db::get_conn(&server_state.db_pool)?;
 
     let posts = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Post>, Error> {
-            let agent = resolve_agent(conn, subject)?;
-
             let result = domain::usecases::consult_posts(&agent);
 
             use domain::usecases::ConsultPostsResult::*;
@@ -121,21 +116,18 @@ pub async fn get_posts(
 
 #[get("/post/<id>", format = "json")]
 pub fn get_post(
-    server_state: &State<ServerState>,
-    subject: Option<JwtIdentifiedSubject>,
+    mut db_conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
+    agent: AgentWrapper,
     id: i32,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Post>, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
-    let mut conn = db::get_conn(&server_state.db_pool)?;
 
-    let result = conn.build_transaction().read_only().run(
+    let result = db_conn.build_transaction().read_only().run(
         |conn| -> Result<domain::models::Post, Error> {
-            let agent = resolve_agent(conn, subject)?;
-
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
 
@@ -162,21 +154,18 @@ pub fn get_post(
 
 #[post("/post/<id>/publish")]
 pub async fn publish_post(
-    server_state: &State<ServerState>,
-    subject: Option<JwtIdentifiedSubject>,
+    mut db_conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
+    rmq_publisher: &RmQPublisher,
+    agent: AgentWrapper,
     id: i32,
     if_match: Option<IfMatchHeader>,
 ) -> Result<Status, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    let mut conn = db::get_conn(&server_state.db_pool)?;
-    let rmq_publisher = &server_state.rmq_publisher;
-    conn.build_transaction()
+    db_conn.build_transaction()
         .run(move |conn| -> Result<(), Error> {
-            let agent = resolve_agent(conn, subject)?;
-
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
 
@@ -222,19 +211,16 @@ pub async fn publish_post(
 
 #[post("/posts", data = "<data>")]
 pub fn post_post(
-    server_state: &State<ServerState>,
-    subject: Option<JwtIdentifiedSubject>,
-    data: Form<NewPost>,
+    mut db_conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
+    agent: AgentWrapper,
     if_match: Option<IfMatchHeader>,
+    data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, ResponseError> {
     let cache_key = "posts".to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    let mut conn = db::get_conn(&server_state.db_pool)?;
-    let result = conn.build_transaction().run(|conn| -> Result<i32, Error> {
-        let agent = resolve_agent(conn, subject)?;
-
+    let result = db_conn.build_transaction().run(|conn| -> Result<i32, Error> {
         let result = domain::usecases::create_post(&agent, data.into_inner().into());
         use domain::usecases::CreatePostResult::*;
         match result {
@@ -258,32 +244,27 @@ pub fn post_post(
 
 #[delete("/post/<id>")]
 pub fn delete_post(
-    // server_state: &State<ServerState>,
-    // subject: Option<JwtIdentifiedSubject>,
-    agent: AgentWrapper,
-    mut conn: DbConnWrapper,
+    mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
     rmq_publisher: &RmQPublisher,
+    agent: AgentWrapper,
     if_match: Option<IfMatchHeader>,
     id: i32,
 ) -> Result<NoContent, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    // let rmq_publisher = &server_state.rmq_publisher;
-    conn.build_transaction().run(|conn| -> Result<(), Error> {
-        // let agent = resolve_agent(conn, subject)?;
-
+    db_conn.build_transaction().run(|conn| -> Result<(), Error> {
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(HttpError::Gone)?;
 
         let result = domain::usecases::delete_post(&agent, &result);
 
-        let do_delete = |db_conn: &mut PgConnection,
+        let do_delete = |conn: &mut PgConnection,
                          redis_conn: &mut RedisConn,
                          post_id: i32|
          -> Result<(), Error> {
-            db::delete_post(db_conn, post_id)?;
+            db::delete_post(conn, post_id)?;
 
             let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
             for cache_key in cache_keys {
@@ -315,23 +296,18 @@ pub fn delete_post(
 
 #[patch("/post/<id>", data = "<data>")]
 pub fn patch_post(
-    server_state: &State<ServerState>,
     mut db_conn: DbConnWrapper,
-    subject: Option<JwtIdentifiedSubject>,
+    mut redis_conn: RedisConnWrapper,
+    rmq_publisher: &RmQPublisher,
+    agent: AgentWrapper,
     if_match: Option<IfMatchHeader>,
     id: i32,
     data: Form<PatchPost>,
 ) -> Result<NoContent, ResponseError> {
     let cache_key = format!("posts.{}", id).to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    // let mut conn = db::get_conn(&server_state.db_pool)?;
-    // let db_conn = wrap.deref_mut();
-    let rmq_publisher = &server_state.rmq_publisher;
-
     db_conn.build_transaction().run(|conn| -> Result<(), Error> {
-        let agent = resolve_agent(conn, subject)?;
         let result = db::find_post(conn, id)?;
         let result = result.ok_or(HttpError::NotFound)?;
 
