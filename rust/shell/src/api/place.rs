@@ -1,6 +1,8 @@
 use super::error::ResponseError;
 use super::{
-    check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, EtagJson, IfNoneMatchHeader, RedisConnWrapper };
+    check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, EtagJson, IfNoneMatchHeader,
+    RedisConnWrapper,
+};
 use crate::db::{self, DbConn};
 use crate::error::Error;
 use domain::models::Agent;
@@ -108,10 +110,7 @@ pub async fn get_places_geojson(
     Ok(result)
 }
 
-fn fetch_places(
-    db_conn: &mut DbConn,
-    agent: &Agent,
-) -> Result<Vec<domain::models::Place>, Error> {
+fn fetch_places(db_conn: &mut DbConn, agent: &Agent) -> Result<Vec<domain::models::Place>, Error> {
     let results = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Place>, Error> {
             let result = domain::usecases::consult_places(&agent);

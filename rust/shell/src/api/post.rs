@@ -1,5 +1,7 @@
 use super::error::ResponseError;
-use super::{check_match, check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, RedisConnWrapper};
+use super::{
+    check_match, check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, RedisConnWrapper,
+};
 use crate::db::{self};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, RedisConn};
@@ -125,7 +127,6 @@ pub fn get_post(
     let cache_key = format!("posts.{}", id).to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
-
     let result = db_conn.build_transaction().read_only().run(
         |conn| -> Result<domain::models::Post, Error> {
             let post = db::find_post(conn, id)?;
@@ -164,7 +165,8 @@ pub async fn publish_post(
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    db_conn.build_transaction()
+    db_conn
+        .build_transaction()
         .run(move |conn| -> Result<(), Error> {
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
@@ -220,22 +222,24 @@ pub fn post_post(
     let cache_key = "posts".to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    let result = db_conn.build_transaction().run(|conn| -> Result<i32, Error> {
-        let result = domain::usecases::create_post(&agent, data.into_inner().into());
-        use domain::usecases::CreatePostResult::*;
-        match result {
-            DoCreate(new_post) => {
-                let post_id = db::insert_new_post(conn, new_post)?;
+    let result = db_conn
+        .build_transaction()
+        .run(|conn| -> Result<i32, Error> {
+            let result = domain::usecases::create_post(&agent, data.into_inner().into());
+            use domain::usecases::CreatePostResult::*;
+            match result {
+                DoCreate(new_post) => {
+                    let post_id = db::insert_new_post(conn, new_post)?;
 
-                let cache_key = "posts".to_string();
-                redis::refresh_etag(&mut redis_conn, &cache_key)?;
+                    let cache_key = "posts".to_string();
+                    redis::refresh_etag(&mut redis_conn, &cache_key)?;
 
-                Ok(post_id)
+                    Ok(post_id)
+                }
+                CantCreateAsReader | CantCreateAsWorker => Err(HttpError::Forbidden.into()),
+                CantCreateAsUnknown => Err(HttpError::Unauthorized.into()),
             }
-            CantCreateAsReader | CantCreateAsWorker => Err(HttpError::Forbidden.into()),
-            CantCreateAsUnknown => Err(HttpError::Unauthorized.into()),
-        }
-    })?;
+        })?;
 
     let result = format!("/api/post/{}", result);
 
@@ -254,42 +258,44 @@ pub fn delete_post(
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    db_conn.build_transaction().run(|conn| -> Result<(), Error> {
-        let result = db::find_post(conn, id)?;
-        let result = result.ok_or(HttpError::Gone)?;
+    db_conn
+        .build_transaction()
+        .run(|conn| -> Result<(), Error> {
+            let result = db::find_post(conn, id)?;
+            let result = result.ok_or(HttpError::Gone)?;
 
-        let result = domain::usecases::delete_post(&agent, &result);
+            let result = domain::usecases::delete_post(&agent, &result);
 
-        let do_delete = |conn: &mut PgConnection,
-                         redis_conn: &mut RedisConn,
-                         post_id: i32|
-         -> Result<(), Error> {
-            db::delete_post(conn, post_id)?;
+            let do_delete = |conn: &mut PgConnection,
+                             redis_conn: &mut RedisConn,
+                             post_id: i32|
+             -> Result<(), Error> {
+                db::delete_post(conn, post_id)?;
 
-            let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-            for cache_key in cache_keys {
-                redis::refresh_etag(redis_conn, &cache_key)?;
-            }
-
-            Ok(())
-        };
-
-        use domain::usecases::DeletePostResult::*;
-        match result {
-            CantDeleteAnotherOnesPost => Err(HttpError::Forbidden.into()),
-            CantDeletePublishedPost => Err(HttpError::Conflict.into()),
-            CantDeleteAsUnknown => Err(HttpError::Unauthorized.into()),
-            CantDeleteAsReader => Err(HttpError::Forbidden.into()),
-            CantDeleteAsWorker => Err(HttpError::Forbidden.into()),
-            DoDelete(post_id) => do_delete(conn, &mut redis_conn, post_id),
-            DoDeleteAndNotify(post_id, post) => {
-                do_delete(conn, &mut redis_conn, post_id)?;
-                rmqpub::notify_post_deleted(&rmq_publisher, &post)?;
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                for cache_key in cache_keys {
+                    redis::refresh_etag(redis_conn, &cache_key)?;
+                }
 
                 Ok(())
+            };
+
+            use domain::usecases::DeletePostResult::*;
+            match result {
+                CantDeleteAnotherOnesPost => Err(HttpError::Forbidden.into()),
+                CantDeletePublishedPost => Err(HttpError::Conflict.into()),
+                CantDeleteAsUnknown => Err(HttpError::Unauthorized.into()),
+                CantDeleteAsReader => Err(HttpError::Forbidden.into()),
+                CantDeleteAsWorker => Err(HttpError::Forbidden.into()),
+                DoDelete(post_id) => do_delete(conn, &mut redis_conn, post_id),
+                DoDeleteAndNotify(post_id, post) => {
+                    do_delete(conn, &mut redis_conn, post_id)?;
+                    rmqpub::notify_post_deleted(&rmq_publisher, &post)?;
+
+                    Ok(())
+                }
             }
-        }
-    })?;
+        })?;
 
     Ok(NoContent)
 }
@@ -307,40 +313,42 @@ pub fn patch_post(
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
-    db_conn.build_transaction().run(|conn| -> Result<(), Error> {
-        let result = db::find_post(conn, id)?;
-        let result = result.ok_or(HttpError::NotFound)?;
+    db_conn
+        .build_transaction()
+        .run(|conn| -> Result<(), Error> {
+            let result = db::find_post(conn, id)?;
+            let result = result.ok_or(HttpError::NotFound)?;
 
-        let result = domain::usecases::edit_post(&agent, &result, data.into_inner().into());
+            let result = domain::usecases::edit_post(&agent, &result, data.into_inner().into());
 
-        let do_update = |db_conn: &mut PgConnection,
-                         redis_conn: &mut RedisConn,
-                         post_id: i32,
-                         edits: PostEdition|
-         -> Result<(), Error> {
-            db::update_post(db_conn, post_id, edits)?;
-            let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
-            for cache_key in cache_keys {
-                redis::refresh_etag(redis_conn, &cache_key)?;
-            }
-            Ok(())
-        };
-        use domain::usecases::EditPostResult::*;
-        match result {
-            CantEditAnotherOnesPost => Err(HttpError::Forbidden.into()),
-            CantEditPublishedPost => Err(HttpError::Conflict.into()),
-            CantEditAsUnknown => Err(HttpError::Unauthorized.into()),
-            CantEditAsReader => Err(HttpError::Forbidden.into()),
-            CantEditAsWorker => Err(HttpError::Forbidden.into()),
-            NothingToUpdate => Ok(()),
-            DoUpdate(post_id, edits) => do_update(conn, &mut redis_conn, post_id, edits),
-            DoUpdateAndNotify(post_id, edits, post) => {
-                do_update(conn, &mut redis_conn, post_id, edits)?;
-                rmqpub::notify_post_updated(&rmq_publisher, &post)?;
+            let do_update = |db_conn: &mut PgConnection,
+                             redis_conn: &mut RedisConn,
+                             post_id: i32,
+                             edits: PostEdition|
+             -> Result<(), Error> {
+                db::update_post(db_conn, post_id, edits)?;
+                let cache_keys = ["posts".to_string(), format!("posts.{}", id).to_string()];
+                for cache_key in cache_keys {
+                    redis::refresh_etag(redis_conn, &cache_key)?;
+                }
                 Ok(())
+            };
+            use domain::usecases::EditPostResult::*;
+            match result {
+                CantEditAnotherOnesPost => Err(HttpError::Forbidden.into()),
+                CantEditPublishedPost => Err(HttpError::Conflict.into()),
+                CantEditAsUnknown => Err(HttpError::Unauthorized.into()),
+                CantEditAsReader => Err(HttpError::Forbidden.into()),
+                CantEditAsWorker => Err(HttpError::Forbidden.into()),
+                NothingToUpdate => Ok(()),
+                DoUpdate(post_id, edits) => do_update(conn, &mut redis_conn, post_id, edits),
+                DoUpdateAndNotify(post_id, edits, post) => {
+                    do_update(conn, &mut redis_conn, post_id, edits)?;
+                    rmqpub::notify_post_updated(&rmq_publisher, &post)?;
+                    Ok(())
+                }
             }
-        }
-    })?;
+        })?;
 
     Ok(NoContent)
 }
