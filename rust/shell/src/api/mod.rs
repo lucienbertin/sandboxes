@@ -328,6 +328,9 @@ impl<'r> FromRequest<'r> for AgentWrapper {
             .ok_or(super::error::Error::Error);
         let r_db_conn: Result<db::DbConn, Error> =
             r_state.and_then(|s| s.db_pool.get().map_err(|e| e.into()));
+        // here i am resolving agent outside of the transaction i will open in my request handler
+        // it is a bit incoherent to do it this way, it goes against why i wrapp all my IO in the db transaction in the first place
+        // tbh im not convinced it is a good idea
         let r_agent = r_db_conn.and_then(|mut conn| resolve_agent(&mut conn, subject));
         match r_agent {
             Err(e) => Outcome::Error((Status::InternalServerError, e)),
