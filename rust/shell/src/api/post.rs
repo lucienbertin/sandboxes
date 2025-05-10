@@ -1,7 +1,9 @@
 use super::error::ResponseError;
 use super::{
-    check_match, check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, RedisConnWrapper,
+    check_match, check_none_match, get_etag_safe, DbConnWrapper, JwtIdentifiedSubject,
+    RedisConnWrapper,
 };
+use crate::api::resolve_agent;
 use crate::db::{self};
 use crate::error::{Error, HttpError};
 use crate::redis::{self, RedisConn};
@@ -88,7 +90,7 @@ impl From<PatchPost> for domain::models::PostEdition {
 pub async fn get_posts(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Vec<Post>>, ResponseError> {
     let cache_key = "posts".to_string();
@@ -96,6 +98,7 @@ pub async fn get_posts(
 
     let posts = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Post>, Error> {
+            let agent = resolve_agent(conn, subject)?;
             let result = domain::usecases::consult_posts(&agent);
 
             use domain::usecases::ConsultPostsResult::*;
@@ -120,7 +123,7 @@ pub async fn get_posts(
 pub fn get_post(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     id: i32,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Post>, ResponseError> {
@@ -129,6 +132,7 @@ pub fn get_post(
 
     let result = db_conn.build_transaction().read_only().run(
         |conn| -> Result<domain::models::Post, Error> {
+            let agent = resolve_agent(conn, subject)?;
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
 
@@ -158,7 +162,7 @@ pub async fn publish_post(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
     rmq_publisher: &RmQPublisher,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     id: i32,
     if_match: Option<IfMatchHeader>,
 ) -> Result<Status, ResponseError> {
@@ -168,6 +172,7 @@ pub async fn publish_post(
     db_conn
         .build_transaction()
         .run(move |conn| -> Result<(), Error> {
+            let agent = resolve_agent(conn, subject)?;
             let post = db::find_post(conn, id)?;
             let post = post.ok_or(HttpError::NotFound)?;
 
@@ -215,7 +220,7 @@ pub async fn publish_post(
 pub fn post_post(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     data: Form<NewPost>,
 ) -> Result<Created<Json<Post>>, ResponseError> {
@@ -225,6 +230,7 @@ pub fn post_post(
     let result = db_conn
         .build_transaction()
         .run(|conn| -> Result<i32, Error> {
+            let agent = resolve_agent(conn, subject)?;
             let result = domain::usecases::create_post(&agent, data.into_inner().into());
             use domain::usecases::CreatePostResult::*;
             match result {
@@ -251,7 +257,7 @@ pub fn delete_post(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
     rmq_publisher: &RmQPublisher,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     id: i32,
 ) -> Result<NoContent, ResponseError> {
@@ -261,6 +267,7 @@ pub fn delete_post(
     db_conn
         .build_transaction()
         .run(|conn| -> Result<(), Error> {
+            let agent = resolve_agent(conn, subject)?;
             let result = db::find_post(conn, id)?;
             let result = result.ok_or(HttpError::Gone)?;
 
@@ -305,7 +312,7 @@ pub fn patch_post(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
     rmq_publisher: &RmQPublisher,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     id: i32,
     data: Form<PatchPost>,
@@ -316,6 +323,7 @@ pub fn patch_post(
     db_conn
         .build_transaction()
         .run(|conn| -> Result<(), Error> {
+            let agent = resolve_agent(conn, subject)?;
             let result = db::find_post(conn, id)?;
             let result = result.ok_or(HttpError::NotFound)?;
 

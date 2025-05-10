@@ -301,43 +301,43 @@ impl<'r> FromRequest<'r> for &'r RmQPublisher {
 }
 
 use std::ops::{Deref, DerefMut};
-struct AgentWrapper(Agent);
-impl Deref for AgentWrapper {
-    type Target = Agent;
+// struct AgentWrapper(Agent);
+// impl Deref for AgentWrapper {
+//     type Target = Agent;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
 
-impl DerefMut for AgentWrapper {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for AgentWrapper {
-    type Error = super::error::Error;
+// impl DerefMut for AgentWrapper {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         &mut self.0
+//     }
+// }
+// #[rocket::async_trait]
+// impl<'r> FromRequest<'r> for AgentWrapper {
+//     type Error = super::error::Error;
 
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let subject = request.guard::<JwtIdentifiedSubject>().await.succeeded();
-        let r_state = request
-            .guard::<&'r State<ServerState>>()
-            .await
-            .succeeded()
-            .ok_or(super::error::Error::Error);
-        let r_db_conn: Result<db::DbConn, Error> =
-            r_state.and_then(|s| s.db_pool.get().map_err(|e| e.into()));
-        // here i am resolving agent outside of the transaction i will open in my request handler
-        // it is a bit incoherent to do it this way, it goes against why i wrapp all my IO in the db transaction in the first place
-        // tbh im not convinced it is a good idea
-        let r_agent = r_db_conn.and_then(|mut conn| resolve_agent(&mut conn, subject));
-        match r_agent {
-            Err(e) => Outcome::Error((Status::InternalServerError, e)),
-            Ok(agent) => Outcome::Success(AgentWrapper(agent)),
-        }
-    }
-}
+//     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+//         let subject = request.guard::<JwtIdentifiedSubject>().await.succeeded();
+//         let r_state = request
+//             .guard::<&'r State<ServerState>>()
+//             .await
+//             .succeeded()
+//             .ok_or(super::error::Error::Error);
+//         let r_db_conn: Result<db::DbConn, Error> =
+//             r_state.and_then(|s| s.db_pool.get().map_err(|e| e.into()));
+//         // here i am resolving agent outside of the transaction i will open in my request handler
+//         // it is a bit incoherent to do it this way, it goes against why i wrapp all my IO in the db transaction in the first place
+//         // tbh im not convinced it is a good idea
+//         let r_agent = r_db_conn.and_then(|mut conn| resolve_agent(&mut conn, subject));
+//         match r_agent {
+//             Err(e) => Outcome::Error((Status::InternalServerError, e)),
+//             Ok(agent) => Outcome::Success(AgentWrapper(agent)),
+//         }
+//     }
+// }
 
 pub struct ServerState {
     pub db_pool: DbPool,

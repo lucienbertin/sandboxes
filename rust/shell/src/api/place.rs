@@ -1,11 +1,11 @@
 use super::error::ResponseError;
 use super::{
-    check_none_match, get_etag_safe, AgentWrapper, DbConnWrapper, EtagJson, IfNoneMatchHeader,
-    RedisConnWrapper,
+    check_none_match, get_etag_safe, DbConnWrapper, EtagJson, IfNoneMatchHeader,
+    JwtIdentifiedSubject, RedisConnWrapper,
 };
+use crate::api::resolve_agent;
 use crate::db::{self, DbConn};
 use crate::error::Error;
-use domain::models::Agent;
 use rocket::serde::Serialize;
 use serde::ser::SerializeStruct;
 use serde::Serializer;
@@ -75,13 +75,13 @@ impl Serialize for PlaceFeatureCollection {
 pub async fn get_places(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Vec<Place>>, ResponseError> {
     let cache_key = "places".to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
-    let results = fetch_places(&mut db_conn, &agent)?;
+    let results = fetch_places(&mut db_conn, subject)?;
 
     let places = results.into_iter().map(|x| x.into()).collect();
     let etag = get_etag_safe(&mut redis_conn, &cache_key);
@@ -94,13 +94,13 @@ pub async fn get_places(
 pub async fn get_places_geojson(
     mut db_conn: DbConnWrapper,
     mut redis_conn: RedisConnWrapper,
-    agent: AgentWrapper,
+    subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<PlaceFeatureCollection>, ResponseError> {
     let cache_key = "places-geojson".to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
-    let results = fetch_places(&mut db_conn, &agent)?;
+    let results = fetch_places(&mut db_conn, subject)?;
 
     let features: Vec<PlaceFeature> = results.into_iter().map(|x| x.into()).collect();
     let collection = PlaceFeatureCollection(features);
@@ -110,9 +110,13 @@ pub async fn get_places_geojson(
     Ok(result)
 }
 
-fn fetch_places(db_conn: &mut DbConn, agent: &Agent) -> Result<Vec<domain::models::Place>, Error> {
+fn fetch_places(
+    db_conn: &mut DbConn,
+    subject: Option<JwtIdentifiedSubject>,
+) -> Result<Vec<domain::models::Place>, Error> {
     let results = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Place>, Error> {
+            let agent = resolve_agent(conn, subject)?;
             let result = domain::usecases::consult_places(&agent);
             use domain::usecases::ConsultPlacesResult::*;
             match result {
