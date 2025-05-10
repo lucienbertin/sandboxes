@@ -17,7 +17,7 @@ pub fn init_pool() -> Result<RedisPool, Error> {
 
     Ok(pool)
 }
-
+#[cfg(feature = "rmqsub")]
 pub fn get_conn(redis_pool: &RedisPool) -> Result<RedisConn, Error> {
     let conn: RedisConn = redis_pool.get()?;
 

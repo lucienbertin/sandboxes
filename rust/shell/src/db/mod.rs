@@ -30,6 +30,7 @@ pub fn init_pool() -> Result<DbPool, Error> {
     Ok(pool)
 }
 
+#[cfg(feature = "rmqsub")]
 pub fn get_conn(db_pool: &DbPool) -> Result<DbConn, Error> {
     let conn: DbConn = db_pool.get()?;
 

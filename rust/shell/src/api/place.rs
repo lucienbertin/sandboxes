@@ -1,13 +1,12 @@
 use super::error::ResponseError;
 use super::{
-    check_none_match, get_etag_safe, resolve_agent, EtagJson, IfNoneMatchHeader,
-    JwtIdentifiedSubject, ServerState,
+    check_none_match, get_etag_safe, DbConnWrapper, EtagJson, IfNoneMatchHeader,
+    JwtIdentifiedSubject, RedisConnWrapper,
 };
+use crate::api::resolve_agent;
 use crate::db::{self, DbConn};
 use crate::error::Error;
-use crate::redis;
 use rocket::serde::Serialize;
-use rocket::State;
 use serde::ser::SerializeStruct;
 use serde::Serializer;
 
@@ -74,15 +73,14 @@ impl Serialize for PlaceFeatureCollection {
 
 #[get("/places", format = "json")]
 pub async fn get_places(
-    server_state: &State<ServerState>,
+    mut db_conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
     subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<Vec<Place>>, ResponseError> {
     let cache_key = "places".to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
-    let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
 
     let places = results.into_iter().map(|x| x.into()).collect();
@@ -94,15 +92,14 @@ pub async fn get_places(
 
 #[get("/places", format = "application/geo+json", rank = 2)]
 pub async fn get_places_geojson(
-    server_state: &State<ServerState>,
+    mut db_conn: DbConnWrapper,
+    mut redis_conn: RedisConnWrapper,
     subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
 ) -> Result<EtagJson<PlaceFeatureCollection>, ResponseError> {
     let cache_key = "places-geojson".to_string();
-    let mut redis_conn = redis::get_conn(&server_state.redis_pool)?;
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
-    let mut db_conn = db::get_conn(&server_state.db_pool)?;
     let results = fetch_places(&mut db_conn, subject)?;
 
     let features: Vec<PlaceFeature> = results.into_iter().map(|x| x.into()).collect();
@@ -120,7 +117,6 @@ fn fetch_places(
     let results = db_conn.build_transaction().read_only().run(
         |conn| -> Result<Vec<domain::models::Place>, Error> {
             let agent = resolve_agent(conn, subject)?;
-
             let result = domain::usecases::consult_places(&agent);
             use domain::usecases::ConsultPlacesResult::*;
             match result {

@@ -15,7 +15,7 @@ use rocket::http::{ContentType, Header};
 use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::{Build, Response, Rocket};
+use rocket::{Build, Response, Rocket, State};
 use serde::Serialize;
 
 #[get("/health")]
@@ -220,6 +220,87 @@ impl<'r> FromRequest<'r> for JwtIdentifiedSubject {
         }
     }
 }
+pub struct DbConnWrapper(db::DbConn);
+impl Deref for DbConnWrapper {
+    type Target = db::DbConn;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for DbConnWrapper {
+    fn deref_mut(&mut self) -> &mut db::DbConn {
+        &mut self.0
+    }
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for DbConnWrapper {
+    type Error = super::error::Error;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let r_state = request
+            .guard::<&'r State<ServerState>>()
+            .await
+            .succeeded()
+            .ok_or(super::error::Error::Error);
+        let r_conn: Result<db::DbConn, Error> =
+            r_state.and_then(|s| s.db_pool.get().map_err(|e| e.into()));
+        match r_conn {
+            Ok(c) => Outcome::Success(DbConnWrapper(c)),
+            Err(e) => Outcome::Error((Status::InternalServerError, e)),
+        }
+    }
+}
+pub struct RedisConnWrapper(crate::redis::RedisConn);
+impl Deref for RedisConnWrapper {
+    type Target = crate::redis::RedisConn;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for RedisConnWrapper {
+    fn deref_mut(&mut self) -> &mut crate::redis::RedisConn {
+        &mut self.0
+    }
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for RedisConnWrapper {
+    type Error = super::error::Error;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let r_state = request
+            .guard::<&'r State<ServerState>>()
+            .await
+            .succeeded()
+            .ok_or(super::error::Error::Error);
+        let r_conn: Result<RedisConn, Error> =
+            r_state.and_then(|s| s.redis_pool.get().map_err(|e| e.into()));
+        match r_conn {
+            Ok(c) => Outcome::Success(RedisConnWrapper(c)),
+            Err(e) => Outcome::Error((Status::InternalServerError, e)),
+        }
+    }
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for &'r RmQPublisher {
+    type Error = super::error::Error;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let r_state = request
+            .guard::<&'r State<ServerState>>()
+            .await
+            .succeeded()
+            .ok_or(super::error::Error::Error);
+        let r_pub: Result<&'r RmQPublisher, Error> = r_state.map(|s| &s.rmq_publisher);
+        match r_pub {
+            Ok(p) => Outcome::Success(p),
+            Err(e) => Outcome::Error((Status::InternalServerError, e)),
+        }
+    }
+}
+
+use std::ops::{Deref, DerefMut};
 
 pub struct ServerState {
     pub db_pool: DbPool,
