@@ -1,20 +1,12 @@
-module Posts exposing (main, Model, Msg)
+module Posts exposing (main, Model, Msg, PostFormModel, PostsModel)
 
 import Browser
-import Html exposing (Html, text, ul, li, h1, main_, b)
-import Http
+import Html exposing (Html, text, ul, li, h1, main_, b, button, label, input, form, h2)
 import Json.Decode exposing (Decoder, map4, map2, field, int, string, list)
-import Html exposing (button)
-import Html.Events exposing (onClick)
-import Html exposing (label)
-import Html exposing (input)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Attributes exposing (type_, value)
-import Html.Events exposing (onInput)
-import Html exposing (form)
-import Html exposing (h2)
-import Html.Events exposing (onSubmit)
-import Http exposing (Part)
-import Http exposing (stringPart)
+import Http
+import Http exposing (Part, stringPart)
 
 
 main : Program () Model Msg
