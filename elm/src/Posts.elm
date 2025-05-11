@@ -12,6 +12,9 @@ import Html.Attributes exposing (type_, value)
 import Html.Events exposing (onInput)
 import Html exposing (form)
 import Html exposing (h2)
+import Html.Events exposing (onSubmit)
+import Http exposing (Part)
+import Http exposing (stringPart)
 
 
 main : Program () Model Msg
@@ -74,6 +77,17 @@ getPosts =
     , tracker = Nothing
     }
 
+postPost : PostFormModel -> Cmd Msg
+postPost pfm =
+  Http.request
+    { url = "https://rust.sandboxes.local/api/posts"
+    , method = "POST"
+    , headers = headers
+    , body = Http.multipartBody <| postEncoder pfm
+    , expect = Http.expectWhatever PostCreated
+    , timeout = Nothing
+    , tracker = Nothing
+    }
 
 authorDecoder : Decoder Author
 authorDecoder = map2 Author
@@ -90,15 +104,23 @@ postDecoder = map4 Post
 postsDecoder : Decoder Posts
 postsDecoder = list postDecoder
 
+postEncoder : PostFormModel -> List Part
+postEncoder pfm =
+  [ stringPart "title"  pfm.title
+  , stringPart "body"  pfm.body
+  ]
+
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.none
 
 type Msg
-  = RefreshPosts
+  = RefreshPosts 
   | GotPosts (Result Http.Error Posts)
-  | UpdateTitle String
-  | UpdateBody String
+  | UpdateFormTitle String
+  | UpdateFormBody String
+  | SubmitForm
+  | PostCreated (Result Http.Error ())
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -106,8 +128,11 @@ update msg model = case msg of
   RefreshPosts        -> ({model | posts = Loading}      , getPosts)
   GotPosts (Ok posts) -> ({model | posts = Success posts}, Cmd.none)
   GotPosts (Err _)    -> ({model | posts = Failure}      , Cmd.none)
-  UpdateTitle t       -> (t |> updatePostFormTitle model.postForm |> updatePostForm model , Cmd.none)
-  UpdateBody b        -> (b |> updatePostFormBody  model.postForm |> updatePostForm model , Cmd.none)
+  UpdateFormTitle t   -> (t |> updatePostFormTitle model.postForm |> updatePostForm model , Cmd.none)
+  UpdateFormBody b    -> (b |> updatePostFormBody  model.postForm |> updatePostForm model , Cmd.none)
+  SubmitForm          -> (model, postPost model.postForm)
+  PostCreated (Ok ()) -> ({model | posts = Loading, postForm = postFormInit}      , getPosts)
+  PostCreated (Err _) -> (model, Cmd.none)
 
 updatePostFormTitle : PostFormModel -> String -> PostFormModel
 updatePostFormTitle pfm t = { pfm | title = t }
@@ -146,10 +171,11 @@ viewAuthor : Author -> Html Msg
 viewAuthor author = text <| author.first_name ++ " " ++ author.last_name
 
 viewPostForm : PostFormModel -> Html Msg
-viewPostForm model = form [] 
+viewPostForm model = form [ onSubmit SubmitForm ] 
   [ h2 [] [text "New post"]
-  , viewInput "title" model.title UpdateTitle
-  , viewInput "body" model.body UpdateBody
+  , viewInput "title" model.title UpdateFormTitle
+  , viewInput "body" model.body UpdateFormBody
+  , button [ type_ "submit"] [text "submit"]
   ]
 viewInput : String -> String -> (String -> msg) -> Html msg
 viewInput l v toMsg = 
