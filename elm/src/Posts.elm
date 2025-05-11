@@ -6,6 +6,12 @@ import Http
 import Json.Decode exposing (Decoder, map4, map2, field, int, string, list)
 import Html exposing (button)
 import Html.Events exposing (onClick)
+import Html exposing (label)
+import Html exposing (input)
+import Html.Attributes exposing (type_, value)
+import Html.Events exposing (onInput)
+import Html exposing (form)
+import Html exposing (h2)
 
 
 main : Program () Model Msg
@@ -31,15 +37,26 @@ type alias Post =
   }
 type alias Posts = List Post
 
-type Model
+type PostsModel
   = Failure
   | Loading
   | Success Posts
+type alias PostFormModel =
+  { title : String 
+  , body : String
+  }
+type alias Model =
+  { posts : PostsModel
+  , postForm : PostFormModel
+  }
+
+postFormInit : PostFormModel
+postFormInit = PostFormModel "" ""
 
 -- INIT
 init : () -> (Model, Cmd Msg)
 init _ =
-  ( Loading, getPosts )
+  ( Model Loading postFormInit, getPosts )
 
 -- HTTP
 headers : List Http.Header
@@ -80,24 +97,40 @@ subscriptions _ = Sub.none
 type Msg
   = RefreshPosts
   | GotPosts (Result Http.Error Posts)
+  | UpdateTitle String
+  | UpdateBody String
+
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg _ = case msg of
-  RefreshPosts        -> (Loading, getPosts)
-  GotPosts (Ok posts) -> (Success posts, Cmd.none)
-  GotPosts (Err _)    -> (Failure, Cmd.none)
+update msg model = case msg of
+  RefreshPosts        -> ({model | posts = Loading}      , getPosts)
+  GotPosts (Ok posts) -> ({model | posts = Success posts}, Cmd.none)
+  GotPosts (Err _)    -> ({model | posts = Failure}      , Cmd.none)
+  UpdateTitle t       -> (t |> updatePostFormTitle model.postForm |> updatePostForm model , Cmd.none)
+  UpdateBody b        -> (b |> updatePostFormBody  model.postForm |> updatePostForm model , Cmd.none)
+
+updatePostFormTitle : PostFormModel -> String -> PostFormModel
+updatePostFormTitle pfm t = { pfm | title = t }
+updatePostFormBody : PostFormModel -> String -> PostFormModel
+updatePostFormBody pfm b = { pfm | body = b }
+
+updatePostForm : Model -> PostFormModel -> Model
+updatePostForm m pf = { m | postForm = pf }
+
+
 
 -- VIEW
 view : Model -> Html Msg
 view model =
   main_ []
     [ h1 [] [ text "Posts" ]
-    , viewPosts model
+    , viewPosts model.posts
     , button [ onClick RefreshPosts ] [ text "refresh" ]
+    , viewPostForm model.postForm
     ]
 
 
-viewPosts : Model -> Html Msg
+viewPosts : PostsModel -> Html Msg
 viewPosts model = case model of
   Failure -> text "I could not load a post for some reason. "
   Loading -> text "Loading..."
@@ -111,3 +144,16 @@ viewPost post = li []
   ]
 viewAuthor : Author -> Html Msg
 viewAuthor author = text <| author.first_name ++ " " ++ author.last_name
+
+viewPostForm : PostFormModel -> Html Msg
+viewPostForm model = form [] 
+  [ h2 [] [text "New post"]
+  , viewInput "title" model.title UpdateTitle
+  , viewInput "body" model.body UpdateBody
+  ]
+viewInput : String -> String -> (String -> msg) -> Html msg
+viewInput l v toMsg = 
+  label []
+    [ text l
+    , input [ type_ "text", value v, onInput toMsg] []
+    ]
