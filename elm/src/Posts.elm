@@ -4,6 +4,8 @@ import Browser
 import Html exposing (Html, text, ul, li, h1, main_, b)
 import Http
 import Json.Decode exposing (Decoder, map4, map2, field, int, string, list)
+import Html exposing (button)
+import Html.Events exposing (onClick)
 
 
 main : Program () Model Msg
@@ -46,7 +48,7 @@ headers =
 getPosts : Cmd Msg
 getPosts =
   Http.request
-    { url = "//rust.sandboxes.local/api/posts"
+    { url = "https://rust.sandboxes.local/api/posts"
     , method = "GET"
     , headers = headers
     , body = Http.emptyBody
@@ -75,10 +77,13 @@ postsDecoder = list postDecoder
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.none
 
-type Msg = GotPosts (Result Http.Error Posts)
+type Msg
+  = RefreshPosts
+  | GotPosts (Result Http.Error Posts)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg _ = case msg of
+  RefreshPosts        -> (Loading, getPosts)
   GotPosts (Ok posts) -> (Success posts, Cmd.none)
   GotPosts (Err _)    -> (Failure, Cmd.none)
 
@@ -88,12 +93,13 @@ view model =
   main_ []
     [ h1 [] [ text "Posts" ]
     , viewPosts model
+    , button [ onClick RefreshPosts ] [ text "refresh" ]
     ]
 
 
 viewPosts : Model -> Html Msg
 viewPosts model = case model of
-  Failure -> text "I could not load a post for some rease. "
+  Failure -> text "I could not load a post for some reason. "
   Loading -> text "Loading..."
   Success posts -> ul []  <| List.map viewPost posts
 
