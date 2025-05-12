@@ -1,9 +1,9 @@
-module Main exposing (..)
+module Main exposing (main, Model, Msg)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, text, aside, nav, b, a)
+import Html.Attributes exposing (href)
 import Url
 
 -- MAIN
