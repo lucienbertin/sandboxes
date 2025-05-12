@@ -1,9 +1,12 @@
-module Posts exposing (main, Model, Msg)
+module Posts exposing (main, Model, Msg, PostFormModel, PostsModel)
 
 import Browser
-import Html exposing (Html, text, ul, li, h1, main_, b)
-import Http
+import Html exposing (Html, text, ul, li, h1, main_, b, button, label, input, form, h2)
 import Json.Decode exposing (Decoder, map4, map2, field, int, string, list)
+import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Attributes exposing (type_, value)
+import Http
+import Http exposing (Part, stringPart)
 
 
 main : Program () Model Msg
@@ -29,15 +32,26 @@ type alias Post =
   }
 type alias Posts = List Post
 
-type Model
+type PostsModel
   = Failure
   | Loading
   | Success Posts
+type alias PostFormModel =
+  { title : String 
+  , body : String
+  }
+type alias Model =
+  { posts : PostsModel
+  , postForm : PostFormModel
+  }
+
+postFormInit : PostFormModel
+postFormInit = PostFormModel "" ""
 
 -- INIT
 init : () -> (Model, Cmd Msg)
 init _ =
-  ( Loading, getPosts )
+  ( Model Loading postFormInit, getPosts )
 
 -- HTTP
 headers : List Http.Header
@@ -46,7 +60,7 @@ headers =
 getPosts : Cmd Msg
 getPosts =
   Http.request
-    { url = "//rust.sandboxes.local/api/posts"
+    { url = "https://rust.sandboxes.local/api/posts"
     , method = "GET"
     , headers = headers
     , body = Http.emptyBody
@@ -55,6 +69,17 @@ getPosts =
     , tracker = Nothing
     }
 
+postPost : PostFormModel -> Cmd Msg
+postPost pfm =
+  Http.request
+    { url = "https://rust.sandboxes.local/api/posts"
+    , method = "POST"
+    , headers = headers
+    , body = Http.multipartBody <| postEncoder pfm
+    , expect = Http.expectWhatever PostCreated
+    , timeout = Nothing
+    , tracker = Nothing
+    }
 
 authorDecoder : Decoder Author
 authorDecoder = map2 Author
@@ -71,29 +96,60 @@ postDecoder = map4 Post
 postsDecoder : Decoder Posts
 postsDecoder = list postDecoder
 
+postEncoder : PostFormModel -> List Part
+postEncoder pfm =
+  [ stringPart "title"  pfm.title
+  , stringPart "body"  pfm.body
+  ]
+
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.none
 
-type Msg = GotPosts (Result Http.Error Posts)
+type Msg
+  = RefreshPosts 
+  | GotPosts (Result Http.Error Posts)
+  | UpdateFormTitle String
+  | UpdateFormBody String
+  | SubmitForm
+  | PostCreated (Result Http.Error ())
+
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg _ = case msg of
-  GotPosts (Ok posts) -> (Success posts, Cmd.none)
-  GotPosts (Err _)    -> (Failure, Cmd.none)
+update msg model = case msg of
+  RefreshPosts        -> ({model | posts = Loading}      , getPosts)
+  GotPosts (Ok posts) -> ({model | posts = Success posts}, Cmd.none)
+  GotPosts (Err _)    -> ({model | posts = Failure}      , Cmd.none)
+  UpdateFormTitle t   -> (t |> updatePostFormTitle model.postForm |> updatePostForm model , Cmd.none)
+  UpdateFormBody b    -> (b |> updatePostFormBody  model.postForm |> updatePostForm model , Cmd.none)
+  SubmitForm          -> (model, postPost model.postForm)
+  PostCreated (Ok ()) -> ({model | posts = Loading, postForm = postFormInit}      , getPosts)
+  PostCreated (Err _) -> (model, Cmd.none)
+
+updatePostFormTitle : PostFormModel -> String -> PostFormModel
+updatePostFormTitle pfm t = { pfm | title = t }
+updatePostFormBody : PostFormModel -> String -> PostFormModel
+updatePostFormBody pfm b = { pfm | body = b }
+
+updatePostForm : Model -> PostFormModel -> Model
+updatePostForm m pf = { m | postForm = pf }
+
+
 
 -- VIEW
 view : Model -> Html Msg
 view model =
   main_ []
     [ h1 [] [ text "Posts" ]
-    , viewPosts model
+    , viewPosts model.posts
+    , button [ onClick RefreshPosts ] [ text "refresh" ]
+    , viewPostForm model.postForm
     ]
 
 
-viewPosts : Model -> Html Msg
+viewPosts : PostsModel -> Html Msg
 viewPosts model = case model of
-  Failure -> text "I could not load a post for some rease. "
+  Failure -> text "I could not load a post for some reason. "
   Loading -> text "Loading..."
   Success posts -> ul []  <| List.map viewPost posts
 
@@ -105,3 +161,17 @@ viewPost post = li []
   ]
 viewAuthor : Author -> Html Msg
 viewAuthor author = text <| author.first_name ++ " " ++ author.last_name
+
+viewPostForm : PostFormModel -> Html Msg
+viewPostForm model = form [ onSubmit SubmitForm ] 
+  [ h2 [] [text "New post"]
+  , viewInput "title" model.title UpdateFormTitle
+  , viewInput "body" model.body UpdateFormBody
+  , button [ type_ "submit"] [text "submit"]
+  ]
+viewInput : String -> String -> (String -> msg) -> Html msg
+viewInput l v toMsg = 
+  label []
+    [ text l
+    , input [ type_ "text", value v, onInput toMsg] []
+    ]

@@ -1,54 +1,79 @@
 module Main exposing (main, Model, Msg)
 
--- Press buttons to increment and decrement a counter.
---
--- Read how it works:
---   https://guide.elm-lang.org/architecture/buttons.html
---
-
 import Browser
-import Html exposing (Html, button, div, text, h1, main_, span)
-import Html.Events exposing (onClick)
+import Browser.Navigation as Nav
+import Html exposing (Html, text, aside, nav, b, a)
+import Html.Attributes exposing (href)
+import Url
 
 -- MAIN
 main : Program () Model Msg
 main =
-  Browser.sandbox { init = init, update = update, view = view }
+  Browser.application
+    { init = init
+    , view = view
+    , update = update
+    , subscriptions = subscriptions
+    , onUrlChange = UrlChanged
+    , onUrlRequest = LinkClicked
+    }
+
+
 
 -- MODEL
-type alias Model = Int
+type alias Model =
+  { key : Nav.Key
+  , url : Url.Url
+  }
 
-init : Model
-init =
-  0
+init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init _ url key =
+  ( Model key url, Cmd.none )
 
 -- UPDATE
 type Msg
-  = Increment
-  | Decrement
-  | Plus Int
-  | Minus Int
+  = LinkClicked Browser.UrlRequest
+  | UrlChanged Url.Url
 
-update : Msg -> Model -> Model
-update msg model =
-  case msg of
-    Increment -> model + 1
-    Decrement -> model - 1
-    Plus x    -> model + x
-    Minus y   -> model - y
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model = case msg of
+  LinkClicked (Browser.Internal url) ->
+    ( model, Nav.pushUrl model.key (Url.toString url) )
+
+  LinkClicked (Browser.External href) ->
+    ( model, Nav.load href )
+
+  UrlChanged url ->
+    ( { model | url = url }
+    , Nav.load <| Url.toString url
+    )
+
+-- SUBSCRIPTIONS
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+  Sub.none
 
 -- VIEW
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
-  main_ []
-    [ h1 [] [text "testing elm" ]
-    , div []
-      [ button [ onClick (Minus 17) ] [ text "-17" ]
-      , button [ onClick (Minus 3) ] [ text "-3" ]
-      , button [ onClick Decrement ] [ text "-" ]
-      , span [] [ text (String.fromInt model) ]
-      , button [ onClick Increment ] [ text "+" ]
-      , button [ onClick (Plus 5) ] [ text "+5" ]
-      , button [ onClick (Plus 25) ] [ text "+25" ]
+  { title = "URL Interceptor"
+  , body =
+      [ text "The current URL is: "
+      , b [] [ text (Url.toString model.url) ]
+      , aside [] 
+          [ nav []
+              [ viewLink "/" "Home"
+              , text " | "
+              , viewLink "/posts" "Posts"
+              , text " | "
+              , viewLink "/health" "Health check"
+              , text " | "
+              , viewLink "https://www.linkedin.com/in/lucien-bertin-a0189387" "LinkedIn"
+              ]
+          ]
       ]
-    ]
+  }
+
+viewLink : String -> String -> Html msg
+viewLink path label =
+  a [ href path ] [ text label ]
