@@ -1,0 +1,35 @@
+on:
+  pull_request:
+    paths:
+      - 'vuejs/**'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'vuejs/**'
+
+name: CI VueJs
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Install
+        run: npm ci --prefix vuejs
+      - name: Build
+        run: npm run build --prefix vuejs
+      - name: Test
+        run: npm run test --prefix vuejs
+      - name: Lint
+        run: npm run lint:check --prefix vuejs
+      - name: Fmt
+        run: npm run format:check --prefix vuejs
