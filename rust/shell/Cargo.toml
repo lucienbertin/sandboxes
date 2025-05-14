@@ -32,22 +32,63 @@ futures-lite = { version = "2.6.0", optional = true }
 redis = { version = "0.29.2", features = ["r2d2"], optional = true }
 rand = { version = "0.9.0", optional = true }
 
+leptos = { version = "0.7.0", optional = true }
+leptos_router = { version = "0.7.0", optional = true }
+axum = { version = "0.7", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true}
+leptos_axum = { version = "0.7.0", optional = true }
+leptos_meta = { version = "0.7.0", optional = true }
+wasm-bindgen = { version = "=0.2.100", optional = true }
+# getrandom = { version = "0.3", features = ["wasm_js"], optional = true }
 
 [features]
 api = ["db", "redis", "rmqpub", "dep:rocket", "dep:hmac", "dep:sha2", "dep:jwt", "dep:serde", "dep:serde_json", "dep:geojson"] # rest api web exposition
 rmqsub = ["db", "redis", "dep:tokio", "dep:lapin", "dep:serde", "dep:serde_json", "dep:geojson", "dep:r2d2", "dep:futures-lite"] # rmq subscriber worker
+appssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:leptos",
+    "dep:leptos_axum",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+appcsr = [
+    "dep:leptos",
+    "dep:leptos_meta",
+    "dep:leptos_router",
+    "dep:console_error_panic_hook",
+    "dep:wasm-bindgen",
+    "leptos/hydrate",
+    # "dep:getrandom"
+]
 
 redis = ["dep:redis", "dep:rand"] # redis adapter
 rmqpub = ["dep:lapin", "dep:serde", "dep:serde_json", "dep:r2d2", "dep:async-global-executor"] # rmq publisher adapter
 db = ["dep:diesel", "dep:postgis_diesel", "dep:pq-sys", "dep:openssl-sys", "dep:r2d2"] # db adapter
-default=["api"]
+# default=["api"]
 
 [[bin]]
 name="server"
-path="src/main.rs"
+path="src/main-api.rs"
 required-features = ["api"]
 
 [[bin]]
 name="worker"
-path="src/worker.rs"
+path="src/main-worker.rs"
 required-features = ["rmqsub"]
+
+[[bin]]
+name="shell"
+path="src/main-app.rs"
+required-features = ["appssr"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
