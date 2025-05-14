@@ -1,8 +1,5 @@
 mod error;
 
-#[macro_use]
-extern crate rocket;
-
 #[cfg(feature = "api")]
 mod api;
 
@@ -15,17 +12,14 @@ mod redis;
 #[cfg(feature = "rmqpub")]
 mod rmqpub;
 
-#[rocket::main]
-async fn main() {
-    use dotenvy::dotenv;
-    match dotenv() {
-        Ok(_) => println!("loaded local .env file"),
-        Err(_) => println!("no local .env file to load"),
-    };
+#[cfg(any(feature = "appssr", feature="appcsr"))]
+mod app;
 
-    let server = api::build_server()
-        .await
-        .expect("couldn't build rocket server");
+#[cfg(feature = "rmqsub")]
+mod rmqsub;
 
-    let _ = server.launch().await;
+// NOTHING
+#[cfg(not(any(feature = "api", feature = "appssr", feature = "rmqsub")))]
+fn main() {
+
 }
