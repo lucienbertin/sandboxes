@@ -85,10 +85,4 @@ required-features = ["appssr"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-
-[profile.wasm-release]
-inherits = "release"
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = "abort"
+required-features = ["appcsr"]

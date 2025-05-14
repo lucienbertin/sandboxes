@@ -1,4 +1,4 @@
-#[cfg(any(feature = "appcsr", feature = "appssr"))]
+#[cfg(any(feature = "appcsr"))]
 pub mod app;
 
 #[cfg(feature = "appcsr")]

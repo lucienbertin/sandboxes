@@ -9,7 +9,7 @@ mod redis;
 #[cfg(feature = "rmqpub")]
 mod rmqpub;
 
-#[cfg(any(feature = "appssr", feature="appcsr"))]
+#[cfg(any(feature = "appssr"))]
 mod app;
 
 // FULLSTACK WEBAPP using leptos
@@ -20,7 +20,7 @@ async fn main() {
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use shell::app::*;
+    use crate::app::*;
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -31,9 +31,9 @@ async fn main() {
     let app = Router::new()
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
-            move || shell::app::shell(leptos_options.clone())
+            move || crate::app::shell(leptos_options.clone())
         })
-        .fallback(leptos_axum::file_and_error_handler(shell::app::shell))
+        .fallback(leptos_axum::file_and_error_handler(crate::app::shell))
         .with_state(leptos_options);
 
     // run our app with hyper
