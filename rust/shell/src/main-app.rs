@@ -22,6 +22,14 @@ async fn main() {
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use crate::app::*;
 
+    use dotenvy::dotenv;
+    match dotenv() {
+        Ok(_) => println!("loaded local .env file"),
+        Err(_) => println!("no local .env file to load"),
+    };
+
+    let db_pool = db::init_pool().expect("could not init db pool");
+
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
@@ -29,10 +37,15 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
-        .leptos_routes(&leptos_options, routes, {
-            let leptos_options = leptos_options.clone();
-            move || crate::app::shell(leptos_options.clone())
-        })
+        .leptos_routes_with_context(
+            &leptos_options,
+            routes,
+            move || provide_context(db_pool.clone()),
+            {
+                let leptos_options = leptos_options.clone();
+                move || crate::app::shell(leptos_options.clone())
+            }
+        )
         .fallback(leptos_axum::file_and_error_handler(crate::app::shell))
         .with_state(leptos_options);
 

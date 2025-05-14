@@ -52,6 +52,8 @@ appssr = [
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",
+    "dep:serde",
+    "db",
 ]
 appcsr = [
     "dep:leptos",
@@ -60,13 +62,13 @@ appcsr = [
     "dep:console_error_panic_hook",
     "dep:wasm-bindgen",
     "leptos/hydrate",
-    # "dep:getrandom"
+    "dep:serde",
 ]
 
 redis = ["dep:redis", "dep:rand"] # redis adapter
 rmqpub = ["dep:lapin", "dep:serde", "dep:serde_json", "dep:r2d2", "dep:async-global-executor"] # rmq publisher adapter
-db = ["dep:diesel", "dep:postgis_diesel", "dep:pq-sys", "dep:openssl-sys", "dep:r2d2"] # db adapter
-# default=["api"]
+db = ["dep:diesel", "dep:postgis_diesel", "dep:pq-sys", "dep:openssl-sys", "dep:r2d2", "dep:geojson"] # db adapter
+# default=["appssr"]
 
 [[bin]]
 name="server"
