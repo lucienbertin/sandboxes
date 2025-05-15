@@ -34,7 +34,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: cargo-leptos --locked --manifest-path rust/Cargo.toml
+          args: cargo-leptos --locked
       - name: Build Server
         uses: actions-rs/cargo@v1
         with:
