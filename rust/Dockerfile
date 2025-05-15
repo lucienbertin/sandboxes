@@ -1,5 +1,5 @@
 # Use a Rust base image with Cargo installed
-FROM rust:1-bullseye AS builder
+FROM rust:1-bookworm AS builder
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
@@ -30,7 +30,7 @@ COPY ./shell/src ./shell/src
 RUN cargo build --release --bin api --features api --no-default-features
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Set the working directory
 WORKDIR /usr/src/app
