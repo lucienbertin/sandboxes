@@ -16,11 +16,11 @@ mod app;
 #[cfg(feature = "appssr")]
 #[tokio::main]
 async fn main() {
+    use crate::app::*;
     use axum::Router;
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use crate::app::*;
 
     use dotenvy::dotenv;
     match dotenv() {
@@ -44,7 +44,7 @@ async fn main() {
             {
                 let leptos_options = leptos_options.clone();
                 move || crate::app::shell(leptos_options.clone())
-            }
+            },
         )
         .fallback(leptos_axum::file_and_error_handler(crate::app::shell))
         .with_state(leptos_options);
@@ -57,4 +57,3 @@ async fn main() {
         .await
         .unwrap();
 }
-

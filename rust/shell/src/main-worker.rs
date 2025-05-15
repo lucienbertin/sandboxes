@@ -9,7 +9,6 @@ mod redis;
 #[cfg(feature = "rmqsub")]
 mod rmqsub;
 
-
 // RMQ subscriber worker using lapin
 #[tokio::main]
 #[cfg(feature = "rmqsub")]
@@ -26,4 +25,3 @@ async fn main() {
         .await
         .expect("couldnt start rmq's consumer");
 }
-

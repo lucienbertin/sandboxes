@@ -1,6 +1,7 @@
 mod error;
 
 #[macro_use]
+#[cfg(feature = "api")]
 extern crate rocket;
 
 #[cfg(feature = "api")]
@@ -14,7 +15,6 @@ mod redis;
 
 #[cfg(feature = "rmqpub")]
 mod rmqpub;
-
 
 // REST API server using rocket
 #[cfg(feature = "api")]

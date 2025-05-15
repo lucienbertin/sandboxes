@@ -56,7 +56,10 @@ fn HomePage() -> impl IntoView {
     // Creates a reactive value to update the button
     // let count = RwSignal::new(0);
     let (count, set_count) = signal(0);
-    let posts = Resource::new(move || count.get(), |_| async move { get_posts().await.expect("AAAAAA") }); // EXPECT !!!!!!
+    let posts = Resource::new(
+        move || count.get(),
+        |_| async move { get_posts().await.expect("AAAAAA") },
+    ); // EXPECT !!!!!!
     let incr = move |_| set_count.update(|c| *c += 1);
     // let on_refresh = move |_| {
     //         spawn_local(async {
@@ -88,11 +91,15 @@ pub async fn get_posts() -> Result<Vec<Post>, ServerFnError> {
     let db_pool = use_context::<db::DbPool>().expect("no db pool"); // EXPECT!!!
     let mut db_conn = db::get_conn(&db_pool).map_err(|e| ServerFnError::WrappedServerError(e))?;
 
-    let posts = db_conn.build_transaction().read_only().run(
-        |conn| -> Result<Vec<domain::models::Post>, crate::error::Error> {
-            db::select_posts(conn)
-        },
-    ).map_err(|e| ServerFnError::WrappedServerError(e))?;
+    let posts = db_conn
+        .build_transaction()
+        .read_only()
+        .run(
+            |conn| -> Result<Vec<domain::models::Post>, crate::error::Error> {
+                db::select_posts(conn)
+            },
+        )
+        .map_err(|e| ServerFnError::WrappedServerError(e))?;
     let posts = posts.into_iter().map(|x| x.into()).collect();
 
     Ok(posts)
