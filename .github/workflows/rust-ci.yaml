@@ -13,33 +13,51 @@ on:
 name: CI Rust
 
 jobs:
-  check:
-    name: check
+  setup:
+    name: Setup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Install wasm32-unknown-unknown
+      - name: Install target wasm32
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: "stable"
           targets: "wasm32-unknown-unknown"
+
+  build-server:
+    needs: setup
+    name: Build Server
+    runs-on: ubuntu-latest
+    steps:
       - name: Build Server
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --locked --bins --manifest-path rust/Cargo.toml
+
+  build-worker:
+    needs: setup
+    name: Build Worker
+    runs-on: ubuntu-latest
+    steps:
       - name: Build Worker
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --bin worker --features rmqsub --no-default-features --locked --manifest-path rust/Cargo.toml
+
+  build-app:
+    needs: setup
+    name: Build App
+    runs-on: ubuntu-latest
+    steps:
       - name: Build App Frontend
         uses: actions-rs/cargo@v1
         with:
@@ -50,6 +68,12 @@ jobs:
         with:
           command: build
           args: --package shell --bin shell --features appssr --no-default-features --locked --manifest-path rust/Cargo.toml
+
+  checks:
+    needs: setup
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
       - name: Test
         uses: actions-rs/cargo@v1
         with:
