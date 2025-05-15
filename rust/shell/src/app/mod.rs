@@ -1,3 +1,5 @@
+use core::time;
+
 use crate::error::Error;
 
 #[cfg(feature = "db")]
@@ -38,7 +40,7 @@ pub fn App() -> impl IntoView {
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/leptos-axum.css"/>
+        <Stylesheet id="leptos" href="/pkg/rust-app.css"/>
 
         // sets the document title
         <Title text="Welcome to Leptos"/>
@@ -48,6 +50,10 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=StaticSegment("/inOrder") view=HomePage ssr=leptos_router::SsrMode::InOrder/>
+                    <Route path=StaticSegment("/async") view=HomePage ssr=leptos_router::SsrMode::Async/>
+                    <Route path=StaticSegment("/outOfOrder") view=HomePage ssr=leptos_router::SsrMode::OutOfOrder/>
+                    <Route path=StaticSegment("/partiallyBlocked") view=HomePage ssr=leptos_router::SsrMode::PartiallyBlocked/>
                 </Routes>
             </main>
         </Router>
@@ -95,6 +101,9 @@ pub async fn get_posts() -> Result<Vec<Post>, ServerFnError> {
         .run(|conn| -> Result<Vec<domain::models::Post>, Error> { db::select_posts(conn) })
         .map_err(|e| ServerFnError::WrappedServerError(e))?;
     let posts = posts.into_iter().map(|x| x.into()).collect();
+
+    let one_sec = time::Duration::from_secs(1);
+    std::thread::sleep(one_sec);
 
     Ok(posts)
 }
