@@ -14,7 +14,7 @@ name: CI Rust
 
 jobs:
   checks:
-    name: Checks
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,68 +34,9 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all --manifest-path rust/Cargo.toml -- --check
-
-  build-server:
-    name: Build Server
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Build Server
+          args: --all --manifest-path rust/Cargo.toml --check
+      - name: Check
         uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --locked --bins --manifest-path rust/Cargo.toml
-
-  build-worker:
-    name: Build Worker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Build Worker
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --bin worker --features rmqsub --no-default-features --locked --manifest-path rust/Cargo.toml
-
-  build-app:
-    name: Build App
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Install target wasm32
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "stable"
-          targets: "wasm32-unknown-unknown"
-      - name: Build App Frontend
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --package shell --lib --target wasm32-unknown-unknown --features=appcsr --no-default-features --locked --manifest-path rust/Cargo.toml
-      - name: Build App Backend
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --package shell --bin shell --features appssr --no-default-features --locked --manifest-path rust/Cargo.toml
+          command: check
+          args: --locked --all-targets --all-features --manifest-path rust/Cargo.toml

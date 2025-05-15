@@ -1,3 +1,8 @@
+mod error;
+
+#[cfg(feature = "db")]
+mod db;
+
 #[cfg(any(feature = "appcsr"))]
 pub mod app;
 

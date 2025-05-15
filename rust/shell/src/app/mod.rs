@@ -1,3 +1,8 @@
+use crate::error::Error;
+
+#[cfg(feature = "db")]
+use crate::db;
+
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Stylesheet, Title};
 use leptos_router::{
@@ -52,7 +57,7 @@ pub fn App() -> impl IntoView {
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    use leptos::task::spawn_local;
+    // use leptos::task::spawn_local;
     // Creates a reactive value to update the button
     // let count = RwSignal::new(0);
     let (count, set_count) = signal(0);
@@ -61,12 +66,7 @@ fn HomePage() -> impl IntoView {
         |_| async move { get_posts().await.expect("AAAAAA") },
     ); // EXPECT !!!!!!
     let incr = move |_| set_count.update(|c| *c += 1);
-    // let on_refresh = move |_| {
-    //         spawn_local(async {
-    //             let posts = get_posts().await.expect("AAAAAAAAAAAAAAHHH"); // EXPECT!!!!!
-    //             *count_posts.write() += 1;
-    //         });
-    //     };
+
     view! {
         <h1>"Welcome to Leptos!"</h1>
         <button on:click=incr>"Click Me: " {count}</button>
@@ -81,13 +81,12 @@ fn HomePage() -> impl IntoView {
                 })
         }}
         </Suspense>
-        // <button on:click=on_refresh>"refresh:" {count_posts}</button>
     }
 }
 
 #[server]
 pub async fn get_posts() -> Result<Vec<Post>, ServerFnError> {
-    use crate::db;
+
     let db_pool = use_context::<db::DbPool>().expect("no db pool"); // EXPECT!!!
     let mut db_conn = db::get_conn(&db_pool).map_err(|e| ServerFnError::WrappedServerError(e))?;
 
@@ -95,7 +94,7 @@ pub async fn get_posts() -> Result<Vec<Post>, ServerFnError> {
         .build_transaction()
         .read_only()
         .run(
-            |conn| -> Result<Vec<domain::models::Post>, crate::error::Error> {
+            |conn| -> Result<Vec<domain::models::Post>, Error> {
                 db::select_posts(conn)
             },
         )
