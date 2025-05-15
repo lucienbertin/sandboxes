@@ -10,7 +10,7 @@ COPY *.go ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o go-binary
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
