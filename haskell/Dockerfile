@@ -23,7 +23,7 @@ COPY ./lib ./lib
 RUN cabal build
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Set the working directory
 WORKDIR /usr/src/app
