@@ -25,12 +25,16 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: cargo-leptos
       - name: "Install wasm32-unknown-unknown"
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: "stable"
           targets: "wasm32-unknown-unknown"
+      - name: "Install Cargo Leptos"
+        uses: actions-rs/toolchain@v1
+        with:
+          command: install
+          args: cargo-leptos
       - name: Build Server
         uses: actions-rs/cargo@v1
         with:
