@@ -86,18 +86,13 @@ fn HomePage() -> impl IntoView {
 
 #[server]
 pub async fn get_posts() -> Result<Vec<Post>, ServerFnError> {
-
     let db_pool = use_context::<db::DbPool>().expect("no db pool"); // EXPECT!!!
     let mut db_conn = db::get_conn(&db_pool).map_err(|e| ServerFnError::WrappedServerError(e))?;
 
     let posts = db_conn
         .build_transaction()
         .read_only()
-        .run(
-            |conn| -> Result<Vec<domain::models::Post>, Error> {
-                db::select_posts(conn)
-            },
-        )
+        .run(|conn| -> Result<Vec<domain::models::Post>, Error> { db::select_posts(conn) })
         .map_err(|e| ServerFnError::WrappedServerError(e))?;
     let posts = posts.into_iter().map(|x| x.into()).collect();
 
