@@ -36,3 +36,11 @@ jobs:
           file: Worker.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build App
+        uses: docker/build-push-action@v6
+        with:
+          tags: sandboxes-rust-app:latest
+          context: "{{defaultContext}}:rust"
+          file: App.Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
