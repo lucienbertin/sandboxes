@@ -1,5 +1,5 @@
 # Use a Rust base image with Cargo installed
-FROM rust:1-bullseye AS builder
+FROM rust:1-bookworm AS builder
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
@@ -14,6 +14,10 @@ COPY shell/Cargo.toml ./shell
 # Create an empty src directory to trick Cargo into thinking it's a valid Rust project
 RUN mkdir domain/src && echo "fn main() {}" > domain/src/main.rs
 RUN mkdir shell/src && echo "fn main() {}" > shell/src/worker.rs
+RUN echo "" > shell/src/lib.rs
+# RUN echo "fn main() {}" > shell/src/main-api.rs
+# RUN echo "fn main() {}" > shell/src/main-app.rs
+RUN echo "fn main() {}" > shell/src/main-worker.rs
 
 # Build the dependencies without the actual source code to cache dependencies separately
 RUN cargo build --release --locked --features rmqsub --no-default-features
@@ -26,7 +30,7 @@ COPY ./shell/src ./shell/src
 RUN cargo build --release --bin worker --features rmqsub --no-default-features
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Set the working directory
 WORKDIR /usr/src/app

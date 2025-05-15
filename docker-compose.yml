@@ -111,6 +111,27 @@ services:
         restart: true
     networks:
       - sandboxes
+  rust-app:
+    image: sandboxes-rust-app
+    build: 
+      context: rust
+      dockerfile: App.Dockerfile
+    env_file: ./rust/.env.dc
+    restart: always
+    deploy:
+      replicas: 1
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      rmq:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+    networks:
+      - sandboxes
   rust-worker:
     image: sandboxes-rust-worker
     build: 

@@ -1,15 +1,15 @@
 mod schema;
 
 mod place;
-#[cfg(feature = "api")]
+#[cfg(any(feature = "api", feature = "appssr"))]
 mod post;
-#[cfg(feature = "api")]
+#[cfg(any(feature = "api", feature = "appssr"))]
 mod user;
 
 pub use place::*;
-#[cfg(feature = "api")]
+#[cfg(any(feature = "api", feature = "appssr"))]
 pub use post::*;
-#[cfg(feature = "api")]
+#[cfg(any(feature = "api", feature = "appssr"))]
 pub use user::*;
 
 use crate::error::Error;
@@ -30,7 +30,7 @@ pub fn init_pool() -> Result<DbPool, Error> {
     Ok(pool)
 }
 
-#[cfg(feature = "rmqsub")]
+#[cfg(any(feature = "rmqsub", feature = "appssr"))]
 pub fn get_conn(db_pool: &DbPool) -> Result<DbConn, Error> {
     let conn: DbConn = db_pool.get()?;
 

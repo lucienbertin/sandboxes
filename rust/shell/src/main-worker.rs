@@ -1,11 +1,15 @@
+mod error;
+
 #[cfg(feature = "db")]
 mod db;
-mod error;
+
 #[cfg(feature = "redis")]
 mod redis;
+
 #[cfg(feature = "rmqsub")]
 mod rmqsub;
 
+// RMQ subscriber worker using lapin
 #[tokio::main]
 #[cfg(feature = "rmqsub")]
 async fn main() {
@@ -21,6 +25,3 @@ async fn main() {
         .await
         .expect("couldnt start rmq's consumer");
 }
-
-#[cfg(not(feature = "rmqsub"))]
-fn main() {}

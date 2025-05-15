@@ -14,27 +14,17 @@ name: CI Rust
 
 jobs:
   check:
-    name: check
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Build Server
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --locked --bins --manifest-path rust/Cargo.toml
-      - name: Build Worker
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --bin worker --features rmqsub --no-default-features --locked --manifest-path rust/Cargo.toml
       - name: Test
         uses: actions-rs/cargo@v1
         with:
@@ -44,4 +34,9 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all --manifest-path rust/Cargo.toml -- --check
+          args: --all --manifest-path rust/Cargo.toml --check
+      - name: Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path rust/Cargo.toml
