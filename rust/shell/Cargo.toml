@@ -42,8 +42,33 @@ wasm-bindgen = { version = "=0.2.100", optional = true }
 # getrandom = { version = "0.3", features = ["wasm_js"], optional = true }
 
 [features]
-api = ["db", "redis", "rmqpub", "dep:rocket", "dep:hmac", "dep:sha2", "dep:jwt", "dep:serde", "dep:serde_json", "dep:geojson"] # rest api web exposition
-rmqsub = ["db", "redis", "dep:tokio", "dep:lapin", "dep:serde", "dep:serde_json", "dep:geojson", "dep:r2d2", "dep:futures-lite"] # rmq subscriber worker
+api = [
+    "db",
+    "dep:pq-sys",
+    "dep:openssl-sys",
+    "redis",
+    "rmqpub",
+    "dep:rocket",
+    "dep:hmac",
+    "dep:sha2",
+    "dep:jwt",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:geojson"
+] # rest api web exposition
+rmqsub = [
+    "db",
+    "dep:pq-sys",
+    "dep:openssl-sys",
+    "redis",
+    "dep:tokio",
+    "dep:lapin",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:geojson",
+    "dep:r2d2",
+    "dep:futures-lite"
+] # rmq subscriber worker
 appssr = [
     "dep:axum",
     "dep:tokio",
@@ -54,6 +79,8 @@ appssr = [
     "leptos_router/ssr",
     "dep:serde",
     "db",
+    "dep:pq-sys",
+    "dep:openssl-sys",
 ]
 appcsr = [
     "dep:leptos",
@@ -67,7 +94,12 @@ appcsr = [
 
 redis = ["dep:redis", "dep:rand"] # redis adapter
 rmqpub = ["dep:lapin", "dep:serde", "dep:serde_json", "dep:r2d2", "dep:async-global-executor"] # rmq publisher adapter
-db = ["dep:diesel", "dep:postgis_diesel", "dep:pq-sys", "dep:openssl-sys", "dep:r2d2", "dep:geojson"] # db adapter
+db = [
+    "dep:diesel",
+    "dep:postgis_diesel",
+    "dep:r2d2",
+    "dep:geojson"
+] # db adapter
 # default=["appssr"]
 
 [[bin]]

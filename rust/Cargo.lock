@@ -2410,9 +2410,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.107"
+version = "0.9.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8288979acd84749c744a9014b4382d42b8f7b2592847b5afb2ed29e5d16ede07"
+checksum = "e145e1651e858e820e4860f7b9c5e169bc1d8ce1c86043be79fa7b7634821847"
 dependencies = [
  "cc",
  "libc",
@@ -2694,9 +2694,9 @@ dependencies = [
 
 [[package]]
 name = "pq-src"
-version = "0.3.6+libpq-17.4"
+version = "0.3.8+libpq-17.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f5b04f06b634725218f5f2d0423e889c82f07890dbb859e6cbfbc7e08d49bde"
+checksum = "7ee4b24aec6c54ba0995bcc9ba17aa369db8764122980c5dbd3c70d26206dc73"
 dependencies = [
  "cc",
  "openssl-sys",
