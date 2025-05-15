@@ -13,22 +13,30 @@ on:
 name: CD Rust
 
 jobs:
-  build:
-    name: build
+  server:
+    name: Build Server
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build Server
+      - name: Build
         uses: docker/build-push-action@v6
         with:
           tags: sandboxes-rust:latest
           context: "{{defaultContext}}:rust"
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Build Worker
+  worker:
+    name: Build Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
         uses: docker/build-push-action@v6
         with:
           tags: sandboxes-rust-worker:latest
@@ -36,7 +44,15 @@ jobs:
           file: Worker.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Build App
+  app:
+    name: Build App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
         uses: docker/build-push-action@v6
         with:
           tags: sandboxes-rust-app:latest
