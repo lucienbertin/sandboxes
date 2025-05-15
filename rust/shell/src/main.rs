@@ -21,5 +21,4 @@ mod rmqsub;
 // NOTHING
 #[cfg(not(any(feature = "api", feature = "appssr", feature = "rmqsub")))]
 fn main() {
-
 }

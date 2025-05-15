@@ -14,6 +14,10 @@ COPY shell/Cargo.toml ./shell
 # Create an empty src directory to trick Cargo into thinking it's a valid Rust project
 RUN mkdir domain/src && echo "fn main() {}" > domain/src/main.rs
 RUN mkdir shell/src && echo "fn main() {}" > shell/src/worker.rs
+RUN echo "" > shell/src/lib.rs
+# RUN echo "fn main() {}" > shell/src/main-api.rs
+# RUN echo "fn main() {}" > shell/src/main-app.rs
+RUN echo "fn main() {}" > shell/src/main-worker.rs
 
 # Build the dependencies without the actual source code to cache dependencies separately
 RUN cargo build --release --locked --features rmqsub --no-default-features

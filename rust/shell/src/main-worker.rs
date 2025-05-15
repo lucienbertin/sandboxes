@@ -1,8 +1,5 @@
 mod error;
 
-#[macro_use]
-extern crate rocket;
-
 #[cfg(feature = "db")]
 mod db;
 
