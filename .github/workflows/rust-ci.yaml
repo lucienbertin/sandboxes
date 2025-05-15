@@ -13,8 +13,8 @@ on:
 name: CI Rust
 
 jobs:
-  checks:
-    name: Tests
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
