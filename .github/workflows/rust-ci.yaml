@@ -30,11 +30,6 @@ jobs:
         with:
           toolchain: "stable"
           targets: "wasm32-unknown-unknown"
-      - name: "Install Cargo Leptos"
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-leptos
       - name: Build Server
         uses: actions-rs/cargo@v1
         with:
