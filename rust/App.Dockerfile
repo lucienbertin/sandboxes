@@ -54,8 +54,8 @@ FROM debian:bookworm-slim
 WORKDIR /usr/src/app
 
 # Copy the built binary from the previous stage
-COPY --from=builder /usr/src/app/target/release/shell /app/
-COPY --from=builder /usr/src/app/target/site /app/site
+COPY --from=builder /usr/src/app/target/release/shell ./
+COPY --from=builder /usr/src/app/target/site ./site
 
 # Command to run the application
-CMD ["/app/shell"]
+CMD ["./shell"]
