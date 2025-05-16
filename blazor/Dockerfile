@@ -3,8 +3,8 @@ WORKDIR /App
 
 # Copy sln and proj files
 COPY blazor.dockersln ./blazor.sln
-COPY Domain/Domain.fsproj Domain/packages.lock.json ./Domain/
-COPY Shell/Shell.csproj Shell/packages.lock.json ./Shell/
+COPY Domain/Domain.fsproj ./Domain/
+COPY Shell/Shell.csproj ./Shell/
 # Restore as distinct layers
 RUN dotnet restore
 
