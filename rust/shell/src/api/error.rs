@@ -20,9 +20,9 @@ impl<'r> Responder<'r, 'static> for Error {
             | Error::Error => Status::InternalServerError, // 500
 
             #[cfg(feature = "rmqsub")]
-            Error::GeoJSONSerdeError(_)
-            | Error::GeoJsonError(_)
-            | Error::FromUTF8Error(_) => Status::InternalServerError, // 500
+            Error::GeoJSONSerdeError(_) | Error::GeoJsonError(_) | Error::FromUTF8Error(_) => {
+                Status::InternalServerError
+            } // 500
 
             Error::JwtError(_) | Error::AuthError(_) => Status::Unauthorized, // 401
 
