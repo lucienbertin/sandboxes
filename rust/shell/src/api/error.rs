@@ -16,13 +16,13 @@ impl<'r> Responder<'r, 'static> for Error {
             | Error::LapinError(_)
             | Error::SendError(_)
             | Error::RedisError(_)
-            | Error::SerializeError(_) => Status::InternalServerError, // 500
+            | Error::SerializeError(_)
+            | Error::Error => Status::InternalServerError, // 500
 
             #[cfg(feature = "rmqsub")]
             Error::GeoJSONSerdeError(_)
             | Error::GeoJsonError(_)
-            | Error::FromUTF8Error(_)
-            | Error::Error => Status::InternalServerError, // 500
+            | Error::FromUTF8Error(_) => Status::InternalServerError, // 500
 
             Error::JwtError(_) | Error::AuthError(_) => Status::Unauthorized, // 401
 

@@ -42,7 +42,6 @@ pub enum Error {
     #[cfg(any(feature = "rmqpub", feature = "api"))]
     SerializeError(serde_json::Error),
 
-    #[cfg(feature = "rmqsub")]
     Error, // Generic error
 }
 #[cfg(feature = "api")]
@@ -202,7 +201,6 @@ impl std::fmt::Display for Error {
                 f.write_str(format!("shell error {:?}", error).as_str())
             }
 
-            #[cfg(feature = "rmqsub")]
             Error::Error => f.write_str("shell error"),
         }
     }
