@@ -1,4 +1,3 @@
-use super::error::ResponseError;
 use super::{
     check_none_match, get_etag_safe, DbConnWrapper, EtagJson, IfNoneMatchHeader,
     JwtIdentifiedSubject, RedisConnWrapper,
@@ -77,7 +76,7 @@ pub async fn get_places(
     mut redis_conn: RedisConnWrapper,
     subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
-) -> Result<EtagJson<Vec<Place>>, ResponseError> {
+) -> Result<EtagJson<Vec<Place>>, Error> {
     let cache_key = "places".to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
@@ -96,7 +95,7 @@ pub async fn get_places_geojson(
     mut redis_conn: RedisConnWrapper,
     subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
-) -> Result<EtagJson<PlaceFeatureCollection>, ResponseError> {
+) -> Result<EtagJson<PlaceFeatureCollection>, Error> {
     let cache_key = "places-geojson".to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 

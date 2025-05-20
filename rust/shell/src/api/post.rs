@@ -1,4 +1,3 @@
-use super::error::ResponseError;
 use super::{
     check_match, check_none_match, get_etag_safe, DbConnWrapper, JwtIdentifiedSubject,
     RedisConnWrapper,
@@ -92,7 +91,7 @@ pub async fn get_posts(
     mut redis_conn: RedisConnWrapper,
     subject: Option<JwtIdentifiedSubject>,
     if_none_match: Option<IfNoneMatchHeader>,
-) -> Result<EtagJson<Vec<Post>>, ResponseError> {
+) -> Result<EtagJson<Vec<Post>>, Error> {
     let cache_key = "posts".to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
@@ -126,7 +125,7 @@ pub fn get_post(
     subject: Option<JwtIdentifiedSubject>,
     id: i32,
     if_none_match: Option<IfNoneMatchHeader>,
-) -> Result<EtagJson<Post>, ResponseError> {
+) -> Result<EtagJson<Post>, Error> {
     let cache_key = format!("posts.{}", id).to_string();
     check_none_match(&mut redis_conn, &cache_key, if_none_match)?;
 
@@ -165,7 +164,7 @@ pub async fn publish_post(
     subject: Option<JwtIdentifiedSubject>,
     id: i32,
     if_match: Option<IfMatchHeader>,
-) -> Result<Status, ResponseError> {
+) -> Result<Status, Error> {
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
@@ -223,7 +222,7 @@ pub fn post_post(
     subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     data: Form<NewPost>,
-) -> Result<Created<Json<Post>>, ResponseError> {
+) -> Result<Created<Json<Post>>, Error> {
     let cache_key = "posts".to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
@@ -260,7 +259,7 @@ pub fn delete_post(
     subject: Option<JwtIdentifiedSubject>,
     if_match: Option<IfMatchHeader>,
     id: i32,
-) -> Result<NoContent, ResponseError> {
+) -> Result<NoContent, Error> {
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
@@ -316,7 +315,7 @@ pub fn patch_post(
     if_match: Option<IfMatchHeader>,
     id: i32,
     data: Form<PatchPost>,
-) -> Result<NoContent, ResponseError> {
+) -> Result<NoContent, Error> {
     let cache_key = format!("posts.{}", id).to_string();
     check_match(&mut redis_conn, &cache_key, if_match)?;
 
